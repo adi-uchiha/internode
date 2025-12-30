@@ -2,6 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { robotoMono } from "@/lib/fonts";
 
 export default function UserCard({ session }: { session: any }) {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function UserCard({ session }: { session: any }) {
         <h4 className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
           Session Info
         </h4>
-        <pre className="overflow-auto rounded bg-gray-50 p-4 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+        <pre className={`overflow-auto rounded p-4 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300 ${robotoMono.className}`}>
           {JSON.stringify(session, null, 2)}
         </pre>
       </div>
