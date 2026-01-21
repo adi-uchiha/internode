@@ -1,17 +1,26 @@
-"use client";
+'use client';
 
-import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { robotoMono } from "@/lib/fonts";
+import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
+import { jetBrainsMono } from '@/lib/fonts';
+import NextImage from 'next/image';
 
-export default function UserCard({ session }: { session: any }) {
+interface Session {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+export default function UserCard({ session }: { session: Session }) {
   const router = useRouter();
 
   const handleLogout = async () => {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/login");
+          router.push('/login');
         },
       },
     });
@@ -21,9 +30,11 @@ export default function UserCard({ session }: { session: any }) {
     <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center gap-4">
         {session.user.image ? (
-          <img
+          <NextImage
             src={session.user.image}
-            alt={session.user.name}
+            alt={session.user.name || 'User'}
+            width={64}
+            height={64}
             className="h-16 w-16 rounded-full"
           />
         ) : (
@@ -35,17 +46,15 @@ export default function UserCard({ session }: { session: any }) {
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
             {session.user.name}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            {session.user.email}
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">{session.user.email}</p>
         </div>
       </div>
 
       <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
-        <h4 className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-          Session Info
-        </h4>
-        <pre className={`overflow-auto rounded p-4 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300 ${robotoMono.className}`}>
+        <h4 className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Session Info</h4>
+        <pre
+          className={`overflow-auto rounded p-4 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300 ${jetBrainsMono.className}`}
+        >
           {JSON.stringify(session, null, 2)}
         </pre>
       </div>

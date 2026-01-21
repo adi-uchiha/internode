@@ -1,11 +1,11 @@
-import { Space_Grotesk, Roboto_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 
 export const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
 });
 
-export const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  variable: "--font-roboto-mono",
+export const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
 });
