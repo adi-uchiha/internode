@@ -39,9 +39,15 @@ const MemberProfile = () => {
         >
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             {/* Avatar */}
-            <div className="w-24 h-24 border-2 border-primary bg-primary/10 flex items-center justify-center overflow-hidden">
+            <div className="relative w-24 h-24 border-2 border-primary bg-primary/10 flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
-                <Image src={user.avatar} alt={user.name} fill className="object-cover" />
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               ) : (
                 <Icon icon="solar:user-linear" className="w-12 h-12 text-primary" />
               )}

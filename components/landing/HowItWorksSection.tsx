@@ -63,7 +63,7 @@ export const HowItWorksSection = () => {
             >
               {/* Connector line */}
               {i < steps.length - 1 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-border to-transparent" />
+                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-linear-to-r from-border to-transparent" />
               )}
 
               <div className="p-6 border border-border bg-card hover:border-primary/30 transition-colors duration-300 h-full">

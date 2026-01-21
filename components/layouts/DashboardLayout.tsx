@@ -115,9 +115,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         {/* User section */}
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="relative w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
               {user?.avatar ? (
-                <Image src={user.avatar} alt={user.name} fill className="object-cover" />
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               ) : (
                 <Icon icon="solar:user-linear" className="w-5 h-5 text-muted-foreground" />
               )}

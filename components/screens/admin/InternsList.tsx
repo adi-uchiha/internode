@@ -35,6 +35,7 @@ const InternsList = () => (
                       width={32}
                       height={32}
                       className="w-8 h-8 border border-border"
+                      unoptimized
                     />
                     <div>
                       <div className="font-mono text-sm">{intern.name}</div>

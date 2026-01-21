@@ -77,8 +77,14 @@ const AdminDashboard = () => {
                     </span>
                   )}
                 </div>
-                <div className="w-10 h-10 border border-border mb-2 overflow-hidden">
-                  <Image src={intern.avatar} alt={intern.name} fill className="object-cover" />
+                <div className="relative w-10 h-10 border border-border mb-2 overflow-hidden">
+                  <Image
+                    src={intern.avatar}
+                    alt={intern.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
                 <div className="font-mono text-sm truncate">{intern.name}</div>
                 <div className="font-mono text-xs text-muted-foreground">{intern.department}</div>
