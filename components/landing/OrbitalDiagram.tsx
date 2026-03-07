@@ -70,11 +70,11 @@ export const OrbitalDiagram = () => {
           } as const;
         })
         .filter(Boolean) as Array<{
-        id: string;
-        status: 'active' | 'blocked';
-        delay: number;
-        d: string;
-      }>;
+          id: string;
+          status: 'active' | 'blocked';
+          delay: number;
+          d: string;
+        }>;
 
       setBeamPaths(next);
     };
@@ -218,22 +218,20 @@ export const OrbitalDiagram = () => {
             className="flex flex-col items-center gap-2"
           >
             {/* Status indicator */}
-            <div
-              className={`w-2 h-2 rounded-full ${
-                member.status === 'blocked' ? 'bg-yellow-500 animate-pulse' : 'bg-primary'
-              }`}
-            />
+            <div className={`w-2 h-2 rounded-full ${member.status === 'blocked'
+              ? 'bg-yellow-500 animate-pulse'
+              : 'bg-primary'
+              }`} />
 
             {/* Member avatar */}
             <div
               ref={(el) => {
                 nodeRefs.current[index] = el;
               }}
-              className={`w-10 h-10 border ${
-                member.status === 'blocked'
-                  ? 'border-yellow-500/50 bg-yellow-500/10'
-                  : 'border-primary/50 bg-primary/10'
-              } flex items-center justify-center`}
+              className={`w-10 h-10 border ${member.status === 'blocked'
+                ? 'border-yellow-500/50 bg-yellow-500/10'
+                : 'border-primary/50 bg-primary/10'
+                } flex items-center justify-center`}
             >
               <span className="font-mono text-sm text-foreground">{member.id}</span>
             </div>
@@ -258,10 +256,7 @@ export const OrbitalDiagram = () => {
           <div className="absolute -inset-6 border border-border/30" />
 
           {/* Main container */}
-          <div
-            ref={hudRef}
-            className="relative w-[200px] border border-border bg-card/90 backdrop-blur-sm overflow-hidden"
-          >
+          <div ref={hudRef} className="relative w-[200px] border border-border bg-card/90 backdrop-blur-sm overflow-hidden">
             {/* Header */}
             <div className="px-3 py-2 border-b border-border bg-background/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -288,10 +283,14 @@ export const OrbitalDiagram = () => {
                   transition={{ duration: 0.4, delay: 1 + index * 0.2 }}
                   className="flex items-start gap-2"
                 >
-                  <div className="w-1 h-1 bg-primary mt-1.5 flex-shrink-0" />
+                  <div className="w-1 h-1 bg-primary mt-1.5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-mono text-[10px] text-foreground truncate">{entry.text}</p>
-                    <p className="font-mono text-[8px] text-muted-foreground">{entry.time}</p>
+                    <p className="font-mono text-[10px] text-foreground truncate">
+                      {entry.text}
+                    </p>
+                    <p className="font-mono text-[8px] text-muted-foreground">
+                      {entry.time}
+                    </p>
                   </div>
                 </motion.div>
               ))}

@@ -59,8 +59,7 @@ export const mockInterns: Intern[] = [
     id: 'intern-001',
     name: 'Alex Chen',
     email: 'alex@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=AC&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AC&backgroundColor=00ff00&textColor=000000',
     status: 'active',
     joinDate: '2025-01-01',
     department: 'Frontend',
@@ -68,14 +67,13 @@ export const mockInterns: Intern[] = [
     logStatus: 'green',
     lastLogTime: '09:15',
     totalHours: 342,
-    skillTags: ['react', 'typescript', 'tailwind', 'nextjs'],
+    skillTags: ['react', 'typescript', 'tailwind', 'nextjs']
   },
   {
     id: 'intern-002',
     name: 'Sarah Kim',
     email: 'sarah@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=SK&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=SK&backgroundColor=00ff00&textColor=000000',
     status: 'active',
     joinDate: '2025-01-05',
     department: 'Backend',
@@ -83,28 +81,26 @@ export const mockInterns: Intern[] = [
     logStatus: 'yellow',
     lastLogTime: '10:30',
     totalHours: 298,
-    skillTags: ['nodejs', 'postgresql', 'docker', 'redis'],
+    skillTags: ['nodejs', 'postgresql', 'docker', 'redis']
   },
   {
     id: 'intern-003',
     name: 'Marcus Johnson',
     email: 'marcus@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=MJ&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=MJ&backgroundColor=00ff00&textColor=000000',
     status: 'active',
     joinDate: '2024-12-15',
     department: 'Full Stack',
     project: 'Mobile App',
     logStatus: 'red',
     totalHours: 412,
-    skillTags: ['react-native', 'expo', 'firebase', 'graphql'],
+    skillTags: ['react-native', 'expo', 'firebase', 'graphql']
   },
   {
     id: 'intern-004',
     name: 'Priya Patel',
     email: 'priya@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=PP&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=PP&backgroundColor=00ff00&textColor=000000',
     status: 'active',
     joinDate: '2025-01-10',
     department: 'DevOps',
@@ -112,28 +108,26 @@ export const mockInterns: Intern[] = [
     logStatus: 'green',
     lastLogTime: '08:45',
     totalHours: 187,
-    skillTags: ['kubernetes', 'terraform', 'aws', 'github-actions'],
+    skillTags: ['kubernetes', 'terraform', 'aws', 'github-actions']
   },
   {
     id: 'intern-005',
     name: 'David Liu',
     email: 'david@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=DL&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=DL&backgroundColor=00ff00&textColor=000000',
     status: 'on-leave',
     joinDate: '2024-11-20',
     department: 'Backend',
     project: 'Data Pipeline',
     logStatus: 'green',
     totalHours: 523,
-    skillTags: ['python', 'spark', 'airflow', 'dbt'],
+    skillTags: ['python', 'spark', 'airflow', 'dbt']
   },
   {
     id: 'intern-006',
     name: 'Emma Wilson',
     email: 'emma@internode.dev',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=EW&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=EW&backgroundColor=00ff00&textColor=000000',
     status: 'active',
     joinDate: '2025-01-08',
     department: 'Frontend',
@@ -141,8 +135,8 @@ export const mockInterns: Intern[] = [
     logStatus: 'green',
     lastLogTime: '09:00',
     totalHours: 156,
-    skillTags: ['figma', 'storybook', 'css', 'accessibility'],
-  },
+    skillTags: ['figma', 'storybook', 'css', 'accessibility']
+  }
 ];
 
 // Mock Daily Logs
@@ -151,10 +145,8 @@ export const mockDailyLogs: DailyLog[] = [
     id: 'log-001',
     userId: 'member-001',
     date: '2025-01-08',
-    whatIDid:
-      'Implemented the new dashboard sidebar with collapsible functionality. Fixed 3 UI bugs related to responsive design.',
-    whatILearned:
-      'Learned about framer-motion animations and how to create smooth collapse/expand transitions. Also discovered the useLayoutEffect hook for avoiding layout shifts.',
+    whatIDid: 'Implemented the new dashboard sidebar with collapsible functionality. Fixed 3 UI bugs related to responsive design.',
+    whatILearned: 'Learned about framer-motion animations and how to create smooth collapse/expand transitions. Also discovered the useLayoutEffect hook for avoiding layout shifts.',
     hoursWorked: 8,
     blockers: '',
     hasBlocker: false,
@@ -164,16 +156,14 @@ export const mockDailyLogs: DailyLog[] = [
     docLinks: [],
     projectId: 'proj-001',
     status: 'submitted',
-    createdAt: '2025-01-08T09:15:00Z',
+    createdAt: '2025-01-08T09:15:00Z'
   },
   {
     id: 'log-002',
     userId: 'member-001',
     date: '2025-01-07',
-    whatIDid:
-      'Set up the authentication flow using session-based auth. Created login and signup pages with proper validation.',
-    whatILearned:
-      'Understood the difference between JWT and session-based authentication. Learned about CSRF protection.',
+    whatIDid: 'Set up the authentication flow using session-based auth. Created login and signup pages with proper validation.',
+    whatILearned: 'Understood the difference between JWT and session-based authentication. Learned about CSRF protection.',
     hoursWorked: 7,
     blockers: '',
     hasBlocker: false,
@@ -183,9 +173,8 @@ export const mockDailyLogs: DailyLog[] = [
     docLinks: ['https://notion.so/internode/auth-docs'],
     projectId: 'proj-001',
     status: 'submitted',
-    adminFeedback:
-      'Great work on the auth implementation! Consider adding rate limiting for the login endpoint.',
-    createdAt: '2025-01-07T17:30:00Z',
+    adminFeedback: 'Great work on the auth implementation! Consider adding rate limiting for the login endpoint.',
+    createdAt: '2025-01-07T17:30:00Z'
   },
   {
     id: 'log-003',
@@ -202,8 +191,8 @@ export const mockDailyLogs: DailyLog[] = [
     docLinks: [],
     projectId: 'proj-001',
     status: 'submitted',
-    createdAt: '2025-01-06T16:00:00Z',
-  },
+    createdAt: '2025-01-06T16:00:00Z'
+  }
 ];
 
 // Mock Projects
@@ -215,7 +204,7 @@ export const mockProjects: Project[] = [
     status: 'active',
     startDate: '2024-12-01',
     interns: ['intern-001', 'intern-006'],
-    techStack: ['react', 'typescript', 'tailwind', 'framer-motion'],
+    techStack: ['react', 'typescript', 'tailwind', 'framer-motion']
   },
   {
     id: 'proj-002',
@@ -224,7 +213,7 @@ export const mockProjects: Project[] = [
     status: 'active',
     startDate: '2024-11-15',
     interns: ['intern-002'],
-    techStack: ['nodejs', 'express', 'redis', 'docker'],
+    techStack: ['nodejs', 'express', 'redis', 'docker']
   },
   {
     id: 'proj-003',
@@ -233,7 +222,7 @@ export const mockProjects: Project[] = [
     status: 'active',
     startDate: '2024-10-01',
     interns: ['intern-003'],
-    techStack: ['react-native', 'expo', 'firebase'],
+    techStack: ['react-native', 'expo', 'firebase']
   },
   {
     id: 'proj-004',
@@ -242,7 +231,7 @@ export const mockProjects: Project[] = [
     status: 'active',
     startDate: '2025-01-01',
     interns: ['intern-004'],
-    techStack: ['kubernetes', 'terraform', 'github-actions'],
+    techStack: ['kubernetes', 'terraform', 'github-actions']
   },
   {
     id: 'proj-005',
@@ -251,8 +240,8 @@ export const mockProjects: Project[] = [
     status: 'paused',
     startDate: '2024-09-01',
     interns: ['intern-005'],
-    techStack: ['python', 'spark', 'airflow'],
-  },
+    techStack: ['python', 'spark', 'airflow']
+  }
 ];
 
 // Mock Weekly Goals
@@ -264,41 +253,41 @@ export const mockWeeklyGoals: WeeklyGoal[] = [
     goals: [
       { id: 'g1', text: 'Complete sidebar component with animations', completed: true },
       { id: 'g2', text: 'Write unit tests for auth flow', completed: false },
-      { id: 'g3', text: 'Document component API', completed: false },
+      { id: 'g3', text: 'Document component API', completed: false }
     ],
-    createdAt: '2025-01-06T08:00:00Z',
-  },
+    createdAt: '2025-01-06T08:00:00Z'
+  }
 ];
 
 // Activity data for heatmap
 export const generateActivityData = () => {
   const data: { date: string; count: number; hours: number }[] = [];
   const today = new Date();
-
+  
   for (let i = 365; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-
+    
     // Random activity - more likely to have activity on weekdays
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
     const hasActivity = isWeekend ? Math.random() > 0.7 : Math.random() > 0.2;
-
+    
     if (hasActivity) {
       const hours = Math.floor(Math.random() * 8) + 1;
       data.push({
         date: date.toISOString().split('T')[0],
         count: Math.floor(Math.random() * 10) + 1,
-        hours,
+        hours
       });
     } else {
       data.push({
         date: date.toISOString().split('T')[0],
         count: 0,
-        hours: 0,
+        hours: 0
       });
     }
   }
-
+  
   return data;
 };
 
@@ -310,7 +299,7 @@ export const generatePerformanceMetrics = () => ({
   totalHoursThisMonth: 156,
   avgHoursPerDay: 6.8,
   learningDays: 18,
-  executionDays: 12,
+  executionDays: 12
 });
 
 // Leave types
@@ -318,5 +307,5 @@ export const leaveTypes = [
   { id: 'sick', label: 'Sick Leave', icon: 'solar:thermometer-linear' },
   { id: 'vacation', label: 'Vacation', icon: 'solar:sun-2-linear' },
   { id: 'half-day', label: 'Half Day', icon: 'solar:clock-circle-linear' },
-  { id: 'personal', label: 'Personal', icon: 'solar:user-linear' },
+  { id: 'personal', label: 'Personal', icon: 'solar:user-linear' }
 ];

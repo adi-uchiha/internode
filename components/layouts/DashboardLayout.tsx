@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -45,7 +44,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
       >
         {/* Logo */}
         <div className="h-16 border-b border-border flex items-center px-4 justify-between">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 border-2 border-primary flex items-center justify-center shrink-0">
               <div className="w-3 h-3 bg-primary" />
             </div>
@@ -74,15 +73,18 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
+                    "flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative",
                     isActive
-                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
+                      ? "bg-primary/10 text-primary border-l-2 border-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent"
                   )}
                 >
                   <Icon
                     icon={item.icon}
-                    className={cn('w-5 h-5 shrink-0 transition-colors', isActive && 'text-primary')}
+                    className={cn(
+                      "w-5 h-5 shrink-0 transition-colors",
+                      isActive && "text-primary"
+                    )}
                   />
                   <AnimatePresence>
                     {!collapsed && (
@@ -90,19 +92,17 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="font-mono text-sm truncate"
+                        className="font-display text-sm truncate tracking-tight font-medium"
                       >
                         {item.label}
                       </motion.span>
                     )}
                   </AnimatePresence>
                   {item.badge && item.badge > 0 && (
-                    <span
-                      className={cn(
-                        'absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5',
-                        collapsed && 'right-1 top-1'
-                      )}
-                    >
+                    <span className={cn(
+                      "absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5",
+                      collapsed && "right-1 top-1"
+                    )}>
                       {item.badge}
                     </span>
                   )}
@@ -115,15 +115,9 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         {/* User section */}
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="relative w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
               {user?.avatar ? (
-                <Image
-                  src={user.avatar}
-                  alt={user.name}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
               ) : (
                 <Icon icon="solar:user-linear" className="w-5 h-5 text-muted-foreground" />
               )}
@@ -136,8 +130,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                   exit={{ opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="font-mono text-sm truncate">{user?.name}</div>
-                  <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                  <div className="font-display font-semibold text-sm truncate">{user?.name}</div>
+                  <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
                     [{user?.role}]
                   </div>
                 </motion.div>
@@ -149,7 +143,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className={cn('w-full justify-start', collapsed && 'justify-center px-0')}
+            className={cn("w-full justify-start", collapsed && "justify-center px-0")}
           >
             <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
             {!collapsed && <span className="ml-2">Logout</span>}
@@ -157,12 +151,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         </div>
 
         {/* Collapse Toggle */}
+        <Button variant="ghost" size="sm" onClick={() => router.push('/tasks/kanban')} className={cn("absolute -right-3 top-12 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10", collapsed && "w-full justify-center px-0")}>
+          <Icon icon="solar:kanban-board-linear" className="w-3 h-3 text-muted-foreground" />
+        </Button>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10"
         >
           <Icon
-            icon={collapsed ? 'solar:alt-arrow-right-linear' : 'solar:alt-arrow-left-linear'}
+            icon={collapsed ? "solar:alt-arrow-right-linear" : "solar:alt-arrow-left-linear"}
             className="w-3 h-3 text-muted-foreground"
           />
         </button>
@@ -198,7 +195,9 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         </header>
 
         {/* Page Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6">
+          {children}
+        </div>
       </main>
     </div>
   );

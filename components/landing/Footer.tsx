@@ -28,8 +28,13 @@ export const Footer = () => {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <a href="#" className="flex items-center gap-3 mb-4">
-              <Icon icon="solar:graph-new-bold" className="w-6 h-6 text-primary" />
-              <span className="font-display font-semibold text-lg text-foreground">INTERNODE</span>
+              <Icon 
+                icon="solar:graph-new-bold" 
+                className="w-6 h-6 text-primary" 
+              />
+              <span className="font-display font-semibold text-lg text-foreground">
+                INTERNODE
+              </span>
             </a>
             <p className="font-mono text-xs text-muted-foreground leading-relaxed max-w-xs">
               Engineering management infrastructure for the next generation of interns.
@@ -44,8 +49,8 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <a 
+                    href={link.href} 
                     className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}
@@ -63,8 +68,8 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <a 
+                    href={link.href} 
                     className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}
@@ -82,8 +87,8 @@ export const Footer = () => {
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <a 
+                    href={link.href} 
                     className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     {link.label}

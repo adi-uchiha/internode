@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type UserRole = 'admin' | 'member';
 
@@ -30,8 +30,7 @@ const DEMO_USERS: Record<string, User & { password: string }> = {
     name: 'Aditya Kumar',
     role: 'admin',
     password: 'admin123',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=AK&backgroundColor=00ff00&textColor=000000',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AK&backgroundColor=00ff00&textColor=000000'
   },
   'member@internode.dev': {
     id: 'member-001',
@@ -39,9 +38,8 @@ const DEMO_USERS: Record<string, User & { password: string }> = {
     name: 'Alex Chen',
     role: 'member',
     password: 'member123',
-    avatar:
-      'https://api.dicebear.com/7.x/initials/svg?seed=AC&backgroundColor=00ff00&textColor=000000',
-  },
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AC&backgroundColor=00ff00&textColor=000000'
+  }
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -53,31 +51,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const savedUser = sessionStorage.getItem('internode_user');
     if (savedUser) {
       try {
-        const parsedUser = JSON.parse(savedUser);
-        const timer = setTimeout(() => {
-          setUser(parsedUser);
-        }, 0);
-        return () => clearTimeout(timer);
+        setUser(JSON.parse(savedUser));
       } catch {
         sessionStorage.removeItem('internode_user');
       }
     }
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 0);
-    return () => clearTimeout(timer);
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
     setIsLoading(true);
 
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     const demoUser = DEMO_USERS[email];
 
     if (demoUser && demoUser.password === password && demoUser.role === role) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userWithoutPassword } = demoUser;
       setUser(userWithoutPassword);
       sessionStorage.setItem('internode_user', JSON.stringify(userWithoutPassword));
@@ -95,15 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      logout,
+      isAuthenticated: !!user
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,6 +9,7 @@ const adminNavItems = [
   { label: 'Reports', href: '/admin/reports', icon: 'solar:file-text-linear' },
   { label: 'Projects', href: '/admin/projects', icon: 'solar:folder-linear' },
   { label: 'Team Settings', href: '/admin/settings', icon: 'solar:settings-linear' },
+  { label: '── Task Manager', href: '/tasks/dashboard', icon: 'solar:widget-4-linear' },
 ];
 
 interface AdminLayoutProps {

@@ -1,32 +1,30 @@
-'use client';
-
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
 
 export const MatrixRain = () => {
-  const [columns, setColumns] = useState<
-    Array<{
-      id: number;
-      x: number;
-      delay: number;
-      duration: number;
-      chars: string[];
-    }>
-  >([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const newColumns = Array.from({ length: 20 }, (_, i) => ({
+    setMounted(true);
+  }, []);
+
+  // Create columns of falling characters
+  const columns = useMemo(() => {
+    if (!mounted) return [];
+
+    return Array.from({ length: 20 }, (_, i) => ({
       id: i,
       x: (i / 20) * 100,
       delay: Math.random() * 5,
       duration: 8 + Math.random() * 10,
-      chars: Array.from({ length: 20 }, () => String.fromCharCode(0x30a0 + Math.random() * 96)),
+      // Generate characters only for this column
+      chars: Array.from({ length: 20 }, () =>
+        String.fromCharCode(0x30A0 + Math.random() * 96)
+      )
     }));
-    const timer = setTimeout(() => {
-      setColumns(newColumns);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  }, [mounted]);
+
+  if (!mounted) return <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]" />;
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">

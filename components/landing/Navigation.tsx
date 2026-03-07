@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
@@ -12,7 +12,7 @@ const navItems = [
 
 export const Navigation = () => {
   return (
-    <motion.header
+    <motion.header 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -65,9 +65,9 @@ export const Navigation = () => {
             <a href="/login">
               <Button variant="hero" size="sm" className="group">
                 <span>Start Engine</span>
-                <Icon
-                  icon="solar:arrow-right-linear"
-                  className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+                <Icon 
+                  icon="solar:arrow-right-linear" 
+                  className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" 
                 />
               </Button>
             </a>

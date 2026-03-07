@@ -9,6 +9,7 @@ const memberNavItems = [
   { label: 'Breakthroughs', href: '/member/breakthroughs', icon: 'solar:star-linear' },
   { label: 'Leave', href: '/member/leave', icon: 'solar:calendar-mark-linear' },
   { label: 'Profile', href: '/member/profile', icon: 'solar:user-circle-linear' },
+  { label: '── Task Manager', href: '/tasks/dashboard', icon: 'solar:widget-4-linear' },
 ];
 
 interface MemberLayoutProps {

@@ -1,3 +1,5 @@
+'use client';
+
 import { useLenis } from '@/hooks/useLenis';
 import { Navigation } from '@/components/landing/Navigation';
 import { HeroSection } from '@/components/landing/HeroSection';

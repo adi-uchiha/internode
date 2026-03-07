@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from 'framer-motion';
 
 export const SkillsFeature = () => {
@@ -15,9 +17,7 @@ export const SkillsFeature = () => {
     <div className="h-full min-h-[200px] p-6 border border-border bg-card hover:border-primary/30 transition-colors duration-300">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-            [SKILL_CLOUD]
-          </span>
+          <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">[SKILL_CLOUD]</span>
           <h3 className="font-display text-xl font-medium text-foreground mt-2">
             Skill Tagging System
           </h3>
@@ -36,12 +36,11 @@ export const SkillsFeature = () => {
             transition={{ duration: 0.3, delay: i * 0.05 }}
             className={`
               inline-flex items-center gap-2 px-3 py-1.5 border font-mono
-              ${
-                skill.size === 'lg'
-                  ? 'bg-primary/10 border-primary/30 text-primary text-sm'
-                  : skill.size === 'md'
-                    ? 'bg-muted/50 border-border text-foreground text-xs'
-                    : 'bg-muted/30 border-border/50 text-muted-foreground text-xs'
+              ${skill.size === 'lg' 
+                ? 'bg-primary/10 border-primary/30 text-primary text-sm' 
+                : skill.size === 'md'
+                  ? 'bg-muted/50 border-border text-foreground text-xs'
+                  : 'bg-muted/30 border-border/50 text-muted-foreground text-xs'
               }
             `}
           >

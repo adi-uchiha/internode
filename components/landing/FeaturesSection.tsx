@@ -9,6 +9,7 @@ import { AnalyticsFeature } from './features/AnalyticsFeature';
 import { FeedbackFeature } from './features/FeedbackFeature';
 import { SkillsFeature } from './features/SkillsFeature';
 import { ReportsFeature } from './features/ReportsFeature';
+import { TaskManagerFeature } from './features/TaskManagerFeature';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,7 +31,7 @@ const itemVariants = {
 
 export const FeaturesSection = () => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
     <section id="features" className="relative py-32 overflow-hidden">
@@ -53,8 +54,8 @@ export const FeaturesSection = () => {
             Built for <span className="text-primary">engineering</span> velocity
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            A developer-first approach to intern management. Real-time data, actionable insights,
-            zero overhead.
+            A developer-first approach to intern management.
+            Real-time data, actionable insights, zero overhead.
           </p>
         </motion.div>
 
@@ -63,7 +64,7 @@ export const FeaturesSection = () => {
           ref={ref}
           variants={containerVariants}
           initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
+          animate={isInView ? "visible" : "hidden"}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         >
           {/* Large card - HUD */}
@@ -94,6 +95,11 @@ export const FeaturesSection = () => {
           {/* Regular card - Reports */}
           <motion.div variants={itemVariants}>
             <ReportsFeature />
+          </motion.div>
+
+          {/* Wide card - Task Manager */}
+          <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-3">
+            <TaskManagerFeature />
           </motion.div>
         </motion.div>
       </div>

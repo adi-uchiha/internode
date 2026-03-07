@@ -1,34 +1,21 @@
-'use client';
+"use client";
+
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
 
 export const LoggingFeature = () => {
-  const [days, setDays] = useState(
-    Array.from({ length: 28 }, () => ({
-      active: false,
-      intensity: 0,
-    }))
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDays(
-        Array.from({ length: 28 }, () => ({
-          active: Math.random() > 0.2,
-          intensity: Math.floor(Math.random() * 4),
-        }))
-      );
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const days = Array.from({ length: 28 }, (_, i) => ({
+    // Use index-based deterministic "randomness"
+    active: (i * 7) % 10 > 2,
+    intensity: (i * 3) % 4,
+  }));
 
   return (
     <div className="h-full min-h-[400px] p-6 border border-border bg-card hover:border-primary/30 transition-colors duration-300 flex flex-col">
       <div className="mb-6">
-        <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-          [QUICK_LOG]
-        </span>
-        <h3 className="font-display text-xl font-medium text-foreground mt-2">Daily Logging</h3>
+        <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">[QUICK_LOG]</span>
+        <h3 className="font-display text-xl font-medium text-foreground mt-2">
+          Daily Logging
+        </h3>
         <p className="text-sm text-muted-foreground mt-1">
           3-minute daily entries that compound into insights
         </p>
@@ -44,8 +31,7 @@ export const LoggingFeature = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.2, delay: i * 0.02 }}
-              className={`aspect-square border ${
-                day.active
+              className={`aspect-square border ${day.active
                   ? day.intensity === 3
                     ? 'bg-primary/80 border-primary/60'
                     : day.intensity === 2
@@ -54,7 +40,7 @@ export const LoggingFeature = () => {
                         ? 'bg-primary/30 border-primary/30'
                         : 'bg-primary/10 border-primary/20'
                   : 'bg-muted/20 border-border/50'
-              }`}
+                }`}
             />
           ))}
         </div>
