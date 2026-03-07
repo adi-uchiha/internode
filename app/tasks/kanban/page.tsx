@@ -28,10 +28,26 @@ import {
 } from '@/components/ui/select';
 
 const columns: { status: TicketStatus; label: string; color: string }[] = [
-  { status: 'unplanned', label: 'BACKLOG', color: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
-  { status: 'todo', label: 'TO-DO', color: 'border-muted-foreground/30 text-muted-foreground bg-muted/20 text-foreground' },
-  { status: 'in-progress', label: 'IN PROGRESS', color: 'border-blue-500/30 text-blue-400 bg-blue-500/10' },
-  { status: 'in-review', label: 'IN REVIEW', color: 'border-amber-500/30 text-amber-400 bg-amber-500/10' },
+  {
+    status: 'unplanned',
+    label: 'BACKLOG',
+    color: 'border-purple-500/30 text-purple-400 bg-purple-500/10',
+  },
+  {
+    status: 'todo',
+    label: 'TO-DO',
+    color: 'border-muted-foreground/30 text-muted-foreground bg-muted/20 text-foreground',
+  },
+  {
+    status: 'in-progress',
+    label: 'IN PROGRESS',
+    color: 'border-blue-500/30 text-blue-400 bg-blue-500/10',
+  },
+  {
+    status: 'in-review',
+    label: 'IN REVIEW',
+    color: 'border-amber-500/30 text-amber-400 bg-amber-500/10',
+  },
   { status: 'done', label: 'DONE', color: 'border-primary/30 text-primary bg-primary/10' },
 ];
 
@@ -61,16 +77,21 @@ const KanbanCard = ({
       }}
     >
       <div className="flex items-center gap-2 mb-2">
-        <div className={cn("w-2 h-2 rounded-full", getPriorityColor(ticket.priority))} />
+        <div className={cn('w-2 h-2 rounded-full', getPriorityColor(ticket.priority))} />
         <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
           {ticket.project}
         </span>
       </div>
-      <h4 className="font-display text-sm font-medium mb-3 line-clamp-2 leading-tight">{ticket.title}</h4>
+      <h4 className="font-display text-sm font-medium mb-3 line-clamp-2 leading-tight">
+        {ticket.title}
+      </h4>
       {ticket.labels.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {ticket.labels.slice(0, 3).map((l) => (
-            <span key={l} className="font-mono text-[8.5px] text-primary bg-primary/10 px-1.5 py-0.5 border border-primary/10">
+            <span
+              key={l}
+              className="font-mono text-[8.5px] text-primary bg-primary/10 px-1.5 py-0.5 border border-primary/10"
+            >
               {l}
             </span>
           ))}
@@ -84,22 +105,36 @@ const KanbanCard = ({
       <div className="mb-3 space-y-1">
         <div className="h-0.5 bg-muted overflow-hidden w-full">
           <div
-            className={cn("h-full transition-all duration-500", getTimeBarColor(ticket.loggedHours, ticket.estimatedHours))}
+            className={cn(
+              'h-full transition-all duration-500',
+              getTimeBarColor(ticket.loggedHours, ticket.estimatedHours)
+            )}
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
         <div className="flex justify-between items-center font-mono text-[9px] text-muted-foreground">
-          <span>{ticket.loggedHours}h / {ticket.estimatedHours}h</span>
+          <span>
+            {ticket.loggedHours}h / {ticket.estimatedHours}h
+          </span>
           <span>{Math.round(pct)}%</span>
         </div>
       </div>
       <div className="flex items-center justify-between mt-auto pt-1">
         <div className="flex -space-x-2">
-          <img src={assignee?.avatar} alt="" className="w-5 h-5 rounded-full border border-background ring-1 ring-border" />
+          <img
+            src={assignee?.avatar}
+            alt=""
+            className="w-5 h-5 rounded-full border border-background ring-1 ring-border"
+          />
         </div>
         {ticket.dueDate && mounted && (
           <span
-            className={cn('font-mono text-[9px]', (new Date(ticket.dueDate) < now && ticket.status !== 'done') ? 'text-destructive font-bold' : 'text-muted-foreground')}
+            className={cn(
+              'font-mono text-[9px]',
+              new Date(ticket.dueDate) < now && ticket.status !== 'done'
+                ? 'text-destructive font-bold'
+                : 'text-muted-foreground'
+            )}
           >
             {ticket.dueDate.slice(5)}
           </span>
@@ -133,9 +168,7 @@ export default function KanbanPage() {
     const ticketId = e.dataTransfer.getData('ticketId');
     if (!ticketId) return;
 
-    setTickets((prev) =>
-      prev.map((t) => (t.id === ticketId ? { ...t, status } : t))
-    );
+    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status } : t)));
     toast.success(`Ticket moved to ${status.toUpperCase()}`);
   };
 
@@ -169,7 +202,10 @@ export default function KanbanPage() {
           </SelectContent>
         </Select>
 
-        <Select value={filter.project} onValueChange={(val) => setFilter({ ...filter, project: val })}>
+        <Select
+          value={filter.project}
+          onValueChange={(val) => setFilter({ ...filter, project: val })}
+        >
           <SelectTrigger className="w-[150px] bg-card/50 border-border h-10 font-display text-sm">
             <SelectValue placeholder="Project" />
           </SelectTrigger>
@@ -184,7 +220,11 @@ export default function KanbanPage() {
         </Select>
 
         {isAdmin && (
-          <Button variant="hero" className="h-10 px-6" onClick={() => router.push('/tasks/ticket/new')}>
+          <Button
+            variant="hero"
+            className="h-10 px-6"
+            onClick={() => router.push('/tasks/ticket/new')}
+          >
             <Icon icon="solar:add-circle-linear" className="w-4 h-4 mr-2" />
             New Ticket
           </Button>
@@ -212,12 +252,14 @@ export default function KanbanPage() {
               >
                 <div
                   className={cn(
-                    "border-t-2 border-x border-border p-4 flex items-center justify-between",
+                    'border-t-2 border-x border-border p-4 flex items-center justify-between',
                     col.color
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-[11px] font-bold uppercase tracking-widest">{col.label}</span>
+                    <span className="font-display text-[11px] font-bold uppercase tracking-widest">
+                      {col.label}
+                    </span>
                   </div>
                   <span className="font-mono text-[10px] opacity-70">[{colTickets.length}]</span>
                 </div>

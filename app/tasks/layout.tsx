@@ -108,12 +108,10 @@ export default function TaskManagerLayout({
   };
 
   // Close search/notifications on navigation
-  const [prevPathname, setPrevPathname] = useState(pathname);
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname);
+  useEffect(() => {
     setShowSearch(false);
     setShowNotifications(false);
-  }
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-background flex overflow-x-hidden">
@@ -251,7 +249,9 @@ export default function TaskManagerLayout({
                   exit={{ opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="font-display font-semibold text-sm truncate">{user?.name || 'Aditya Sharma'}</div>
+                  <div className="font-display font-semibold text-sm truncate">
+                    {user?.name || 'Aditya Sharma'}
+                  </div>
                   <span
                     className={cn(
                       'font-mono text-[9px] uppercase px-1.5 py-0.5 tracking-widest opacity-60',

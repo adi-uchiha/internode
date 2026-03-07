@@ -73,18 +73,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative",
+                    'flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
                     isActive
-                      ? "bg-primary/10 text-primary border-l-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent"
+                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
                   )}
                 >
                   <Icon
                     icon={item.icon}
-                    className={cn(
-                      "w-5 h-5 shrink-0 transition-colors",
-                      isActive && "text-primary"
-                    )}
+                    className={cn('w-5 h-5 shrink-0 transition-colors', isActive && 'text-primary')}
                   />
                   <AnimatePresence>
                     {!collapsed && (
@@ -99,10 +96,12 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                     )}
                   </AnimatePresence>
                   {item.badge && item.badge > 0 && (
-                    <span className={cn(
-                      "absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5",
-                      collapsed && "right-1 top-1"
-                    )}>
+                    <span
+                      className={cn(
+                        'absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5',
+                        collapsed && 'right-1 top-1'
+                      )}
+                    >
                       {item.badge}
                     </span>
                   )}
@@ -143,7 +142,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className={cn("w-full justify-start", collapsed && "justify-center px-0")}
+            className={cn('w-full justify-start', collapsed && 'justify-center px-0')}
           >
             <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
             {!collapsed && <span className="ml-2">Logout</span>}
@@ -151,7 +150,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         </div>
 
         {/* Collapse Toggle */}
-        <Button variant="ghost" size="sm" onClick={() => router.push('/tasks/kanban')} className={cn("absolute -right-3 top-12 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10", collapsed && "w-full justify-center px-0")}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/tasks/kanban')}
+          className={cn(
+            'absolute -right-3 top-12 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10',
+            collapsed && 'w-full justify-center px-0'
+          )}
+        >
           <Icon icon="solar:kanban-board-linear" className="w-3 h-3 text-muted-foreground" />
         </Button>
         <button
@@ -159,7 +166,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
           className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10"
         >
           <Icon
-            icon={collapsed ? "solar:alt-arrow-right-linear" : "solar:alt-arrow-left-linear"}
+            icon={collapsed ? 'solar:alt-arrow-right-linear' : 'solar:alt-arrow-left-linear'}
             className="w-3 h-3 text-muted-foreground"
           />
         </button>
@@ -195,9 +202,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         </header>
 
         {/* Page Content */}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </main>
     </div>
   );

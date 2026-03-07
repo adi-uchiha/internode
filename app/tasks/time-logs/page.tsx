@@ -14,9 +14,7 @@ export default function TimeLogsPage() {
   // Gather all time logs
   const allLogs = useMemo(() => {
     return tmTickets
-      .flatMap((t) =>
-        t.timeLogs.map((log) => ({ ...log, ticketTitle: t.title, ticketId: t.id }))
-      )
+      .flatMap((t) => t.timeLogs.map((log) => ({ ...log, ticketTitle: t.title, ticketId: t.id })))
       .sort((a, b) => b.date.localeCompare(a.date));
   }, []);
 
