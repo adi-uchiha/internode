@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import {
@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 50 16" className="w-12 h-4">
@@ -409,7 +408,7 @@ export default function AnalyticsPage() {
               Granular Resource Analytics
             </p>
           </div>
-          <Select value={selectedMember} onValueChange={setSelectedMember}>
+          <Select value={selectedMember} onValueChange={(val) => setSelectedMember(val || '')}>
             <SelectTrigger className="w-full md:w-[240px] bg-muted/30 border-border h-10 font-mono text-xs">
               <SelectValue placeholder="Select member for analysis" />
             </SelectTrigger>

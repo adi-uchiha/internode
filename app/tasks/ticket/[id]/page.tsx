@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +26,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import {
   tmTickets,
-  tmMembers,
   tmProjects,
   getMemberById,
   getStatusColor,
@@ -62,6 +60,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
   const [now] = useState(() => new Date());
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
   useEffect(() => setMounted(true), []);
 
   const isOverdue = useMemo(() => {
@@ -133,10 +132,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     setTicket((prev) =>
       prev
         ? {
-          ...prev,
-          timeLogs: [newLog, ...prev.timeLogs],
-          loggedHours: prev.loggedHours + parseFloat(logHours),
-        }
+            ...prev,
+            timeLogs: [newLog, ...prev.timeLogs],
+            loggedHours: prev.loggedHours + parseFloat(logHours),
+          }
         : prev
     );
     setShowLogTime(false);
@@ -219,11 +218,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             </div>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="sm" className="h-8">
-                <Icon icon="solar:menu-dots-bold" className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="secondary" size="sm" className="h-8">
+                  <Icon icon="solar:menu-dots-bold" className="w-4 h-4" />
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end" className="w-56 border-border shadow-xl">
               <DropdownMenuItem onClick={() => setShowLogTime(true)} className="cursor-pointer">
                 <Icon icon="solar:clock-circle-linear" className="w-4 h-4 mr-2" />
@@ -397,7 +398,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         className={cn(
                           'flex items-center gap-4 p-4 border border-border bg-card/50 transition-all hover:bg-card',
                           log.isBreakthrough &&
-                          'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
+                            'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
                         )}
                       >
                         <img
@@ -496,11 +497,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               />
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                  <Icon
-                    icon="solar:text-italic-bold"
-                    className="w-4 h-4 text-muted-foreground"
-                    title="Markdown ready"
-                  />
+                  <Icon icon="solar:text-italic-bold" className="w-4 h-4 text-muted-foreground" />
                   <span className="font-mono text-[10px] text-muted-foreground uppercase opacity-50">
                     Terminal ready
                   </span>
@@ -539,7 +536,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     <Select
                       value={editForm.status}
                       onValueChange={(val) =>
-                        setEditForm({ ...editForm, status: val as TicketStatus })
+                        setEditForm({ ...editForm, status: (val || 'todo') as TicketStatus })
                       }
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
@@ -576,7 +573,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     <Select
                       value={editForm.priority}
                       onValueChange={(val) =>
-                        setEditForm({ ...editForm, priority: val as TicketPriority })
+                        setEditForm({ ...editForm, priority: (val || 'low') as TicketPriority })
                       }
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
@@ -607,7 +604,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   {isEditing ? (
                     <Select
                       value={editForm.project}
-                      onValueChange={(val) => setEditForm({ ...editForm, project: val })}
+                      onValueChange={(val) => setEditForm({ ...editForm, project: val || '' })}
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
                         <SelectValue />

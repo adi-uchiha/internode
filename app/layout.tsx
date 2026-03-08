@@ -4,7 +4,6 @@ import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { SmoothScroll } from '@/components/smooth-scroll';
 import { Geist } from 'next/font/google';
@@ -32,7 +31,6 @@ export default function RootLayout({
             <TooltipProvider>
               <SmoothScroll />
               {children}
-              <Toaster />
               <Sonner />
             </TooltipProvider>
           </AuthProvider>

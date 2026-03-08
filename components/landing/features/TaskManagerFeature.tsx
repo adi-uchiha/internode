@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { motion } from 'framer-motion';
 
@@ -13,7 +13,9 @@ export const TaskManagerFeature = () => {
     <div className="h-full min-h-[280px] p-6 border border-border bg-card hover:border-primary/30 transition-colors duration-300 group">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">[TASK_MANAGER]</span>
+          <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+            [TASK_MANAGER]
+          </span>
           <h3 className="font-display text-xl font-medium text-foreground mt-2">
             Kanban & Time Tracking
           </h3>
@@ -33,9 +35,13 @@ export const TaskManagerFeature = () => {
             transition={{ duration: 0.3, delay: i * 0.1 }}
             className="flex-1"
           >
-            <div className={`border-t-2 ${col.color} border-x border-b border-border bg-background/50 p-2`}>
+            <div
+              className={`border-t-2 ${col.color} border-x border-b border-border bg-background/50 p-2`}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[9px] text-muted-foreground uppercase">{col.name}</span>
+                <span className="font-mono text-[9px] text-muted-foreground uppercase">
+                  {col.name}
+                </span>
                 <span className="font-mono text-[9px] text-muted-foreground">({col.count})</span>
               </div>
               <div className="space-y-1.5">

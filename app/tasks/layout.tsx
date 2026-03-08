@@ -8,7 +8,7 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { tmNotifications, type TNotification } from '@/data/taskManagerData';
+import { tmNotifications } from '@/data/taskManagerData';
 
 interface NavItemDef {
   label: string;
@@ -109,7 +109,9 @@ export default function TaskManagerLayout({
 
   // Close search/notifications on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- closing overlays on route change
     setShowSearch(false);
+
     setShowNotifications(false);
   }, [pathname]);
 

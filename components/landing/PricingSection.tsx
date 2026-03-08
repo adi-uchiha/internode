@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
@@ -10,12 +10,7 @@ const plans = [
     tagline: 'For small teams',
     price: 'Free',
     period: '',
-    features: [
-      'Up to 5 interns',
-      'Daily logging',
-      'Basic analytics',
-      'Email support',
-    ],
+    features: ['Up to 5 interns', 'Daily logging', 'Basic analytics', 'Email support'],
     cta: 'Get Started',
     featured: false,
   },
@@ -57,10 +52,10 @@ export const PricingSection = () => {
     <section id="pricing" className="relative py-32 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 dot-pattern opacity-20" />
-      
+
       <div className="container mx-auto px-6">
         {/* Section header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -89,9 +84,10 @@ export const PricingSection = () => {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className={`
                 relative p-6 border bg-card
-                ${plan.featured 
-                  ? 'border-primary/50 shadow-[0_0_40px_hsl(var(--primary)/0.1)]' 
-                  : 'border-border hover:border-border-glow/30'
+                ${
+                  plan.featured
+                    ? 'border-primary/50 shadow-[0_0_40px_hsl(var(--primary)/0.1)]'
+                    : 'border-border hover:border-border-glow/30'
                 }
                 transition-colors duration-300
               `}
@@ -99,14 +95,10 @@ export const PricingSection = () => {
               {plan.featured && (
                 <div className="absolute -top-px left-0 right-0 h-px bg-linear-to-r from-transparent via-primary to-transparent" />
               )}
-              
+
               <div className="mb-6">
-                <h3 className="font-display text-xl font-medium text-foreground">
-                  {plan.name}
-                </h3>
-                <p className="font-mono text-xs text-muted-foreground mt-1">
-                  {plan.tagline}
-                </p>
+                <h3 className="font-display text-xl font-medium text-foreground">{plan.name}</h3>
+                <p className="font-mono text-xs text-muted-foreground mt-1">{plan.tagline}</p>
               </div>
 
               <div className="mb-6">
@@ -114,23 +106,21 @@ export const PricingSection = () => {
                   {plan.price}
                 </span>
                 {plan.period && (
-                  <span className="font-mono text-sm text-muted-foreground">
-                    {plan.period}
-                  </span>
+                  <span className="font-mono text-sm text-muted-foreground">{plan.period}</span>
                 )}
               </div>
 
-              <Button 
-                variant={plan.featured ? 'hero' : 'hero-outline'} 
-                className="w-full mb-6"
-              >
+              <Button variant={plan.featured ? 'hero' : 'hero-outline'} className="w-full mb-6">
                 {plan.cta}
               </Button>
 
               <ul className="space-y-3">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
-                    <Icon icon="solar:check-circle-bold" className="w-4 h-4 text-primary shrink-0" />
+                    <Icon
+                      icon="solar:check-circle-bold"
+                      className="w-4 h-4 text-primary shrink-0"
+                    />
                     <span className="font-mono text-xs text-muted-foreground">{feature}</span>
                   </li>
                 ))}

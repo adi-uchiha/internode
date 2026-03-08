@@ -34,6 +34,7 @@ export default function NewTicketPage() {
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
     setMounted(true);
     if (!isAdmin && user) {
       toast.error('Unauthorized access');
@@ -89,7 +90,7 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   System / Project
                 </label>
-                <Select value={project} onValueChange={setProject}>
+                <Select value={project} onValueChange={(val) => setProject(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
@@ -106,7 +107,7 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   Assignee
                 </label>
-                <Select value={assignee} onValueChange={setAssignee}>
+                <Select value={assignee} onValueChange={(val) => setAssignee(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
@@ -126,7 +127,7 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   Priority
                 </label>
-                <Select value={priority} onValueChange={setPriority}>
+                <Select value={priority} onValueChange={(val) => setPriority(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
                     <SelectValue />
                   </SelectTrigger>
@@ -214,7 +215,8 @@ export default function NewTicketPage() {
             <span className="font-mono text-[10px] font-bold uppercase">System Advisory</span>
           </div>
           <p className="font-mono text-[10px] text-muted-foreground leading-relaxed">
-            All tickets initiated are tracked for system contribution efficiency. Ensure the estimate aligns with technical complexity.
+            All tickets initiated are tracked for system contribution efficiency. Ensure the
+            estimate aligns with technical complexity.
           </p>
         </div>
       </motion.div>

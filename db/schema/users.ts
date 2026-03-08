@@ -1,14 +1,11 @@
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 
-/**
- * Example modular schema definition.
- * All timestamp fields should be consistent (createdAt, updatedAt).
- */
 export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
+  id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  name: text('name'),
+  name: text('name').notNull(),
+  emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

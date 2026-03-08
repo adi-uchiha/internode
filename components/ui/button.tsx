@@ -10,7 +10,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
+        default:
+          'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20',
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary:
@@ -20,19 +21,21 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
         link: 'text-primary underline-offset-4 hover:underline',
+        hero: 'bg-primary text-primary-foreground font-mono uppercase tracking-widest hover:bg-primary/90 shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] border border-primary/50 transition-all duration-300',
+        'hero-outline':
+          'bg-transparent text-primary border border-primary/50 font-mono uppercase tracking-widest hover:bg-primary/10 hover:shadow-[0_0_20px_hsl(var(--primary)/0.2)] transition-all duration-300',
       },
       size: {
         default:
-          'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3',
+          'h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5',
+        xs: "h-6 gap-1 rounded-sm px-2 text-[10px] font-mono uppercase tracking-tight has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1.5 rounded-sm px-3 text-[11px] font-mono uppercase tracking-widest has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: 'h-10 gap-2 px-6 text-sm font-mono uppercase tracking-[0.2em] has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5',
+        xl: 'h-12 gap-3 px-8 text-base font-mono uppercase tracking-[0.3em] has-data-[icon=inline-end]:pr-7 has-data-[icon=inline-start]:pl-7',
         icon: 'size-8',
-        'icon-xs':
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        'icon-sm':
-          'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-        'icon-lg': 'size-9',
+        'icon-xs': "size-6 rounded-sm [&_svg:not([class*='size-'])]:size-3",
+        'icon-sm': "size-7 rounded-sm [&_svg:not([class*='size-'])]:size-3.5",
+        'icon-lg': 'size-10',
       },
     },
     defaultVariants: {
@@ -42,12 +45,8 @@ const buttonVariants = cva(
   }
 );
 
-function Button({
-  className,
-  variant = 'default',
-  size = 'default',
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants>;
+function Button({ className, variant = 'default', size = 'default', ...props }: ButtonProps) {
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -57,4 +56,4 @@ function Button({
   );
 }
 
-export { Button, buttonVariants };
+export { Button, buttonVariants, type ButtonProps };

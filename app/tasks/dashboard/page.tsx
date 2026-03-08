@@ -9,13 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
 import {
   tmTickets,
   tmMembers,
@@ -31,7 +25,6 @@ import {
   tmLeaderboard,
 } from '@/data/taskManagerData';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
@@ -51,6 +44,7 @@ const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; colo
 const AdminDashboardContent = () => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
   useEffect(() => setMounted(true), []);
 
   const overBudgetTickets = tmTickets.filter((t) => t.loggedHours > t.estimatedHours);
@@ -110,8 +104,9 @@ const AdminDashboardContent = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className={`border bg-card p-5 ${kpi.danger ? 'border-l-[3px] border-l-destructive border-border' : 'border-border'
-              }`}
+            className={`border bg-card p-5 ${
+              kpi.danger ? 'border-l-[3px] border-l-destructive border-border' : 'border-border'
+            }`}
           >
             <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-2">
               {kpi.label}
@@ -141,10 +136,11 @@ const AdminDashboardContent = () => {
             {['This Week', 'Last 2 Weeks', 'This Month'].map((t, i) => (
               <button
                 key={t}
-                className={`font-mono text-xs px-3 py-1 border transition-colors ${i === 0
-                  ? 'border-primary text-primary bg-primary/10'
-                  : 'border-border text-muted-foreground hover:border-primary/30'
-                  }`}
+                className={`font-mono text-xs px-3 py-1 border transition-colors ${
+                  i === 0
+                    ? 'border-primary text-primary bg-primary/10'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
               >
                 {t}
               </button>
@@ -311,8 +307,9 @@ const AdminDashboardContent = () => {
               return (
                 <div
                   key={member.id}
-                  className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors ${i % 2 === 0 ? 'bg-card' : 'bg-muted/30'
-                    }`}
+                  className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
+                    i % 2 === 0 ? 'bg-card' : 'bg-muted/30'
+                  }`}
                   onClick={() => ticket && router.push(`/tasks/ticket/${ticket.id}`)}
                 >
                   <img
@@ -364,10 +361,11 @@ const AdminDashboardContent = () => {
             <button
               key={f.value}
               onClick={() => setActivityFilter(f.value)}
-              className={`font-mono text-xs px-3 py-1 border transition-colors ${activityFilter === f.value
-                ? 'border-primary text-primary bg-primary/10'
-                : 'border-border text-muted-foreground hover:border-primary/30'
-                }`}
+              className={`font-mono text-xs px-3 py-1 border transition-colors ${
+                activityFilter === f.value
+                  ? 'border-primary text-primary bg-primary/10'
+                  : 'border-border text-muted-foreground hover:border-primary/30'
+              }`}
             >
               {f.label}
             </button>
@@ -620,8 +618,9 @@ const MemberDashboardContent = () => {
           {['By Tickets', 'By Hours', 'By Efficiency'].map((f, i) => (
             <button
               key={f}
-              className={`font-mono text-xs px-3 py-1 border transition-colors ${i === 0 ? 'border-primary text-primary' : 'border-border text-muted-foreground'
-                }`}
+              className={`font-mono text-xs px-3 py-1 border transition-colors ${
+                i === 0 ? 'border-primary text-primary' : 'border-border text-muted-foreground'
+              }`}
             >
               {f}
             </button>
@@ -635,12 +634,14 @@ const MemberDashboardContent = () => {
             return (
               <div
                 key={entry.memberId}
-                className={`flex items-center gap-4 p-3 ${isYou ? 'bg-primary/10 border border-primary/30' : 'border border-border'
-                  }`}
+                className={`flex items-center gap-4 p-3 ${
+                  isYou ? 'bg-primary/10 border border-primary/30' : 'border border-border'
+                }`}
               >
                 <span
-                  className={`font-mono text-sm w-8 ${i < 3 ? 'text-primary' : 'text-muted-foreground'
-                    }`}
+                  className={`font-mono text-sm w-8 ${
+                    i < 3 ? 'text-primary' : 'text-muted-foreground'
+                  }`}
                 >
                   #{i + 1} {medals[i] || ''}
                 </span>
@@ -661,12 +662,13 @@ const MemberDashboardContent = () => {
                 </span>
                 <span className="text-muted-foreground">│</span>
                 <span
-                  className={`font-mono text-xs ${entry.efficiency >= 95
-                    ? 'text-primary'
-                    : entry.efficiency >= 80
-                      ? 'text-amber-400'
-                      : 'text-destructive'
-                    }`}
+                  className={`font-mono text-xs ${
+                    entry.efficiency >= 95
+                      ? 'text-primary'
+                      : entry.efficiency >= 80
+                        ? 'text-amber-400'
+                        : 'text-destructive'
+                  }`}
                 >
                   Efficiency: {entry.efficiency}%
                 </span>

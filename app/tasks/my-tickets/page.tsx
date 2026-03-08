@@ -65,7 +65,7 @@ export default function MyTicketsPage() {
         </div>
 
         <div className="ml-auto">
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val || 'newest')}>
             <SelectTrigger className="w-[150px] h-8 bg-card border-border">
               <SelectValue />
             </SelectTrigger>

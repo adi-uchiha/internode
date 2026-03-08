@@ -16,7 +16,8 @@ export const HeroSection = () => {
       <div
         className="absolute top-0 right-0 w-[800px] h-[800px] opacity-40"
         style={{
-          background: 'radial-gradient(ellipse at center, hsl(140 100% 50% / 0.08) 0%, transparent 60%)',
+          background:
+            'radial-gradient(ellipse at center, hsl(140 100% 50% / 0.08) 0%, transparent 60%)',
         }}
       />
 
@@ -67,9 +68,8 @@ export const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="text-muted-foreground text-lg md:text-xl max-w-lg mb-10 leading-relaxed"
             >
-              Real-time visibility into your engineering interns.
-              Transform internships from black-box experiences into
-              transparent, growth-oriented journeys.
+              Real-time visibility into your engineering interns. Transform internships from
+              black-box experiences into transparent, growth-oriented journeys.
             </motion.p>
 
             {/* CTAs */}

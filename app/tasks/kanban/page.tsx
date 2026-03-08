@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 
 import {
   tmTickets,
-  tmMembers,
   tmProjects,
   getMemberById,
   getPriorityColor,
@@ -71,6 +70,7 @@ const KanbanCard = ({
       onClick={onClick}
       className="border border-border bg-card p-4 cursor-pointer transition-all active:scale-95"
       draggable
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onDragStart={(e: any) => {
         e.dataTransfer.setData('ticketId', ticket.id);
         e.dataTransfer.dropEffect = 'move';
@@ -153,6 +153,7 @@ export default function KanbanPage() {
   const [dragOverColumn, setDragOverColumn] = useState<TicketStatus | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
   useEffect(() => setMounted(true), []);
 
   const filteredTickets = tickets.filter((t) => {
@@ -188,7 +189,7 @@ export default function KanbanPage() {
 
         <Select
           value={filter.priority}
-          onValueChange={(val) => setFilter({ ...filter, priority: val })}
+          onValueChange={(val) => setFilter({ ...filter, priority: val || '' })}
         >
           <SelectTrigger className="w-[140px] bg-card/50 border-border h-10 font-display text-sm">
             <SelectValue placeholder="Priority" />
@@ -204,7 +205,7 @@ export default function KanbanPage() {
 
         <Select
           value={filter.project}
-          onValueChange={(val) => setFilter({ ...filter, project: val })}
+          onValueChange={(val) => setFilter({ ...filter, project: val || '' })}
         >
           <SelectTrigger className="w-[150px] bg-card/50 border-border h-10 font-display text-sm">
             <SelectValue placeholder="Project" />
