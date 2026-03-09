@@ -2,7 +2,7 @@
 
 **High-Performance Engineering-Grade Project Management**
 
-![Internode OpenGraph](/og-image.png)
+![Internode OpenGraph](https://raw.githubusercontent.com/adi-uchiha/internode/main/public/og-image.png)
 
 Internode is a high-performance project management platform built for engineering teams who demand precision, speed, and reliability. It combines the power of modern web technologies with a sleek, developer-centric interface to streamline workflows and boost productivity.
 
