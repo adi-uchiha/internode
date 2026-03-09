@@ -1,4 +1,4 @@
-# ⚡ Internode
+# 🟩 Internode
 
 **High-Performance Engineering-Grade Project Management**
 
