@@ -26,7 +26,7 @@ const Login = () => {
     setError('');
     setIsLoading(true);
 
-    const success = await login(email, password, mode);
+    const success = await login(email, password);
 
     if (success) {
       router.push(mode === 'admin' ? '/admin' : '/member');

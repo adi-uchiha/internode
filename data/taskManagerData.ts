@@ -84,7 +84,8 @@ export const tmMembers: TMember[] = [
     name: 'Aditya Sharma',
     email: 'aditya@internhub.com',
     role: 'admin',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AS&backgroundColor=00ff88&textColor=000000',
+    avatar:
+      'https://api.dicebear.com/7.x/initials/svg?seed=AS&backgroundColor=00ff88&textColor=000000',
     ticketsActive: 12,
     hoursThisWeek: 32.5,
     efficiency: 94,
@@ -95,7 +96,8 @@ export const tmMembers: TMember[] = [
     name: 'Rahul Verma',
     email: 'rahul@internhub.com',
     role: 'member',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=RV&backgroundColor=3b82f6&textColor=ffffff',
+    avatar:
+      'https://api.dicebear.com/7.x/initials/svg?seed=RV&backgroundColor=3b82f6&textColor=ffffff',
     ticketsActive: 8,
     hoursThisWeek: 28.5,
     efficiency: 102,
@@ -106,7 +108,8 @@ export const tmMembers: TMember[] = [
     name: 'Priya Mehta',
     email: 'priya@internhub.com',
     role: 'member',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=PM&backgroundColor=f59e0b&textColor=000000',
+    avatar:
+      'https://api.dicebear.com/7.x/initials/svg?seed=PM&backgroundColor=f59e0b&textColor=000000',
     ticketsActive: 6,
     hoursThisWeek: 31.0,
     efficiency: 95,
@@ -117,7 +120,8 @@ export const tmMembers: TMember[] = [
     name: 'Arjun Patel',
     email: 'arjun@internhub.com',
     role: 'member',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AP&backgroundColor=8b5cf6&textColor=ffffff',
+    avatar:
+      'https://api.dicebear.com/7.x/initials/svg?seed=AP&backgroundColor=8b5cf6&textColor=ffffff',
     ticketsActive: 5,
     hoursThisWeek: 24.0,
     efficiency: 88,
@@ -128,7 +132,8 @@ export const tmMembers: TMember[] = [
     name: 'Sneha Gupta',
     email: 'sneha@internhub.com',
     role: 'member',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=SG&backgroundColor=ef4444&textColor=ffffff',
+    avatar:
+      'https://api.dicebear.com/7.x/initials/svg?seed=SG&backgroundColor=ef4444&textColor=ffffff',
     ticketsActive: 7,
     hoursThisWeek: 26.0,
     efficiency: 91,
@@ -198,13 +203,47 @@ redirect(\`/auth/callback?redirect_uri=\${encodeURIComponent(callbackUrl)}\`);
     createdAt: '2026-03-05',
     labels: ['auth', 'bug', 'frontend'],
     timeLogs: [
-      { id: 'tl-1', ticketId: 'ticket-42', memberId: 'tm-002', hours: 2.0, note: 'Fixed token refresh logic and added proper error handling', date: '2026-03-07', isBreakthrough: true },
-      { id: 'tl-2', ticketId: 'ticket-42', memberId: 'tm-002', hours: 3.0, note: 'Debugged redirect URI mismatch in OAuth provider config', date: '2026-03-06' },
-      { id: 'tl-3', ticketId: 'ticket-42', memberId: 'tm-002', hours: 1.5, note: 'Set up OAuth test environment with mock provider', date: '2026-03-05' },
+      {
+        id: 'tl-1',
+        ticketId: 'ticket-42',
+        memberId: 'tm-002',
+        hours: 2.0,
+        note: 'Fixed token refresh logic and added proper error handling',
+        date: '2026-03-07',
+        isBreakthrough: true,
+      },
+      {
+        id: 'tl-2',
+        ticketId: 'ticket-42',
+        memberId: 'tm-002',
+        hours: 3.0,
+        note: 'Debugged redirect URI mismatch in OAuth provider config',
+        date: '2026-03-06',
+      },
+      {
+        id: 'tl-3',
+        ticketId: 'ticket-42',
+        memberId: 'tm-002',
+        hours: 1.5,
+        note: 'Set up OAuth test environment with mock provider',
+        date: '2026-03-05',
+      },
     ],
     comments: [
-      { id: 'c-1', memberId: 'tm-001', content: 'Check the redirect_uri parameter encoding. It might be double-encoding the callback URL.', createdAt: '2026-03-07T10:00:00Z' },
-      { id: 'c-2', memberId: 'tm-002', content: 'Found it — was double-encoding the callback URL. The `encodeURIComponent` was being called twice in the middleware chain.', createdAt: '2026-03-07T11:00:00Z' },
+      {
+        id: 'c-1',
+        memberId: 'tm-001',
+        content:
+          'Check the redirect_uri parameter encoding. It might be double-encoding the callback URL.',
+        createdAt: '2026-03-07T10:00:00Z',
+      },
+      {
+        id: 'c-2',
+        memberId: 'tm-002',
+        content:
+          'Found it — was double-encoding the callback URL. The `encodeURIComponent` was being called twice in the middleware chain.',
+        createdAt: '2026-03-07T11:00:00Z',
+      },
     ],
   },
   {
@@ -253,7 +292,14 @@ Update all endpoint documentation to reflect **v2 API changes**, including new a
     createdAt: '2026-03-04',
     labels: ['documentation', 'api'],
     timeLogs: [
-      { id: 'tl-4', ticketId: 'ticket-41', memberId: 'tm-003', hours: 2.0, note: 'Started documenting auth endpoints', date: '2026-03-06' },
+      {
+        id: 'tl-4',
+        ticketId: 'ticket-41',
+        memberId: 'tm-003',
+        hours: 2.0,
+        note: 'Started documenting auth endpoints',
+        date: '2026-03-06',
+      },
     ],
     comments: [],
   },
@@ -358,18 +404,38 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     createdAt: '2026-03-01',
     labels: ['performance', 'backend', 'database'],
     timeLogs: [
-      { id: 'tl-5', ticketId: 'ticket-39', memberId: 'tm-005', hours: 3.0, note: 'Added composite indexes on frequently queried columns', date: '2026-03-06' },
-      { id: 'tl-6', ticketId: 'ticket-39', memberId: 'tm-005', hours: 2.0, note: 'Created materialized views for dashboard metrics', date: '2026-03-05' },
+      {
+        id: 'tl-5',
+        ticketId: 'ticket-39',
+        memberId: 'tm-005',
+        hours: 3.0,
+        note: 'Added composite indexes on frequently queried columns',
+        date: '2026-03-06',
+      },
+      {
+        id: 'tl-6',
+        ticketId: 'ticket-39',
+        memberId: 'tm-005',
+        hours: 2.0,
+        note: 'Created materialized views for dashboard metrics',
+        date: '2026-03-05',
+      },
     ],
     comments: [
-      { id: 'c-3', memberId: 'tm-001', content: 'Great progress! Make sure to benchmark before and after with `EXPLAIN ANALYZE`.', createdAt: '2026-03-06T14:00:00Z' },
+      {
+        id: 'c-3',
+        memberId: 'tm-001',
+        content: 'Great progress! Make sure to benchmark before and after with `EXPLAIN ANALYZE`.',
+        createdAt: '2026-03-06T14:00:00Z',
+      },
     ],
   },
   {
     id: 'ticket-38',
     ticketId: 'TICKET-38',
     title: 'Setup CI/CD pipeline with GitHub Actions',
-    description: '# CI/CD Pipeline\n\nSet up automated testing and deployment pipeline using GitHub Actions.',
+    description:
+      '# CI/CD Pipeline\n\nSet up automated testing and deployment pipeline using GitHub Actions.',
     status: 'done',
     priority: 'high',
     project: 'DevOps',
@@ -380,8 +446,22 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     createdAt: '2026-02-20',
     labels: ['devops', 'ci-cd', 'automation'],
     timeLogs: [
-      { id: 'tl-7', ticketId: 'ticket-38', memberId: 'tm-002', hours: 4.0, note: 'Configured build and test workflows', date: '2026-02-25' },
-      { id: 'tl-8', ticketId: 'ticket-38', memberId: 'tm-002', hours: 4.0, note: 'Added deployment stages with environment secrets', date: '2026-02-26' },
+      {
+        id: 'tl-7',
+        ticketId: 'ticket-38',
+        memberId: 'tm-002',
+        hours: 4.0,
+        note: 'Configured build and test workflows',
+        date: '2026-02-25',
+      },
+      {
+        id: 'tl-8',
+        ticketId: 'ticket-38',
+        memberId: 'tm-002',
+        hours: 4.0,
+        note: 'Added deployment stages with environment secrets',
+        date: '2026-02-26',
+      },
     ],
     comments: [],
   },
@@ -389,7 +469,8 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     id: 'ticket-37',
     ticketId: 'TICKET-37',
     title: 'Design onboarding flow for new users',
-    description: '# Onboarding Flow\n\nCreate a step-by-step onboarding experience for new team members.',
+    description:
+      '# Onboarding Flow\n\nCreate a step-by-step onboarding experience for new team members.',
     status: 'done',
     priority: 'medium',
     project: 'Mobile App',
@@ -400,8 +481,22 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     createdAt: '2026-02-15',
     labels: ['design', 'ux', 'onboarding'],
     timeLogs: [
-      { id: 'tl-9', ticketId: 'ticket-37', memberId: 'tm-003', hours: 5.0, note: 'Designed wireframes and user flow', date: '2026-02-18' },
-      { id: 'tl-10', ticketId: 'ticket-37', memberId: 'tm-003', hours: 5.0, note: 'Implemented animations and transitions', date: '2026-02-20' },
+      {
+        id: 'tl-9',
+        ticketId: 'ticket-37',
+        memberId: 'tm-003',
+        hours: 5.0,
+        note: 'Designed wireframes and user flow',
+        date: '2026-02-18',
+      },
+      {
+        id: 'tl-10',
+        ticketId: 'ticket-37',
+        memberId: 'tm-003',
+        hours: 5.0,
+        note: 'Implemented animations and transitions',
+        date: '2026-02-20',
+      },
     ],
     comments: [],
   },
@@ -409,7 +504,8 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     id: 'ticket-36',
     ticketId: 'TICKET-36',
     title: 'Add unit tests for authentication module',
-    description: '# Auth Unit Tests\n\nWrite comprehensive unit tests covering login, signup, password reset, and session management.',
+    description:
+      '# Auth Unit Tests\n\nWrite comprehensive unit tests covering login, signup, password reset, and session management.',
     status: 'unplanned',
     priority: 'medium',
     project: 'Frontend App',
@@ -426,7 +522,8 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     id: 'ticket-35',
     ticketId: 'TICKET-35',
     title: 'Write API integration guide for third-party developers',
-    description: '# API Integration Guide\n\nComprehensive guide for external developers integrating with our API.',
+    description:
+      '# API Integration Guide\n\nComprehensive guide for external developers integrating with our API.',
     status: 'in-progress',
     priority: 'low',
     project: 'Documentation',
@@ -438,7 +535,14 @@ WHERE created_at > NOW() - INTERVAL '7 days';
     createdAt: '2026-03-01',
     labels: ['documentation', 'api'],
     timeLogs: [
-      { id: 'tl-11', ticketId: 'ticket-35', memberId: 'tm-005', hours: 3.0, note: 'Wrote authentication and rate limiting sections', date: '2026-03-04' },
+      {
+        id: 'tl-11',
+        ticketId: 'ticket-35',
+        memberId: 'tm-005',
+        hours: 3.0,
+        note: 'Wrote authentication and rate limiting sections',
+        date: '2026-03-04',
+      },
     ],
     comments: [],
   },
@@ -456,25 +560,140 @@ export interface TActivity {
 }
 
 export const tmActivities: TActivity[] = [
-  { id: 'a-1', memberId: 'tm-002', action: 'logged 2.0h on', ticketTitle: 'Fix authentication redirect loop', ticketId: 'ticket-42', timestamp: '2m ago', type: 'time-log' },
-  { id: 'a-2', memberId: 'tm-005', action: 'moved to In Review', ticketTitle: 'Optimize database queries', ticketId: 'ticket-39', timestamp: '15m ago', type: 'status' },
-  { id: 'a-3', memberId: 'tm-001', action: 'commented on', ticketTitle: 'Fix authentication redirect loop', ticketId: 'ticket-42', timestamp: '1h ago', type: 'comment' },
-  { id: 'a-4', memberId: 'tm-003', action: 'logged 2.0h on', ticketTitle: 'Update API documentation', ticketId: 'ticket-41', timestamp: '2h ago', type: 'time-log' },
-  { id: 'a-5', memberId: 'tm-002', action: 'completed', ticketTitle: 'Setup CI/CD pipeline', ticketId: 'ticket-38', timestamp: '3h ago', type: 'completed' },
-  { id: 'a-6', memberId: 'tm-004', action: 'moved to In Progress', ticketTitle: 'Implement dark mode toggle', ticketId: 'ticket-40', timestamp: '5h ago', type: 'status' },
-  { id: 'a-7', memberId: 'tm-005', action: 'logged 3.0h on', ticketTitle: 'Optimize database queries', ticketId: 'ticket-39', timestamp: '6h ago', type: 'time-log' },
-  { id: 'a-8', memberId: 'tm-001', action: 'created', ticketTitle: 'Fix authentication redirect loop', ticketId: 'ticket-42', timestamp: '1d ago', type: 'created' },
-  { id: 'a-9', memberId: 'tm-003', action: 'completed', ticketTitle: 'Design onboarding flow', ticketId: 'ticket-37', timestamp: '2d ago', type: 'completed' },
-  { id: 'a-10', memberId: 'tm-005', action: 'logged 2.0h on', ticketTitle: 'Write API integration guide', ticketId: 'ticket-35', timestamp: '3d ago', type: 'time-log' },
+  {
+    id: 'a-1',
+    memberId: 'tm-002',
+    action: 'logged 2.0h on',
+    ticketTitle: 'Fix authentication redirect loop',
+    ticketId: 'ticket-42',
+    timestamp: '2m ago',
+    type: 'time-log',
+  },
+  {
+    id: 'a-2',
+    memberId: 'tm-005',
+    action: 'moved to In Review',
+    ticketTitle: 'Optimize database queries',
+    ticketId: 'ticket-39',
+    timestamp: '15m ago',
+    type: 'status',
+  },
+  {
+    id: 'a-3',
+    memberId: 'tm-001',
+    action: 'commented on',
+    ticketTitle: 'Fix authentication redirect loop',
+    ticketId: 'ticket-42',
+    timestamp: '1h ago',
+    type: 'comment',
+  },
+  {
+    id: 'a-4',
+    memberId: 'tm-003',
+    action: 'logged 2.0h on',
+    ticketTitle: 'Update API documentation',
+    ticketId: 'ticket-41',
+    timestamp: '2h ago',
+    type: 'time-log',
+  },
+  {
+    id: 'a-5',
+    memberId: 'tm-002',
+    action: 'completed',
+    ticketTitle: 'Setup CI/CD pipeline',
+    ticketId: 'ticket-38',
+    timestamp: '3h ago',
+    type: 'completed',
+  },
+  {
+    id: 'a-6',
+    memberId: 'tm-004',
+    action: 'moved to In Progress',
+    ticketTitle: 'Implement dark mode toggle',
+    ticketId: 'ticket-40',
+    timestamp: '5h ago',
+    type: 'status',
+  },
+  {
+    id: 'a-7',
+    memberId: 'tm-005',
+    action: 'logged 3.0h on',
+    ticketTitle: 'Optimize database queries',
+    ticketId: 'ticket-39',
+    timestamp: '6h ago',
+    type: 'time-log',
+  },
+  {
+    id: 'a-8',
+    memberId: 'tm-001',
+    action: 'created',
+    ticketTitle: 'Fix authentication redirect loop',
+    ticketId: 'ticket-42',
+    timestamp: '1d ago',
+    type: 'created',
+  },
+  {
+    id: 'a-9',
+    memberId: 'tm-003',
+    action: 'completed',
+    ticketTitle: 'Design onboarding flow',
+    ticketId: 'ticket-37',
+    timestamp: '2d ago',
+    type: 'completed',
+  },
+  {
+    id: 'a-10',
+    memberId: 'tm-005',
+    action: 'logged 2.0h on',
+    ticketTitle: 'Write API integration guide',
+    ticketId: 'ticket-35',
+    timestamp: '3d ago',
+    type: 'time-log',
+  },
 ];
 
 // --- Notifications ---
 export const tmNotifications: TNotification[] = [
-  { id: 'n-1', type: 'assigned', title: 'Aditya assigned you', subtitle: '"Fix auth redirect loop"', time: '2 minutes ago', read: false },
-  { id: 'n-2', type: 'time-logged', title: 'Time log approved', subtitle: '"Setup OAuth test env"', time: '1 hour ago', read: false },
-  { id: 'n-3', type: 'overdue', title: 'Ticket overdue', subtitle: '"Update API documentation"', time: '3 hours ago', read: false },
-  { id: 'n-4', type: 'comment', title: 'Aditya commented', subtitle: '"Check the redirect_uri parameter"', time: '5 hours ago', read: true },
-  { id: 'n-5', type: 'status', title: 'Status changed', subtitle: '"Optimize DB queries" → In Review', time: '1 day ago', read: true },
+  {
+    id: 'n-1',
+    type: 'assigned',
+    title: 'Aditya assigned you',
+    subtitle: '"Fix auth redirect loop"',
+    time: '2 minutes ago',
+    read: false,
+  },
+  {
+    id: 'n-2',
+    type: 'time-logged',
+    title: 'Time log approved',
+    subtitle: '"Setup OAuth test env"',
+    time: '1 hour ago',
+    read: false,
+  },
+  {
+    id: 'n-3',
+    type: 'overdue',
+    title: 'Ticket overdue',
+    subtitle: '"Update API documentation"',
+    time: '3 hours ago',
+    read: false,
+  },
+  {
+    id: 'n-4',
+    type: 'comment',
+    title: 'Aditya commented',
+    subtitle: '"Check the redirect_uri parameter"',
+    time: '5 hours ago',
+    read: true,
+  },
+  {
+    id: 'n-5',
+    type: 'status',
+    title: 'Status changed',
+    subtitle: '"Optimize DB queries" → In Review',
+    time: '1 day ago',
+    read: true,
+  },
 ];
 
 // --- Dashboard Chart Data ---
@@ -499,39 +718,41 @@ export const projectHoursData = [
 export const weeklySparkline = [3, 5, 4, 8, 6, 7, 8];
 
 // --- Helper Functions ---
-export const getMemberById = (id: string) => tmMembers.find(m => m.id === id);
-export const getTicketsByStatus = (status: TicketStatus) => tmTickets.filter(t => t.status === status);
-export const getTicketsByAssignee = (assigneeId: string) => tmTickets.filter(t => t.assigneeId === assigneeId);
-export const getTicketById = (id: string) => tmTickets.find(t => t.id === id);
+export const getMemberById = (id: string) => tmMembers.find((m) => m.id === id);
+export const getTicketsByStatus = (status: TicketStatus) =>
+  tmTickets.filter((t) => t.status === status);
+export const getTicketsByAssignee = (assigneeId: string) =>
+  tmTickets.filter((t) => t.assigneeId === assigneeId);
+export const getTicketById = (id: string) => tmTickets.find((t) => t.id === id);
 
 export const getStatusColor = (status: TicketStatus) => {
   const colors: Record<TicketStatus, string> = {
-    'todo': 'text-muted-foreground bg-muted-foreground/15',
+    todo: 'text-muted-foreground bg-muted-foreground/15',
     'in-progress': 'text-blue-400 bg-blue-400/15',
     'in-review': 'text-amber-400 bg-amber-400/15',
-    'done': 'text-primary bg-primary/15',
-    'unplanned': 'text-purple-400 bg-purple-400/15',
+    done: 'text-primary bg-primary/15',
+    unplanned: 'text-purple-400 bg-purple-400/15',
   };
   return colors[status];
 };
 
 export const getStatusLabel = (status: TicketStatus) => {
   const labels: Record<TicketStatus, string> = {
-    'todo': 'TO-DO',
+    todo: 'TO-DO',
     'in-progress': 'IN PROGRESS',
     'in-review': 'IN REVIEW',
-    'done': 'DONE',
-    'unplanned': 'UNPLANNED',
+    done: 'DONE',
+    unplanned: 'UNPLANNED',
   };
   return labels[status];
 };
 
 export const getPriorityColor = (priority: TicketPriority) => {
   const colors: Record<TicketPriority, string> = {
-    'critical': 'bg-red-500',
-    'high': 'bg-amber-500',
-    'medium': 'bg-blue-500',
-    'low': 'bg-muted-foreground',
+    critical: 'bg-red-500',
+    high: 'bg-amber-500',
+    medium: 'bg-blue-500',
+    low: 'bg-muted-foreground',
   };
   return colors[priority];
 };
@@ -551,7 +772,11 @@ export const generateHeatmapData = () => {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-    const hours = isWeekend ? (Math.random() > 0.7 ? Math.floor(Math.random() * 4) : 0) : Math.floor(Math.random() * 8) + 1;
+    const hours = isWeekend
+      ? Math.random() > 0.7
+        ? Math.floor(Math.random() * 4)
+        : 0
+      : Math.floor(Math.random() * 8) + 1;
     data.push({ date: d.toISOString().split('T')[0], hours });
   }
   return data;

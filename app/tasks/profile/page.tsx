@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { tmMembers, tmTickets, tmActivities, generateHeatmapData } from '@/data/taskManagerData';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -35,9 +36,11 @@ export default function ProfilePage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -z-10" />
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="relative">
-            <img
+            <Image
               src={member.avatar}
               alt={member.name}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 transition-all group-hover:ring-primary/50"
             />
             <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary border-4 border-card flex items-center justify-center">
@@ -163,7 +166,7 @@ export default function ProfilePage() {
             </h3>
           </div>
           <div className="space-y-1">
-            {activities.map((a, i) => (
+            {activities.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center gap-4 py-4 border-b border-border/50 last:border-0 group px-2 hover:bg-muted/10 transition-colors"

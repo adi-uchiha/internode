@@ -7,7 +7,8 @@ import { MemberLayout } from '@/components/layouts/MemberLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { mockProjects } from '@/data/mockData';
+import { useCreateLog } from '@/hooks/useLogs';
+import { useProjects } from '@/hooks/useProjects';
 
 const MemberDashboard = () => {
   const [whatIDid, setWhatIDid] = useState('');
@@ -19,32 +20,48 @@ const MemberDashboard = () => {
   const [selectedProject, setSelectedProject] = useState('');
   const [skillTags, setSkillTags] = useState('');
   const [isBreakthrough, setIsBreakthrough] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const { data: projects } = useProjects();
+  const { mutateAsync: createLog, isPending: isSubmitting } = useCreateLog();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      await createLog({
+        date: new Date(),
+        whatIDid,
+        whatILearned,
+        hoursWorked: hoursWorked ? parseFloat(hoursWorked) : 0,
+        blockers,
+        hasBlocker: !!blockers,
+        isBreakthrough,
+        skillTags: skillTags ? skillTags.split(',').map((s) => s.trim()) : [],
+        prLinks: prLinks ? prLinks.split(',').map((s) => s.trim()) : [],
+        docLinks: docLinks ? docLinks.split(',').map((s) => s.trim()) : [],
+        projectId: selectedProject || null,
+        status: 'submitted',
+      });
 
-    setIsSubmitting(false);
-    setSubmitted(true);
+      setSubmitted(true);
 
-    // Reset after showing success
-    setTimeout(() => {
-      setWhatIDid('');
-      setWhatILearned('');
-      setHoursWorked('');
-      setBlockers('');
-      setPrLinks('');
-      setDocLinks('');
-      setSelectedProject('');
-      setSkillTags('');
-      setIsBreakthrough(false);
-      setSubmitted(false);
-    }, 2000);
+      // Reset after showing success
+      setTimeout(() => {
+        setWhatIDid('');
+        setWhatILearned('');
+        setHoursWorked('');
+        setBlockers('');
+        setPrLinks('');
+        setDocLinks('');
+        setSelectedProject('');
+        setSkillTags('');
+        setIsBreakthrough(false);
+        setSubmitted(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to submit log', error);
+    }
   };
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -139,7 +156,7 @@ const MemberDashboard = () => {
                 required
               >
                 <option value="">Select project...</option>
-                {mockProjects.map((project) => (
+                {projects?.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>

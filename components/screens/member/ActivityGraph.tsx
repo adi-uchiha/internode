@@ -4,27 +4,84 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
-import { generateActivityData, generatePerformanceMetrics } from '@/data/mockData';
+import { useLogs } from '@/hooks/useLogs';
 
 const ActivityGraph = () => {
-  const activityData = useMemo(() => generateActivityData(), []);
-  const metrics = useMemo(() => generatePerformanceMetrics(), []);
+  const { data: logs } = useLogs();
+
+  const metrics = useMemo(() => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const currentMonthLogs =
+      logs?.filter((l) => {
+        const d = new Date(l.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      }) || [];
+
+    const totalHoursThisMonth =
+      currentMonthLogs.reduce((sum, l) => sum + (l.hoursWorked || 0), 0) || 0;
+    const daysLogged = new Set(currentMonthLogs.map((l) => new Date(l.date).toDateString())).size;
+    const avgHoursPerDay = daysLogged > 0 ? totalHoursThisMonth / daysLogged : 0;
+    const learningDays = currentMonthLogs.filter((l) => (l.whatILearned?.length || 0) > 20).length;
+    const executionDays = currentMonthLogs.filter(
+      (l) => (l.hoursWorked || 0) > 0 && l.whatIDid
+    ).length;
+
+    // Roughly days / total days in month
+    const logCompletionRate = Math.round(
+      (daysLogged / new Date(currentYear, currentMonth + 1, 0).getDate()) * 100
+    );
+
+    return { totalHoursThisMonth, avgHoursPerDay, learningDays, executionDays, logCompletionRate };
+  }, [logs]);
 
   // Group data by weeks for the contribution grid
   const weeks = useMemo(() => {
     const result: { date: string; count: number; hours: number }[][] = [];
-    let currentWeek: { date: string; count: number; hours: number }[] = [];
 
-    activityData.forEach((day, index) => {
-      currentWeek.push(day);
-      if (currentWeek.length === 7 || index === activityData.length - 1) {
+    // Map last 364 days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 364);
+
+    // Make sure we start on a Sunday to align with strict week views
+    while (startDate.getDay() !== 0) {
+      startDate.setDate(startDate.getDate() - 1);
+    }
+
+    let currentWeek: { date: string; count: number; hours: number }[] = [];
+    const iterator = new Date(startDate);
+
+    // Create a map to O(1) fetch log hours by day
+    const logMap = new Map();
+    logs?.forEach((l) => {
+      const d = new Date(l.date).toDateString();
+      logMap.set(d, (logMap.get(d) || 0) + (l.hoursWorked || 0));
+    });
+
+    while (iterator <= today || currentWeek.length > 0) {
+      if (iterator > today && currentWeek.length === 0) break;
+
+      const dateStr = iterator.toDateString();
+      const hoursHit = iterator <= today ? logMap.get(dateStr) || 0 : 0;
+
+      currentWeek.push({
+        date: dateStr,
+        count: hoursHit > 0 ? 1 : 0,
+        hours: hoursHit,
+      });
+
+      if (currentWeek.length === 7) {
         result.push(currentWeek);
         currentWeek = [];
       }
-    });
 
-    return result.slice(-52); // Last 52 weeks
-  }, [activityData]);
+      iterator.setDate(iterator.getDate() + 1);
+    }
+
+    return result;
+  }, [logs]);
 
   const getIntensityClass = (hours: number) => {
     if (hours === 0) return 'bg-border/50';

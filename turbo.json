@@ -1,11 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build:internal": {
+    "build:next": {
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
-    "lint:internal": {
+    "lint:eslint": {
       "outputs": []
     },
     "dev": {

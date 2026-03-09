@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
-import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { cn } from '@/lib/utils';
 

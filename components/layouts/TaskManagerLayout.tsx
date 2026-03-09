@@ -8,7 +8,8 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { tmNotifications, type TNotification } from '@/data/taskManagerData';
+import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
+import Image from 'next/image';
 
 interface NavItemDef {
   label: string;
@@ -66,10 +67,20 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
+
+  const { data: notifications = [] } = useNotifications();
+  const { mutateAsync: markAsRead } = useMarkNotificationsRead();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleMarkAllRead = async () => {
+    if (unreadCount > 0) {
+      await markAsRead();
+    }
+  };
 
   // ⌘K shortcut
   useEffect(() => {
@@ -87,10 +98,12 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  /*
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
+  */
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -209,8 +222,14 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 border border-border overflow-hidden shrink-0">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Icon icon="solar:user-linear" className="w-4 h-4 text-muted-foreground" />
@@ -299,7 +318,9 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
                 className="relative p-2 hover:bg-muted/50 transition-colors"
               >
                 <Icon icon="solar:bell-linear" className="w-5 h-5 text-muted-foreground" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                )}
               </button>
 
               {/* Notification Dropdown */}
@@ -312,42 +333,54 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
                     className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] border border-border bg-card overflow-hidden z-50"
                   >
                     <div className="flex items-center justify-between p-4 border-b border-border">
-                      <span className="font-display font-semibold text-sm">NOTIFICATIONS</span>
-                      <button className="font-mono text-xs text-primary hover:underline">
-                        Mark all
+                      <span className="font-display font-semibold text-sm">
+                        NOTIFICATIONS ({unreadCount})
+                      </span>
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="font-mono text-[10px] uppercase text-primary hover:underline disabled:opacity-50"
+                        disabled={unreadCount === 0}
+                      >
+                        Mark all read
                       </button>
                     </div>
                     <div className="overflow-y-auto max-h-[400px]">
-                      {tmNotifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={cn(
-                            'p-4 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
-                            !n.read && 'border-l-[3px] border-l-primary bg-muted/20'
-                          )}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <div
-                              className={cn('w-2 h-2 rounded-full', {
-                                'bg-primary': n.type === 'assigned',
-                                'bg-destructive': n.type === 'overdue',
-                                'bg-blue-400': n.type === 'status',
-                                'bg-amber-400': n.type === 'time-logged',
-                                'bg-purple-400': n.type === 'comment',
-                              })}
-                            />
-                            <span className="text-sm font-medium">{n.title}</span>
-                          </div>
-                          <div className="font-mono text-xs text-muted-foreground ml-4">
-                            {n.subtitle}
-                          </div>
-                          <div className="font-mono text-[10px] text-muted-foreground ml-4 mt-1">
-                            {n.time}
-                          </div>
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center border-b border-border text-xs font-mono text-muted-foreground">
+                          You have no new notifications.
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              'p-4 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
+                              !n.read && 'border-l-[3px] border-l-primary bg-muted/20'
+                            )}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <div
+                                className={cn('w-2 h-2 rounded-full', {
+                                  'bg-primary': n.type === 'assigned',
+                                  'bg-destructive': n.type === 'overdue',
+                                  'bg-blue-400': n.type === 'status',
+                                  'bg-amber-400': n.type === 'time-logged',
+                                  'bg-purple-400': n.type === 'comment',
+                                })}
+                              />
+                              <span className="text-sm font-medium">{n.title}</span>
+                            </div>
+                            <div className="font-mono text-xs text-muted-foreground ml-4">
+                              {n.subtitle}
+                            </div>
+                            <div className="font-mono text-[10px] text-muted-foreground ml-4 mt-1">
+                              {new Date(n.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                    <div className="p-3 text-center border-t border-border">
+                    <div className="p-3 text-center">
                       <button className="font-mono text-xs text-primary hover:underline">
                         View all notifications →
                       </button>
@@ -359,8 +392,14 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
 
             {/* User avatar */}
             <div className="w-8 h-8 border border-border rounded-full overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-              {user?.avatar ? (
-                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Icon icon="solar:user-linear" className="w-4 h-4" />

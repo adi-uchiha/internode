@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Icon } from '@iconify/react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { tmTickets, getMemberById, generateHeatmapData } from '@/data/taskManagerData';
@@ -128,11 +128,15 @@ export default function TimeLogsPage() {
                     {isAdmin && (
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={member?.avatar}
-                            alt=""
-                            className="w-5 h-5 rounded-full border border-border"
-                          />
+                          {member?.avatar && (
+                            <Image
+                              src={member.avatar}
+                              alt={member.name || ''}
+                              width={20}
+                              height={20}
+                              className="rounded-full border border-border"
+                            />
+                          )}
                           <span className="text-sm font-medium">{member?.name}</span>
                         </div>
                       </td>
@@ -181,7 +185,7 @@ export default function TimeLogsPage() {
         <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar">
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-1">
-              {week.map((day, di) => (
+              {week.map((day) => (
                 <div
                   key={day.date}
                   className={cn(

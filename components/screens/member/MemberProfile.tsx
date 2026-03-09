@@ -5,28 +5,28 @@ import { Icon } from '@iconify/react';
 import Image from 'next/image';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { generatePerformanceMetrics, generateActivityData } from '@/data/mockData';
-import { useMemo } from 'react';
+import { useLogs } from '@/hooks/useLogs';
 
 const MemberProfile = () => {
   const { user } = useAuth();
-  const metrics = useMemo(() => generatePerformanceMetrics(), []);
-  const activityData = useMemo(() => generateActivityData(), []);
+  const { data: logs } = useLogs();
 
-  // Calculate some stats
-  const totalDaysLogged = activityData.filter((d) => d.count > 0).length;
-  const totalHours = activityData.reduce((sum, d) => sum + d.hours, 0);
-  const avgHoursPerDay = (totalHours / totalDaysLogged).toFixed(1);
+  const totalDaysLogged = new Set(logs?.map((l) => new Date(l.date).toDateString())).size || 0;
+  const totalHours = logs?.reduce((sum, l) => sum + (l.hoursWorked || 0), 0) || 0;
+  const avgHoursPerDay = totalDaysLogged > 0 ? (totalHours / totalDaysLogged).toFixed(1) : '0.0';
+  const breakthroughs = logs?.filter((l) => l.isBreakthrough).length || 0;
 
-  const skills = [
-    'react',
-    'typescript',
-    'tailwind',
-    'framer-motion',
-    'nodejs',
-    'postgresql',
-    'git',
-  ];
+  const skills = Array.from(new Set(logs?.flatMap((l) => l.skillTags || [])));
+
+  const recentActivity =
+    logs?.slice(0, 5).map((l) => ({
+      id: l.id,
+      action: l.isBreakthrough
+        ? `Breakthrough: ${l.whatIDid}`
+        : `Logged ${l.hoursWorked}h: ${l.whatIDid}`,
+      time: new Date(l.createdAt).toLocaleDateString(),
+      icon: l.isBreakthrough ? 'solar:star-linear' : 'solar:document-add-linear',
+    })) || [];
 
   return (
     <MemberLayout title="Profile">
@@ -40,10 +40,10 @@ const MemberProfile = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             {/* Avatar */}
             <div className="relative w-24 h-24 border-2 border-primary bg-primary/10 flex items-center justify-center overflow-hidden">
-              {user?.avatar ? (
+              {user?.image ? (
                 <Image
-                  src={user.avatar}
-                  alt={user.name}
+                  src={user.image}
+                  alt={user.name || 'User'}
                   fill
                   className="object-cover"
                   unoptimized
@@ -63,10 +63,11 @@ const MemberProfile = () => {
 
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                 <span className="px-3 py-1 border border-primary bg-primary/10 font-mono text-xs text-primary uppercase">
-                  Frontend Engineer
+                  {user?.department || 'Engineering'}
                 </span>
                 <span className="px-3 py-1 border border-border font-mono text-xs text-muted-foreground">
-                  Joined Jan 2025
+                  Joined{' '}
+                  {user?.joinDate ? new Date(user.joinDate).toLocaleDateString() : 'Recently'}
                 </span>
               </div>
             </div>
@@ -91,12 +92,12 @@ const MemberProfile = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             {
-              label: 'Log Rate',
-              value: `${metrics.logCompletionRate}%`,
-              icon: 'solar:check-circle-linear',
+              label: 'Logs',
+              value: logs?.length?.toString() || '0',
+              icon: 'solar:document-text-linear',
             },
             { label: 'Avg Hours/Day', value: avgHoursPerDay, icon: 'solar:clock-circle-linear' },
-            { label: 'Breakthroughs', value: '5', icon: 'solar:star-linear' },
+            { label: 'Breakthroughs', value: breakthroughs.toString(), icon: 'solar:star-linear' },
             { label: 'Skills', value: skills.length.toString(), icon: 'solar:code-square-linear' },
           ].map((stat, i) => (
             <motion.div
@@ -127,16 +128,22 @@ const MemberProfile = () => {
           <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">
             [SKILL_CLOUD]
           </div>
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="px-3 py-2 border border-border bg-muted font-mono text-sm hover:border-primary/50 transition-colors"
-              >
-                #{skill}
-              </span>
-            ))}
-          </div>
+          {skills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="px-3 py-2 border border-border bg-muted font-mono text-sm hover:border-primary/50 transition-colors"
+                >
+                  #{skill}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="font-mono text-sm text-muted-foreground">
+              No skills recorded yet. Log daily entries to populate your skill cloud.
+            </p>
+          )}
         </motion.div>
 
         {/* Recent Activity */}
@@ -149,67 +156,24 @@ const MemberProfile = () => {
           <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">
             [RECENT_ACTIVITY]
           </div>
-          <div className="space-y-3">
-            {[
-              {
-                action: 'Submitted daily log',
-                time: '2 hours ago',
-                icon: 'solar:document-add-linear',
-              },
-              {
-                action: 'Completed weekly goal: Sidebar component',
-                time: '1 day ago',
-                icon: 'solar:check-circle-linear',
-              },
-              {
-                action: 'Marked breakthrough: Auth Implementation',
-                time: '2 days ago',
-                icon: 'solar:star-linear',
-              },
-              {
-                action: 'Added skill tag: framer-motion',
-                time: '3 days ago',
-                icon: 'solar:code-square-linear',
-              },
-            ].map((activity, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 p-3 border border-border bg-background"
-              >
-                <Icon icon={activity.icon} className="w-5 h-5 text-muted-foreground" />
-                <span className="font-mono text-sm flex-1">{activity.action}</span>
-                <span className="font-mono text-xs text-muted-foreground">{activity.time}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Current Project */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="border border-border bg-card p-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-              [CURRENT_PROJECT]
+          {recentActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-4 p-3 border border-border bg-background"
+                >
+                  <Icon icon={activity.icon} className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-mono text-sm flex-1 truncate">{activity.action}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{activity.time}</span>
+                </div>
+              ))}
             </div>
-            <span className="px-2 py-1 border border-primary bg-primary/10 font-mono text-xs text-primary">
-              ACTIVE
-            </span>
-          </div>
-          <h3 className="font-display font-semibold text-lg mb-2">Dashboard Revamp</h3>
-          <p className="font-mono text-sm text-muted-foreground mb-4">
-            Complete overhaul of the main dashboard with new UI/UX
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {['react', 'typescript', 'tailwind', 'framer-motion'].map((tech) => (
-              <span key={tech} className="px-2 py-1 border border-border font-mono text-xs">
-                {tech}
-              </span>
-            ))}
-          </div>
+          ) : (
+            <p className="font-mono text-sm text-muted-foreground">
+              No recent activity found. Start logging your work to build your profile.
+            </p>
+          )}
         </motion.div>
       </div>
     </MemberLayout>

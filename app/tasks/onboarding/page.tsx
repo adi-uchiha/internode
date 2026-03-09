@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
@@ -46,9 +47,11 @@ export default function OnboardingPage() {
                     animate={{ scale: 1 }}
                     className="w-24 h-24 mx-auto border-2 border-primary bg-primary/5 rounded-full flex items-center justify-center relative z-10 p-1"
                   >
-                    <img
+                    <Image
                       src="https://api.dicebear.com/7.x/initials/svg?seed=Internode&backgroundColor=00ff88&textColor=000000"
                       alt="Avatar"
+                      width={96}
+                      height={96}
                       className="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all duration-500"
                     />
                   </motion.div>

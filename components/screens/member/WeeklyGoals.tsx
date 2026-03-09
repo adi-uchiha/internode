@@ -6,25 +6,31 @@ import { Icon } from '@iconify/react';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { mockWeeklyGoals } from '@/data/mockData';
+import { useGoals, useAddGoalItem, useUpdateGoalItem, useDeleteGoalItem } from '@/hooks/useGoals';
 
 const WeeklyGoals = () => {
-  const [goals, setGoals] = useState(mockWeeklyGoals[0]?.goals || []);
+  const { data: goalData } = useGoals();
+  const { mutateAsync: addGoalMutation } = useAddGoalItem();
+  const { mutateAsync: updateGoalMutation } = useUpdateGoalItem();
+  const { mutateAsync: deleteGoalMutation } = useDeleteGoalItem();
+
   const [newGoal, setNewGoal] = useState('');
 
-  const addGoal = () => {
-    if (newGoal.trim() && goals.length < 5) {
-      setGoals([...goals, { id: `g${Date.now()}`, text: newGoal, completed: false }]);
+  const goals = goalData?.items || [];
+
+  const addGoal = async () => {
+    if (newGoal.trim() && goals.length < 5 && goalData) {
+      await addGoalMutation({ weeklyGoalId: goalData.id, text: newGoal });
       setNewGoal('');
     }
   };
 
-  const toggleGoal = (id: string) => {
-    setGoals(goals.map((g) => (g.id === id ? { ...g, completed: !g.completed } : g)));
+  const toggleGoal = async (id: string, currentCompleted: boolean) => {
+    await updateGoalMutation({ id, completed: !currentCompleted });
   };
 
-  const removeGoal = (id: string) => {
-    setGoals(goals.filter((g) => g.id !== id));
+  const removeGoal = async (id: string) => {
+    await deleteGoalMutation(id);
   };
 
   const completedCount = goals.filter((g) => g.completed).length;
@@ -95,7 +101,7 @@ const WeeklyGoals = () => {
               }`}
             >
               <button
-                onClick={() => toggleGoal(goal.id)}
+                onClick={() => toggleGoal(goal.id, goal.completed)}
                 className={`w-6 h-6 border shrink-0 flex items-center justify-center transition-all ${
                   goal.completed
                     ? 'bg-primary border-primary'

@@ -8,15 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-import {
-  tmTickets,
-  tmProjects,
-  getMemberById,
-  getPriorityColor,
-  getTimeBarColor,
-  type TTicket,
-  type TicketStatus,
-} from '@/data/taskManagerData';
+import { getPriorityColor, getTimeBarColor, type TicketPriority } from '@/data/taskManagerData';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -26,7 +19,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const columns: { status: TicketStatus; label: string; color: string }[] = [
+import { useTickets, useUpdateTicket } from '@/hooks/useTickets';
+import { useProjects } from '@/hooks/useProjects';
+import type { TicketWithRelations } from '@/hooks/useTickets';
+
+const columns: {
+  status: 'todo' | 'in-progress' | 'in-review' | 'done' | 'unplanned';
+  label: string;
+  color: string;
+}[] = [
   {
     status: 'unplanned',
     label: 'BACKLOG',
@@ -55,12 +56,14 @@ const KanbanCard = ({
   onClick,
   mounted = false,
 }: {
-  ticket: TTicket;
+  ticket: TicketWithRelations;
   onClick: () => void;
   mounted?: boolean;
 }) => {
-  const assignee = getMemberById(ticket.assigneeId);
-  const pct = ticket.estimatedHours > 0 ? (ticket.loggedHours / ticket.estimatedHours) * 100 : 0;
+  const pct =
+    ticket.estimatedHours && ticket.estimatedHours > 0
+      ? ((ticket.loggedHours || 0) / ticket.estimatedHours) * 100
+      : 0;
   const now = new Date();
 
   return (
@@ -70,24 +73,28 @@ const KanbanCard = ({
       onClick={onClick}
       className="border border-border bg-card p-4 cursor-pointer transition-all active:scale-95"
       draggable
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onDragStart={(e: any) => {
-        e.dataTransfer.setData('ticketId', ticket.id);
+      onDragStartCapture={(e: React.DragEvent) => {
+        e.dataTransfer.setData('ticketDbId', ticket.id);
         e.dataTransfer.dropEffect = 'move';
       }}
     >
       <div className="flex items-center gap-2 mb-2">
-        <div className={cn('w-2 h-2 rounded-full', getPriorityColor(ticket.priority))} />
+        <div
+          className={cn(
+            'w-2 h-2 rounded-full',
+            getPriorityColor((ticket.priority as TicketPriority) || 'medium')
+          )}
+        />
         <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
-          {ticket.project}
+          {ticket.project?.name || 'GENERIC'}
         </span>
       </div>
       <h4 className="font-display text-sm font-medium mb-3 line-clamp-2 leading-tight">
         {ticket.title}
       </h4>
-      {ticket.labels.length > 0 && (
+      {(ticket.labels || []).length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {ticket.labels.slice(0, 3).map((l) => (
+          {ticket.labels!.slice(0, 3).map((l) => (
             <span
               key={l}
               className="font-mono text-[8.5px] text-primary bg-primary/10 px-1.5 py-0.5 border border-primary/10"
@@ -95,9 +102,9 @@ const KanbanCard = ({
               {l}
             </span>
           ))}
-          {ticket.labels.length > 3 && (
+          {ticket.labels!.length > 3 && (
             <span className="font-mono text-[9px] text-muted-foreground ml-1">
-              +{ticket.labels.length - 3}
+              +{ticket.labels!.length - 3}
             </span>
           )}
         </div>
@@ -107,25 +114,33 @@ const KanbanCard = ({
           <div
             className={cn(
               'h-full transition-all duration-500',
-              getTimeBarColor(ticket.loggedHours, ticket.estimatedHours)
+              getTimeBarColor(ticket.loggedHours || 0, ticket.estimatedHours || 0)
             )}
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
         <div className="flex justify-between items-center font-mono text-[9px] text-muted-foreground">
           <span>
-            {ticket.loggedHours}h / {ticket.estimatedHours}h
+            {ticket.loggedHours || 0}h / {ticket.estimatedHours || 0}h
           </span>
           <span>{Math.round(pct)}%</span>
         </div>
       </div>
       <div className="flex items-center justify-between mt-auto pt-1">
         <div className="flex -space-x-2">
-          <img
-            src={assignee?.avatar}
-            alt=""
-            className="w-5 h-5 rounded-full border border-background ring-1 ring-border"
-          />
+          {ticket.assignee ? (
+            <Image
+              src={ticket.assignee.image || ''}
+              alt={ticket.assignee.name || 'User'}
+              width={20}
+              height={20}
+              className="w-5 h-5 rounded-full border border-background ring-1 ring-border object-cover bg-muted"
+            />
+          ) : (
+            <div className="w-5 h-5 rounded-full border border-background ring-1 ring-border bg-muted flex items-center justify-center">
+              <Icon icon="solar:user-linear" className="w-3 h-3 text-muted-foreground" />
+            </div>
+          )}
         </div>
         {ticket.dueDate && mounted && (
           <span
@@ -136,7 +151,10 @@ const KanbanCard = ({
                 : 'text-muted-foreground'
             )}
           >
-            {ticket.dueDate.slice(5)}
+            {new Date(ticket.dueDate).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+            })}
           </span>
         )}
       </div>
@@ -148,29 +166,43 @@ export default function KanbanPage() {
   const { user } = useAuth();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
-  const [tickets, setTickets] = useState(tmTickets);
+  const { data: ticketsResponse, isLoading } = useTickets();
+  const { data: projectsResponse } = useProjects();
+  const { mutateAsync: updateTicket } = useUpdateTicket();
+
   const [filter, setFilter] = useState({ priority: 'all', project: 'all', search: '' });
-  const [dragOverColumn, setDragOverColumn] = useState<TicketStatus | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  const tickets = ticketsResponse || [];
 
   const filteredTickets = tickets.filter((t) => {
     if (filter.priority !== 'all' && t.priority !== filter.priority) return false;
-    if (filter.project !== 'all' && t.project !== filter.project) return false;
+    if (filter.project !== 'all' && t.project?.name !== filter.project) return false;
     if (filter.search && !t.title.toLowerCase().includes(filter.search.toLowerCase())) return false;
     return true;
   });
 
-  const handleDrop = (e: React.DragEvent, status: TicketStatus) => {
+  const handleDrop = async (
+    e: React.DragEvent,
+    status: 'todo' | 'in-progress' | 'in-review' | 'done' | 'unplanned'
+  ) => {
     e.preventDefault();
     setDragOverColumn(null);
-    const ticketId = e.dataTransfer.getData('ticketId');
+    const ticketId = e.dataTransfer.getData('ticketDbId');
     if (!ticketId) return;
 
-    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status } : t)));
-    toast.success(`Ticket moved to ${status.toUpperCase()}`);
+    try {
+      await updateTicket({ id: ticketId, status });
+      toast.success(`Ticket moved to ${status.toUpperCase()}`);
+    } catch {
+      toast.error('Failed to move ticket');
+    }
   };
 
   return (
@@ -212,7 +244,7 @@ export default function KanbanPage() {
           </SelectTrigger>
           <SelectContent className="font-display">
             <SelectItem value="all">All Projects</SelectItem>
-            {tmProjects.map((p) => (
+            {projectsResponse?.map((p) => (
               <SelectItem key={p.id} value={p.name}>
                 {p.name}
               </SelectItem>
@@ -234,62 +266,72 @@ export default function KanbanPage() {
 
       {/* Board Scroll Area */}
       <div className="overflow-x-auto pb-6 -mx-2 px-2">
-        <div className="flex gap-4 min-w-max h-[calc(100vh-220px)]">
-          {columns.map((col) => {
-            const colTickets = filteredTickets.filter((t) => t.status === col.status);
-            return (
-              <div
-                key={col.status}
-                className={cn(
-                  'w-[300px] flex flex-col transition-all duration-200',
-                  dragOverColumn === col.status && 'bg-primary/5 ring-1 ring-primary/20 ring-inset'
-                )}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverColumn(col.status);
-                }}
-                onDragLeave={() => setDragOverColumn(null)}
-                onDrop={(e) => handleDrop(e, col.status)}
-              >
+        {isLoading ? (
+          <div className="flex items-center justify-center p-20 text-muted-foreground gap-3">
+            <Icon icon="solar:refresh-linear" className="w-6 h-6 animate-spin" />
+            Loading Board...
+          </div>
+        ) : (
+          <div className="flex gap-4 min-w-max h-[calc(100vh-220px)]">
+            {columns.map((col) => {
+              const colTickets = filteredTickets.filter((t) => t.status === col.status);
+              return (
                 <div
+                  key={col.status}
                   className={cn(
-                    'border-t-2 border-x border-border p-4 flex items-center justify-between',
-                    col.color
+                    'w-[300px] flex flex-col transition-all duration-200',
+                    dragOverColumn === col.status &&
+                      'bg-primary/5 ring-1 ring-primary/20 ring-inset'
                   )}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverColumn(col.status);
+                  }}
+                  onDragLeave={() => setDragOverColumn(null)}
+                  onDrop={(e) => handleDrop(e, col.status)}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-[11px] font-bold uppercase tracking-widest">
-                      {col.label}
-                    </span>
+                  <div
+                    className={cn(
+                      'border-t-2 border-x border-border p-4 flex items-center justify-between',
+                      col.color
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-[11px] font-bold uppercase tracking-widest">
+                        {col.label}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] opacity-70">[{colTickets.length}]</span>
                   </div>
-                  <span className="font-mono text-[10px] opacity-70">[{colTickets.length}]</span>
-                </div>
 
-                <div className="flex-1 border-x border-b border-border bg-card/10 overflow-y-auto p-3 space-y-3 scrollbar-none">
-                  <AnimatePresence>
-                    {colTickets.map((ticket) => (
-                      <KanbanCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        onClick={() => router.push(`/tasks/ticket/${ticket.id}`)}
-                        mounted={mounted}
-                      />
-                    ))}
-                  </AnimatePresence>
+                  <div className="flex-1 border-x border-b border-border bg-card/10 overflow-y-auto p-3 space-y-3 scrollbar-none">
+                    <AnimatePresence>
+                      {colTickets.map((ticket) => (
+                        <KanbanCard
+                          key={ticket.id}
+                          ticket={ticket}
+                          onClick={() =>
+                            router.push(`/tasks/ticket/${ticket.ticketId}?dbId=${ticket.id}`)
+                          }
+                          mounted={mounted}
+                        />
+                      ))}
+                    </AnimatePresence>
 
-                  {col.status === 'todo' && isAdmin && (
-                    <button
-                      onClick={() => router.push('/tasks/ticket/new')}
-                      className="w-full border border-dashed border-border py-4 text-center font-mono text-[10px] text-muted-foreground hover:border-primary/40 hover:text-primary transition-all bg-card/5 hover:bg-primary/5"
-                    >
-                      + INITIALIZE TICKET
-                    </button>
-                  )}
+                    {col.status === 'todo' && isAdmin && (
+                      <button
+                        onClick={() => router.push('/tasks/ticket/new')}
+                        className="w-full border border-dashed border-border py-4 text-center font-mono text-[10px] text-muted-foreground hover:border-primary/40 hover:text-primary transition-all bg-card/5 hover:bg-primary/5"
+                      >
+                        + INITIALIZE TICKET
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

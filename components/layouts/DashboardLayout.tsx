@@ -1,5 +1,3 @@
-'use client';
-
 import { ReactNode, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -8,6 +6,8 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
+import Image from 'next/image';
 
 interface NavItem {
   label: string;
@@ -24,9 +24,20 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+
+  const { data: notifications = [] } = useNotifications();
+  const { mutateAsync: markAsRead } = useMarkNotificationsRead();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleMarkAllRead = async () => {
+    if (unreadCount > 0) {
+      await markAsRead();
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -115,8 +126,14 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <Icon icon="solar:user-linear" className="w-5 h-5 text-muted-foreground" />
               )}
@@ -139,10 +156,10 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
           </div>
 
           <Button
-            variant="ghost"
+            variant="hero"
             size="sm"
             onClick={handleLogout}
-            className={cn('w-full justify-start', collapsed && 'justify-center px-0')}
+            className={cn('w-full justify-start mt-2', collapsed && 'justify-center px-0')}
           >
             <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
             {!collapsed && <span className="ml-2">Logout</span>}
@@ -188,22 +205,106 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 border border-border bg-card/50">
-              <div className="status-dot" />
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 System Online
               </span>
             </div>
 
-            <button className="relative p-2 hover:bg-muted/50 transition-colors">
-              <Icon icon="solar:bell-linear" className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </button>
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 hover:bg-muted/50 transition-colors"
+              >
+                <Icon icon="solar:bell-linear" className="w-5 h-5 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] border border-border bg-card overflow-hidden z-50 rounded-sm shadow-xl"
+                  >
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+                      <span className="font-display font-semibold text-sm tracking-tight">
+                        NOTIFICATIONS ({unreadCount})
+                      </span>
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="font-mono text-[10px] uppercase text-primary hover:text-primary/70 transition-colors disabled:opacity-50"
+                        disabled={unreadCount === 0}
+                      >
+                        Mark all read
+                      </button>
+                    </div>
+                    <div className="overflow-y-auto max-h-[400px]">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center border-b border-border text-xs font-mono text-muted-foreground">
+                          You have no new notifications.
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              'p-4 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors relative',
+                              !n.read && 'bg-primary/5'
+                            )}
+                          >
+                            {!n.read && (
+                              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary" />
+                            )}
+                            <div className="flex items-center gap-2 mb-1">
+                              <div
+                                className={cn('w-2 h-2 rounded-full shadow-sm', {
+                                  'bg-primary': n.type === 'assigned',
+                                  'bg-destructive': n.type === 'overdue',
+                                  'bg-blue-400': n.type === 'status',
+                                  'bg-amber-400': n.type === 'time-logged',
+                                  'bg-purple-400': n.type === 'comment',
+                                })}
+                              />
+                              <span className="text-sm font-medium tracking-tight text-foreground/90">
+                                {n.title}
+                              </span>
+                            </div>
+                            <div className="font-mono text-xs text-muted-foreground ml-4 leading-relaxed">
+                              {n.subtitle}
+                            </div>
+                            <div className="font-mono text-[10px] text-muted-foreground/60 ml-4 mt-2">
+                              {new Date(n.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="p-3 text-center bg-muted/10 border-t border-border">
+                      <button className="font-mono text-[11px] uppercase tracking-widest text-primary hover:text-primary/70 transition-colors">
+                        View all
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6 relative z-10">{children}</div>
       </main>
+
+      {/* Click-away overlay */}
+      {showNotifications && (
+        <div className="fixed inset-0 z-30" onClick={() => setShowNotifications(false)} />
+      )}
     </div>
   );
 };

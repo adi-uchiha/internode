@@ -13,6 +13,17 @@ export const auth = betterAuth({
       verification: schema.verifications,
     },
   }),
+  user: {
+    additionalFields: {
+      role: { type: 'string' },
+      status: { type: 'string' },
+      joinDate: { type: 'date' },
+      department: { type: 'string' },
+      skillTags: { type: 'string[]', input: false },
+      logStatus: { type: 'string' },
+      lastLogTime: { type: 'date' },
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

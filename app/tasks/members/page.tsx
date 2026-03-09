@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { tmMembers } from '@/data/taskManagerData';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 
@@ -44,9 +45,11 @@ export default function MembersPage() {
           >
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
-                <img
+                <Image
                   src={member.avatar}
                   alt={member.name}
+                  width={56}
+                  height={56}
                   className="w-14 h-14 rounded-full border border-border group-hover:border-primary/50 transition-colors"
                 />
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary border-2 border-card" />

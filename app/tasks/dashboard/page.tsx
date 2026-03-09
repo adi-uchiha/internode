@@ -26,6 +26,7 @@ import {
 } from '@/data/taskManagerData';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 70 20" className="w-full h-5">
@@ -231,10 +232,12 @@ const AdminDashboardContent = () => {
                         </div>
                       </div>
                     </div>
-                    <img
-                      src={member?.avatar}
+                    <Image
+                      src={member?.avatar || ''}
                       alt=""
-                      className="w-6 h-6 rounded-full border border-border"
+                      width={24}
+                      height={24}
+                      className="rounded-full border border-border"
                     />
                   </div>
                 );
@@ -312,10 +315,12 @@ const AdminDashboardContent = () => {
                   }`}
                   onClick={() => ticket && router.push(`/tasks/ticket/${ticket.id}`)}
                 >
-                  <img
+                  <Image
                     src={member.avatar}
                     alt=""
-                    className="w-7 h-7 rounded-full border border-border"
+                    width={28}
+                    height={28}
+                    className="rounded-full border border-border"
                   />
                   <span className="text-sm flex-1 truncate">{member.name}</span>
                   <span className="font-mono text-xs text-muted-foreground truncate max-w-[150px]">
@@ -383,10 +388,12 @@ const AdminDashboardContent = () => {
                   className="flex items-center gap-3 pl-8 relative cursor-pointer hover:bg-muted/30 p-2 transition-colors"
                 >
                   <div className="absolute left-[13px] w-[5px] h-[5px] bg-border rounded-full" />
-                  <img
-                    src={member?.avatar}
+                  <Image
+                    src={member?.avatar || ''}
                     alt=""
-                    className="w-6 h-6 rounded-full border border-border"
+                    width={24}
+                    height={24}
+                    className="rounded-full border border-border"
                   />
                   <span className="text-sm">
                     <span className="font-medium">{member?.name}</span> {a.action}{' '}
@@ -645,10 +652,12 @@ const MemberDashboardContent = () => {
                 >
                   #{i + 1} {medals[i] || ''}
                 </span>
-                <img
-                  src={member?.avatar}
+                <Image
+                  src={member?.avatar || ''}
                   alt=""
-                  className="w-7 h-7 rounded-full border border-border"
+                  width={28}
+                  height={28}
+                  className="rounded-full border border-border"
                 />
                 <span className="text-sm flex-1">
                   {isYou ? <span className="text-primary font-medium">You</span> : member?.name}

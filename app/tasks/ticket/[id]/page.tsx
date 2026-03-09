@@ -25,33 +25,52 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  tmTickets,
-  tmProjects,
-  getMemberById,
   getStatusColor,
   getStatusLabel,
   getPriorityColor,
   getTimeBarColor,
-  type TTicket,
   type TicketStatus,
   type TicketPriority,
-  type TTimeLog,
-  type TComment,
 } from '@/data/taskManagerData';
+import {
+  useTicket,
+  useUpdateTicket,
+  useLogTime,
+  useTicketComments,
+  useCreateComment,
+} from '@/hooks/useTickets';
+import { useProjects } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import Image from 'next/image';
+
+interface EditForm {
+  title?: string;
+  description?: string;
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  projectId?: string;
+  assigneeId?: string | null;
+  estimatedHours?: number;
+  dueDate?: Date | null;
+  labels?: string[];
+}
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: ticketId } = use(params);
+  const { id: ticketUrlId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
-  const baseTicket = useMemo(() => tmTickets.find((t) => t.id === ticketId), [ticketId]);
+  const { data: ticket, isLoading } = useTicket(ticketUrlId);
+  const { mutateAsync: updateTicket } = useUpdateTicket();
+  const { mutateAsync: logTime } = useLogTime();
+  const { data: commentsList } = useTicketComments(ticket?.id || '');
+  const { mutateAsync: createComment } = useCreateComment();
+  const { data: projects } = useProjects();
 
-  const [ticket, setTicket] = useState<TTicket | null>(baseTicket ? { ...baseTicket } : null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<TTicket>>({});
+  const [editForm, setEditForm] = useState<EditForm>({});
   const [showLogTime, setShowLogTime] = useState(false);
   const [logHours, setLogHours] = useState('');
   const [logNote, setLogNote] = useState('');
@@ -68,6 +87,14 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     return ticket.dueDate && new Date(ticket.dueDate) < now && ticket.status !== 'done';
   }, [ticket, now]);
 
+  if (isLoading) {
+    return (
+      <div className="p-20 text-center text-muted-foreground animate-pulse">
+        Retrieving Ticket Database...
+      </div>
+    );
+  }
+
   if (!ticket) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -81,36 +108,43 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     );
   }
 
-  const assignee = getMemberById(ticket.assigneeId);
-  const creator = getMemberById(ticket.createdById);
-  const pct = ticket.estimatedHours > 0 ? (ticket.loggedHours / ticket.estimatedHours) * 100 : 0;
+  const pct =
+    (ticket.estimatedHours || 0) > 0
+      ? ((ticket.loggedHours || 0) / (ticket.estimatedHours || 1)) * 100
+      : 0;
   const variance =
-    ticket.estimatedHours > 0
-      ? (((ticket.loggedHours - ticket.estimatedHours) / ticket.estimatedHours) * 100).toFixed(1)
+    (ticket.estimatedHours || 0) > 0
+      ? (
+          (((ticket.loggedHours || 0) - (ticket.estimatedHours || 0)) /
+            (ticket.estimatedHours || 1)) *
+          100
+        ).toFixed(1)
       : '0';
-  const isOverBudget = ticket.loggedHours > ticket.estimatedHours;
+  const isOverBudget = (ticket.loggedHours || 0) > (ticket.estimatedHours || 0);
 
   const startEdit = () => {
     setEditForm({
       title: ticket.title,
-      description: ticket.description,
+      description: ticket.description ?? undefined,
       status: ticket.status,
       priority: ticket.priority,
-      project: ticket.project,
-      assigneeId: ticket.assigneeId,
-      estimatedHours: ticket.estimatedHours,
+      projectId: ticket.projectId ?? undefined,
+      assigneeId: ticket.assigneeId ?? undefined,
+      estimatedHours: ticket.estimatedHours ?? undefined,
       dueDate: ticket.dueDate,
-      labels: [...ticket.labels],
+      labels: [...(ticket.labels || [])],
     });
     setIsEditing(true);
   };
 
-  const saveEdit = () => {
-    setTicket((prev) =>
-      prev ? { ...prev, ...editForm, labels: editForm.labels || prev.labels } : prev
-    );
-    setIsEditing(false);
-    toast.success('Ticket updated successfully');
+  const saveEdit = async () => {
+    try {
+      await updateTicket({ id: ticket.id, ...editForm });
+      setIsEditing(false);
+      toast.success('Ticket updated successfully');
+    } catch {
+      toast.error('Failed to update ticket');
+    }
   };
 
   const cancelEdit = () => {
@@ -118,49 +152,44 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     setEditForm({});
   };
 
-  const handleLogTime = () => {
+  const handleLogTime = async () => {
     if (!logHours || parseFloat(logHours) <= 0) return;
-    const newLog: TTimeLog = {
-      id: `tl-${Date.now()}`,
-      ticketId: ticket.id,
-      memberId: 'tm-002',
-      hours: parseFloat(logHours),
-      note: logNote || 'Time logged',
-      date: new Date().toISOString().split('T')[0],
-      isBreakthrough: logBreakthrough,
-    };
-    setTicket((prev) =>
-      prev
-        ? {
-            ...prev,
-            timeLogs: [newLog, ...prev.timeLogs],
-            loggedHours: prev.loggedHours + parseFloat(logHours),
-          }
-        : prev
-    );
-    setShowLogTime(false);
-    setLogHours('');
-    setLogNote('');
-    setLogBreakthrough(false);
-    toast.success(`Logged ${logHours}h successfully`);
+    try {
+      await logTime({
+        id: ticket.id,
+        hours: parseFloat(logHours),
+        note: logNote || 'Time logged',
+        isBreakthrough: logBreakthrough,
+        date: new Date().toISOString(),
+      });
+      setShowLogTime(false);
+      setLogHours('');
+      setLogNote('');
+      setLogBreakthrough(false);
+      toast.success(`Logged ${logHours}h successfully`);
+    } catch {
+      toast.error('Failed to log time');
+    }
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentText.trim()) return;
-    const newComment: TComment = {
-      id: `c-${Date.now()}`,
-      memberId: 'tm-002',
-      content: commentText,
-      createdAt: new Date().toISOString(),
-    };
-    setTicket((prev) => (prev ? { ...prev, comments: [...prev.comments, newComment] } : prev));
-    setCommentText('');
-    toast.success('Comment added');
+    try {
+      await createComment({ ticketId: ticket.id, content: commentText });
+      setCommentText('');
+      toast.success('Comment added');
+    } catch {
+      toast.error('Failed to post comment');
+    }
   };
 
-  const handleStatusChange = (newStatus: TicketStatus) => {
-    setTicket((prev) => (prev ? { ...prev, status: newStatus } : prev));
-    toast.success(`Status changed to ${getStatusLabel(newStatus)}`);
+  const handleStatusChange = async (newStatus: TicketStatus) => {
+    try {
+      await updateTicket({ id: ticket.id, status: newStatus });
+      toast.success(`Status changed to ${getStatusLabel(newStatus)}`);
+    } catch {
+      toast.error('Failed to change status');
+    }
   };
 
   const handleDuplicate = () => {
@@ -290,8 +319,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   Assignee
                 </span>
                 <div className="flex items-center gap-2 px-2 py-1 bg-muted/20 border border-border rounded-full">
-                  <img src={assignee?.avatar} alt="" className="w-4 h-4 rounded-full" />
-                  <span className="text-xs font-medium">{assignee?.name}</span>
+                  {ticket.assignee?.image && (
+                    <Image
+                      src={ticket.assignee.image}
+                      alt={ticket.assignee.name || ''}
+                      width={16}
+                      height={16}
+                      className="rounded-full"
+                    />
+                  )}
+                  <span className="text-xs font-medium">
+                    {ticket.assignee?.name || 'Unassigned'}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -299,7 +338,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   Priority
                 </span>
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/20 border border-border rounded-full">
-                  <div className={`w-2 h-2 rounded-full ${getPriorityColor(ticket.priority)}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${getPriorityColor(ticket.priority || 'medium')}`}
+                  />
                   <span className="text-xs font-medium capitalize">{ticket.priority}</span>
                 </div>
               </div>
@@ -307,7 +348,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
                   Project
                 </span>
-                <span className="text-xs font-bold text-primary">{ticket.project}</span>
+                <span className="text-xs font-bold text-primary">
+                  {ticket.project?.name || 'Generic'}
+                </span>
               </div>
             </div>
           </div>
@@ -327,7 +370,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             ) : (
               <div className="border border-border/50 bg-card p-8 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                <MarkdownRenderer content={ticket.description} />
+                <MarkdownRenderer content={ticket.description || ''} />
               </div>
             )}
           </div>
@@ -385,13 +428,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
 
-              {ticket.timeLogs.length > 0 ? (
+              {(ticket.timeLogs || []).length > 0 ? (
                 <div className="space-y-2">
                   <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3 opacity-50">
                     ── Activity Log ──
                   </div>
-                  {ticket.timeLogs.map((log) => {
-                    const member = getMemberById(log.memberId);
+                  {(ticket.timeLogs || []).map((log) => {
                     return (
                       <div
                         key={log.id}
@@ -401,14 +443,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
                         )}
                       >
-                        <img
-                          src={member?.avatar}
-                          alt=""
-                          className="w-6 h-6 rounded-full border border-border"
-                        />
+                        {log.user?.image && (
+                          <Image
+                            src={log.user.image}
+                            alt={log.user.name || ''}
+                            width={24}
+                            height={24}
+                            className="w-6 h-6 rounded-full border border-border object-cover"
+                          />
+                        )}
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
                           <span className="font-mono text-[11px] text-muted-foreground">
-                            {log.date}
+                            {new Date(log.date).toLocaleDateString()}
                           </span>
                           <span className="font-mono text-xs font-bold text-foreground">
                             {log.hours.toFixed(1)}h
@@ -443,25 +489,28 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center gap-2">
               <Icon icon="solar:chat-round-dots-linear" className="w-5 h-5 text-primary" />
               <h2 className="font-display text-lg font-semibold tracking-tight">
-                Activity & Comments ({ticket.comments.length})
+                Activity & Comments ({(commentsList || []).length})
               </h2>
             </div>
             <div className="space-y-3">
-              {ticket.comments.map((c) => {
-                const member = getMemberById(c.memberId);
+              {(commentsList || []).map((c) => {
                 return (
                   <div
                     key={c.id}
                     className="flex gap-4 border border-border bg-card/80 p-5 shadow-sm group"
                   >
-                    <img
-                      src={member?.avatar}
-                      alt=""
-                      className="w-10 h-10 rounded-full border border-border shrink-0 group-hover:border-primary/50 transition-colors"
-                    />
+                    {c.user?.image && (
+                      <Image
+                        src={c.user.image}
+                        alt={c.user.name || ''}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full border border-border shrink-0 group-hover:border-primary/50 transition-colors object-cover"
+                      />
+                    )}
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold">{member?.name}</span>
+                        <span className="text-sm font-bold">{c.user?.name}</span>
                         <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5">
                           {new Date(c.createdAt).toLocaleString()}
                         </span>
@@ -474,7 +523,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 );
               })}
 
-              {ticket.comments.length === 0 && (
+              {(commentsList || []).length === 0 && (
                 <div className="text-center py-12 border border-dashed border-border bg-card/30">
                   <Icon
                     icon="solar:bubble-chat-linear"
@@ -603,15 +652,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   </span>
                   {isEditing ? (
                     <Select
-                      value={editForm.project}
-                      onValueChange={(val) => setEditForm({ ...editForm, project: val || '' })}
+                      value={editForm.projectId || ''}
+                      onValueChange={(val) => setEditForm({ ...editForm, projectId: val || '' })}
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {tmProjects.map((p) => (
-                          <SelectItem key={p.id} value={p.name}>
+                        {(projects || []).map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
                             {p.name}
                           </SelectItem>
                         ))}
@@ -619,7 +668,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     </Select>
                   ) : (
                     <div className="text-sm font-mono bg-primary/5 text-primary border border-primary/20 p-2 text-center">
-                      {ticket.project}
+                      {ticket.project?.name || 'GENERIC'}
                     </div>
                   )}
                 </div>
@@ -658,8 +707,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   {isEditing ? (
                     <Input
                       type="date"
-                      value={editForm.dueDate || ''}
-                      onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
+                      value={
+                        editForm.dueDate instanceof Date
+                          ? editForm.dueDate.toISOString().split('T')[0]
+                          : ''
+                      }
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          dueDate: e.target.value ? new Date(e.target.value) : null,
+                        })
+                      }
                       className="bg-muted/50 border-border h-9 font-mono"
                     />
                   ) : (
@@ -669,7 +727,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         isOverdue && mounted ? 'text-destructive font-bold' : 'text-foreground'
                       )}
                     >
-                      {ticket.dueDate ? (mounted ? ticket.dueDate : 'LOADING...') : '∞ UNSCHEDULED'}
+                      {ticket.dueDate
+                        ? mounted
+                          ? new Date(ticket.dueDate).toLocaleDateString()
+                          : 'LOADING...'
+                        : '∞ UNSCHEDULED'}
                     </div>
                   )}
                 </div>
@@ -696,7 +758,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     />
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
-                      {ticket.labels.map((l) => (
+                      {(ticket.labels || []).map((l) => (
                         <span
                           key={l}
                           className="font-mono text-[9px] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5"
@@ -716,8 +778,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     Author
                   </span>
                   <div className="flex items-center gap-2">
-                    <img src={creator?.avatar} alt="" className="w-5 h-5 rounded-full" />
-                    <span className="text-xs font-medium">{creator?.name}</span>
+                    {ticket.createdBy?.image && (
+                      <Image
+                        src={ticket.createdBy.image}
+                        alt={ticket.createdBy.name || ''}
+                        width={20}
+                        height={20}
+                        className="w-5 h-5 rounded-full object-cover"
+                      />
+                    )}
+                    <span className="text-xs font-medium">
+                      {ticket.createdBy?.name || 'Unknown'}
+                    </span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -725,7 +797,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     Created
                   </span>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {ticket.createdAt}
+                    {new Date(ticket.createdAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>

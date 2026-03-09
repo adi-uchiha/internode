@@ -10,14 +10,13 @@ interface NavLinkProps {
   children: ReactNode;
   className?: string;
   activeClassName?: string;
-  pendingClassName?: string;
 }
 
 type NavLinkCombinedProps = NavLinkProps &
   Omit<React.ComponentProps<typeof Link>, keyof NavLinkProps>;
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkCombinedProps>(
-  ({ className, activeClassName, pendingClassName, href, children, ...props }, ref) => {
+  ({ className, activeClassName, href, children, ...props }, ref) => {
     const pathname = usePathname();
     const isActive = pathname === href;
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
+import { cn } from '@/lib/utils';
 import {
   tmMembers,
   tmTickets,
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Image from 'next/image';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 50 16" className="w-12 h-4">
@@ -247,10 +249,12 @@ export default function AnalyticsPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <img
+                      <Image
                         src={row.member.avatar}
                         alt=""
-                        className="w-7 h-7 rounded-full border border-border group-hover:border-primary/50 transition-colors"
+                        width={28}
+                        height={28}
+                        className="rounded-full border border-border group-hover:border-primary/50 transition-colors"
                       />
                       <span className="text-sm font-medium">{row.member.name}</span>
                     </div>

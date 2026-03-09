@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { tmNotifications } from '@/data/taskManagerData';
 
@@ -69,7 +70,7 @@ export default function TaskManagerLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
@@ -102,10 +103,12 @@ export default function TaskManagerLayout({
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  /*
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
+  */
 
   // Close search/notifications on navigation
   useEffect(() => {
@@ -235,8 +238,14 @@ export default function TaskManagerLayout({
         <div className="border-t border-border p-3">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 border border-border overflow-hidden shrink-0">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={28}
+                  height={28}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Icon icon="solar:user-linear" className="w-4 h-4 text-muted-foreground" />
@@ -385,8 +394,14 @@ export default function TaskManagerLayout({
 
             {/* User avatar */}
             <div className="w-8 h-8 border border-border rounded-full overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-              {user?.avatar ? (
-                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+              {user?.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name || ''}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">
                   <Icon icon="solar:user-linear" className="w-4 h-4" />

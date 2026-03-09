@@ -4,11 +4,27 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
-import { mockDailyLogs, generatePerformanceMetrics } from '@/data/mockData';
+import { useLogs, type DailyLog } from '@/hooks/useLogs';
 
 const MonthlyView = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const metrics = useMemo(() => generatePerformanceMetrics(), []);
+  const { data: logs } = useLogs();
+
+  const metrics = useMemo(() => {
+    const currentMonthLogs =
+      logs?.filter((l) => {
+        const d = new Date(l.date);
+        return (
+          d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear()
+        );
+      }) || [];
+    const totalHoursThisMonth = currentMonthLogs.reduce((sum, l) => sum + (l.hoursWorked || 0), 0);
+    const daysLogged = new Set(currentMonthLogs.map((l) => new Date(l.date).toDateString())).size;
+    const breakthroughs = currentMonthLogs.filter((l) => l.isBreakthrough).length;
+    const avgHoursPerDay = daysLogged > 0 ? totalHoursThisMonth / daysLogged : 0;
+
+    return { totalHoursThisMonth, daysLogged, breakthroughs, avgHoursPerDay };
+  }, [logs, currentMonth]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -19,7 +35,7 @@ const MonthlyView = () => {
     const daysInMonth = lastDay.getDate();
     const startingDay = firstDay.getDay();
 
-    const days: { date: Date | null; log?: (typeof mockDailyLogs)[0] }[] = [];
+    const days: { date: Date | null; log?: DailyLog }[] = [];
 
     // Empty cells for days before month starts
     for (let i = 0; i < startingDay; i++) {
@@ -29,13 +45,12 @@ const MonthlyView = () => {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      const dateStr = date.toISOString().split('T')[0];
-      const log = mockDailyLogs.find((l) => l.date === dateStr);
+      const log = logs?.find((l) => new Date(l.date).toDateString() === date.toDateString());
       days.push({ date, log });
     }
 
     return days;
-  }, [currentMonth]);
+  }, [currentMonth, logs]);
 
   const navigateMonth = (direction: number) => {
     setCurrentMonth((prev) => {
@@ -48,7 +63,7 @@ const MonthlyView = () => {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const getDayStatus = (log?: (typeof mockDailyLogs)[0]) => {
+  const getDayStatus = (log?: DailyLog) => {
     if (!log) return 'none';
     if (log.hasBlocker) return 'blocker';
     if (log.isBreakthrough) return 'breakthrough';
@@ -67,8 +82,13 @@ const MonthlyView = () => {
               suffix: 'h',
               icon: 'solar:clock-circle-linear',
             },
-            { label: 'Days Logged', value: 22, suffix: '/31', icon: 'solar:calendar-linear' },
-            { label: 'Breakthroughs', value: 3, icon: 'solar:star-linear' },
+            {
+              label: 'Days Logged',
+              value: metrics.daysLogged,
+              suffix: `/${new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()}`,
+              icon: 'solar:calendar-linear',
+            },
+            { label: 'Breakthroughs', value: metrics.breakthroughs, icon: 'solar:star-linear' },
             {
               label: 'Avg Hours/Day',
               value: metrics.avgHoursPerDay.toFixed(1),

@@ -1,97 +1,58 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
+import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
+import type { User } from '@/lib/auth-types';
 
 type UserRole = 'admin' | 'member';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar?: string;
-}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string, role: UserRole) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string, role?: UserRole) => Promise<boolean>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo users for testing
-const DEMO_USERS: Record<string, User & { password: string }> = {
-  'admin@internode.dev': {
-    id: 'admin-001',
-    email: 'admin@internode.dev',
-    name: 'Aditya Kumar',
-    role: 'admin',
-    password: 'admin123',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AK&backgroundColor=00ff00&textColor=000000'
-  },
-  'member@internode.dev': {
-    id: 'member-001',
-    email: 'member@internode.dev',
-    name: 'Alex Chen',
-    role: 'member',
-    password: 'member123',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=AC&backgroundColor=00ff00&textColor=000000'
-  }
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { data: sessionData, isPending: isLoading } = authClient.useSession();
 
-  useEffect(() => {
-    // Check for saved session
-    const savedUser = sessionStorage.getItem('internode_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        sessionStorage.removeItem('internode_user');
-      }
-    }
-    setIsLoading(false);
-  }, []);
+  const user = sessionData?.user as User | null;
 
-  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    setIsLoading(true);
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const { data, error } = await authClient.signIn.email({
+      email,
+      password,
+    });
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const demoUser = DEMO_USERS[email];
-
-    if (demoUser && demoUser.password === password && demoUser.role === role) {
-      const { password: _, ...userWithoutPassword } = demoUser;
-      setUser(userWithoutPassword);
-      sessionStorage.setItem('internode_user', JSON.stringify(userWithoutPassword));
-      setIsLoading(false);
-      return true;
+    if (error || !data) {
+      return false;
     }
 
-    setIsLoading(false);
-    return false;
+    router.refresh(); // Refresh Next.js cache to re-run layout/middleware conditionally
+    return true;
   };
 
-  const logout = () => {
-    setUser(null);
-    sessionStorage.removeItem('internode_user');
+  const logout = async () => {
+    await authClient.signOut();
+    router.push('/login');
+    router.refresh();
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoading,
-      login,
-      logout,
-      isAuthenticated: !!user
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

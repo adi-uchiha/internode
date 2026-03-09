@@ -6,46 +6,64 @@ import { Icon } from '@iconify/react';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { leaveTypes } from '@/data/mockData';
+import { useLeaves, useCreateLeave } from '@/hooks/useLeaves';
+import { toast } from 'sonner';
+
+export const leaveTypes = [
+  { id: 'sick', label: 'Sick Leave', icon: 'solar:thermometer-linear' },
+  { id: 'vacation', label: 'Vacation', icon: 'solar:sun-2-linear' },
+  { id: 'half-day', label: 'Half Day', icon: 'solar:clock-circle-linear' },
+  { id: 'personal', label: 'Personal', icon: 'solar:user-linear' },
+];
 
 const LeaveManagement = () => {
+  const { data: leaves, isLoading } = useLeaves();
+  const { mutateAsync: createLeave } = useCreateLeave();
+
   const [selectedType, setSelectedType] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Demo leave history
-  const leaveHistory = [
-    {
-      id: '1',
-      date: '2025-01-03',
-      type: 'half-day',
-      reason: 'Doctor appointment',
-      status: 'approved',
-    },
-    {
-      id: '2',
-      date: '2024-12-25',
-      type: 'vacation',
-      reason: 'Christmas holiday',
-      status: 'approved',
-    },
-    { id: '3', date: '2024-12-24', type: 'vacation', reason: 'Christmas Eve', status: 'approved' },
-  ];
+  const leaveHistory = leaves || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedType || !selectedDate) return;
+
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setSelectedType('');
-    setSelectedDate('');
-    setReason('');
+    try {
+      await createLeave({
+        type: selectedType,
+        date: new Date(selectedDate).toISOString(),
+        reason,
+      });
+      toast.success('Leave request submitted successfully');
+      setSelectedType('');
+      setSelectedDate('');
+      setReason('');
+    } catch {
+      toast.error('Failed to submit leave request');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getLeaveTypeInfo = (typeId: string) => {
     return leaveTypes.find((t) => t.id === typeId);
   };
+
+  // Calculate used balances dynamically
+  const calculateUsed = (typeId: string) => {
+    return leaveHistory.filter((l) => l.type === typeId && l.status === 'approved').length;
+  };
+
+  const balances = [
+    { label: 'Sick Leave', used: calculateUsed('sick'), total: 10, id: 'sick' },
+    { label: 'Vacation', used: calculateUsed('vacation'), total: 15, id: 'vacation' },
+    { label: 'Personal', used: calculateUsed('personal'), total: 3, id: 'personal' },
+    { label: 'Half Days', used: calculateUsed('half-day'), total: 8, id: 'half-day' },
+  ];
 
   return (
     <MemberLayout title="Leave Management">
@@ -143,12 +161,7 @@ const LeaveManagement = () => {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
-          {[
-            { label: 'Sick Leave', used: 2, total: 10 },
-            { label: 'Vacation', used: 5, total: 15 },
-            { label: 'Personal', used: 1, total: 3 },
-            { label: 'Half Days', used: 4, total: 8 },
-          ].map((balance) => (
+          {balances.map((balance) => (
             <div key={balance.label} className="border border-border bg-card p-4">
               <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
                 [{balance.label}]
@@ -186,41 +199,55 @@ const LeaveManagement = () => {
           </div>
 
           <div className="space-y-3">
-            {leaveHistory.map((leave) => {
-              const typeInfo = getLeaveTypeInfo(leave.type);
-              return (
-                <div
-                  key={leave.id}
-                  className="flex items-center justify-between p-4 border border-border bg-background"
-                >
-                  <div className="flex items-center gap-4">
-                    <Icon
-                      icon={typeInfo?.icon || 'solar:calendar-linear'}
-                      className="w-5 h-5 text-muted-foreground"
-                    />
-                    <div>
-                      <div className="font-mono text-sm">{typeInfo?.label}</div>
-                      <div className="font-mono text-xs text-muted-foreground">{leave.date}</div>
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground animate-pulse">
+                Loading history...
+              </div>
+            ) : leaveHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border border-dashed border-border text-sm">
+                No leave requests found
+              </div>
+            ) : (
+              leaveHistory.map((leave) => {
+                const typeInfo = getLeaveTypeInfo(leave.type);
+                return (
+                  <div
+                    key={leave.id}
+                    className="flex items-center justify-between p-4 border border-border bg-background"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Icon
+                        icon={typeInfo?.icon || 'solar:calendar-linear'}
+                        className="w-5 h-5 text-muted-foreground"
+                      />
+                      <div>
+                        <div className="font-mono text-sm">{typeInfo?.label}</div>
+                        <div className="font-mono text-xs text-muted-foreground">
+                          {new Date(leave.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-xs text-muted-foreground hidden md:block">
+                        {leave.reason}
+                      </span>
+                      <span
+                        className={`px-2 py-1 font-mono text-xs uppercase ${
+                          leave.status === 'approved'
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : leave.status === 'rejected'
+                              ? 'bg-destructive/10 text-destructive border border-destructive/30'
+                              : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30'
+                        }`}
+                      >
+                        {leave.status}
+                      </span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-xs text-muted-foreground hidden md:block">
-                      {leave.reason}
-                    </span>
-                    <span
-                      className={`px-2 py-1 font-mono text-xs uppercase ${
-                        leave.status === 'approved'
-                          ? 'bg-primary/10 text-primary border border-primary/30'
-                          : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30'
-                      }`}
-                    >
-                      {leave.status}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </motion.div>
       </div>

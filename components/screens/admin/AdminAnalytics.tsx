@@ -1,25 +1,36 @@
 'use client';
 
 import { AdminLayout } from '@/components/layouts/AdminLayout';
+import { useAdminAnalytics } from '@/hooks/useAnalytics';
 
-const AdminAnalytics = () => (
-  <AdminLayout title="Analytics">
-    <div className="grid grid-cols-2 gap-4">
-      {[
-        { label: 'Log Rate', value: '94%' },
-        { label: 'Avg Resolve Time', value: '2.4h' },
-        { label: 'Active Interns', value: '6' },
-        { label: 'Total Hours', value: '1,918' },
-      ].map((s) => (
-        <div key={s.label} className="border border-border bg-card p-6">
-          <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
-            [{s.label}]
+const AdminAnalytics = () => {
+  const { data, isLoading } = useAdminAnalytics();
+
+  const stats = [
+    { label: 'Log Rate', value: data?.logRate || '...' },
+    { label: 'Avg Resolve Time', value: data?.avgResolveTime || '...' },
+    { label: 'Active Interns', value: data?.activeInterns || '...' },
+    { label: 'Total Hours', value: data?.totalHours || '...' },
+  ];
+
+  return (
+    <AdminLayout title="Analytics">
+      <div className="grid grid-cols-2 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className="border border-border bg-card p-6">
+            <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
+              [{s.label}]
+            </div>
+            <div
+              className={`font-display text-3xl font-bold ${isLoading ? 'text-muted-foreground animate-pulse' : 'text-primary'}`}
+            >
+              {s.value}
+            </div>
           </div>
-          <div className="font-display text-3xl font-bold text-primary">{s.value}</div>
-        </div>
-      ))}
-    </div>
-  </AdminLayout>
-);
+        ))}
+      </div>
+    </AdminLayout>
+  );
+};
 
 export default AdminAnalytics;
