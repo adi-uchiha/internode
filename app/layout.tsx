@@ -12,8 +12,40 @@ import { cn } from '@/lib/utils';
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'Internode',
-  description: 'Internode Application',
+  title: 'Internode | Engineering-Grade Project Management',
+  description:
+    'Internode is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability.',
+  metadataBase: new URL('https://internode.app'), // Replace with actual URL if known
+  openGraph: {
+    title: 'Internode',
+    description: 'Engineering-Grade Project Management Platform',
+    url: 'https://internode.app',
+    siteName: 'Internode',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Internode - High Performance Project Management',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Internode',
+    description: 'Engineering-Grade Project Management Platform',
+    images: ['/og-image.png'],
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png' }],
+  },
 };
 
 export default function RootLayout({

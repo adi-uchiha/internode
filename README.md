@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚡ Internode
 
-## Getting Started
+**High-Performance Engineering-Grade Project Management**
 
-First, run the development server:
+![Internode OpenGraph](/og-image.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Internode is a high-performance project management platform built for engineering teams who demand precision, speed, and reliability. It combines the power of modern web technologies with a sleek, developer-centric interface to streamline workflows and boost productivity.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Advanced Task Management**: Efficiently track and manage complex engineering tasks.
+- **Kanban & List Views**: Flexible views to suit different project needs.
+- **Engineering-Grade Auth**: Secure, reliable authentication powered by Better-Auth.
+- **Responsive UI**: A premium, dark-themed interface built with Tailwind CSS v4 and Base UI.
+- **Real-time Performance**: Optimized for speed with Next.js and Bun.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router)
+- **Runtime**: [Bun](https://bun.sh)
+- **Database**: [Drizzle ORM](https://orm.drizzle.team) with [Neon DB](https://neon.tech)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com), [Base UI](https://base-ui.com), [Framer Motion](https://www.framer.com/motion/)
+- **Authentication**: [Better-Auth](https://better-auth.com)
+- **Icons**: [Iconify](https://iconify.design), [Lucide](https://lucide.dev)
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Bun](https://bun.sh) installed.
+- PostgreSQL database (e.g., [Neon DB](https://neon.tech)).
 
-## Deploy on Vercel
+### Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Clone the repository:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   git clone https://github.com/your-username/internode.git
+   cd internode
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+3. Set up environment variables:
+   Copy `.env.example` to `.env` and fill in your credentials.
+
+4. Run the development server:
+   ```bash
+   bun dev
+   ```
+
+Visit [http://localhost:3000](http://localhost:3000) to see the engine in action.
+
+## 📄 License
+
+This project is licensed under the MIT License.

@@ -67,7 +67,6 @@
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "lovable-tagger": "^1.1.13",
     "prettier": "^3.8.0",
     "tailwindcss": "^4",
     "turbo": "^2.7.5",
