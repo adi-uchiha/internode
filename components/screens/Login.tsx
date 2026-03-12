@@ -29,22 +29,9 @@ const Login = () => {
 
     const success = await login(email, password);
 
-    if (success) {
-      router.push(mode === 'admin' ? '/admin' : '/member');
-    } else {
-      setError('Invalid credentials. Try the demo accounts below.');
-    }
-
-    setIsLoading(false);
-  };
-
-  const fillDemoCredentials = () => {
-    if (mode === 'admin') {
-      setEmail('admin@internode.dev');
-      setPassword('admin123');
-    } else {
-      setEmail('member@internode.dev');
-      setPassword('member123');
+    if (!success) {
+      setError('Invalid credentials.');
+      setIsLoading(false);
     }
   };
 
@@ -223,7 +210,7 @@ const Login = () => {
                 onClick={async () => {
                   await authClient.signIn.social({
                     provider: 'github',
-                    callbackURL: '/tasks/dashboard',
+                    callbackURL: '/',
                   });
                 }}
               >
@@ -234,24 +221,6 @@ const Login = () => {
                 />
                 Sign in with GitHub
               </Button>
-            </div>
-
-            {/* Demo credentials */}
-            <div className="mt-6 pt-6 border-t border-border">
-              <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-3">
-                [DEMO CREDENTIALS]
-              </div>
-              <button
-                onClick={fillDemoCredentials}
-                className="w-full p-3 border border-dashed border-border hover:border-primary/50 transition-colors text-left"
-              >
-                <div className="font-mono text-sm text-foreground">
-                  {mode === 'admin' ? 'admin@internode.dev' : 'member@internode.dev'}
-                </div>
-                <div className="font-mono text-xs text-muted-foreground mt-1">
-                  Password: {mode === 'admin' ? 'admin123' : 'member123'}
-                </div>
-              </button>
             </div>
           </div>
 

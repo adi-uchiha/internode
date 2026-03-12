@@ -33,7 +33,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!sessionData && !isPublicRoute) {
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
-        router.push('/tasks/dashboard');
+        if (user?.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/member');
+        }
       }
     }
 
@@ -44,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
       }
     }
-  }, [sessionData, isLoading, error, pathname, router]);
+  }, [sessionData, isLoading, error, pathname, router, user?.role]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const { data, error } = await authClient.signIn.email({

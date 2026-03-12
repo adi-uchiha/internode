@@ -67,7 +67,7 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
@@ -98,12 +98,10 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  /*
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
-  */
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -259,6 +257,16 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
               )}
             </AnimatePresence>
           </div>
+
+          <Button
+            variant="hero"
+            size="sm"
+            onClick={handleLogout}
+            className={cn('w-full justify-start mt-2', collapsed && 'justify-center px-0')}
+          >
+            <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
+            {!collapsed && <span className="ml-2">Logout</span>}
+          </Button>
         </div>
 
         {/* Collapse toggle */}
