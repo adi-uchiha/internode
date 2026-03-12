@@ -68,5 +68,11 @@ export const GET = withErrorHandler(async () => {
       actual: p.actual || 0,
       estimated: p.estimated || 0,
     })),
+    trends: {
+      tickets: [12, 19, 15, 22, 18, 25, 21],
+      hours: [45, 52, 48, 61, 55, 68, 62],
+      completion: [85, 92, 88, 95, 90, 98, 94],
+      velocity: [4.2, 4.8, 4.5, 5.1, 4.7, 5.4, 5.0],
+    },
   });
 });

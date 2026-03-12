@@ -29,7 +29,7 @@ export interface TaskAnalyticsData {
     color: string;
   }[];
   trend: number[];
-  trends: {
+  trends?: {
     tickets: number[];
     hours: number[];
     completion: number[];

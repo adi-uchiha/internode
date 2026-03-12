@@ -69,21 +69,23 @@ const AdminDashboardContent = () => {
       value: analytics?.kpis.totalTickets || 0,
       sub: 'overall entries',
       subColor: 'text-primary',
-      sparkData: analytics?.trends.tickets || [0, 0, 0, 0, 0, 0, 0],
+      sparkData: analytics?.trends?.tickets || [0, 0, 0, 0, 0, 0, 0],
     },
     {
       label: 'IN PROGRESS',
       value: analytics?.kpis.inProgress || 0,
       sub: 'currently active',
       subColor: 'text-blue-400',
-      sparkData: analytics?.trends.velocity || [0, 0, 0, 0, 0, 0, 0],
+      sparkData: analytics?.trends?.velocity || [0, 0, 0, 0, 0, 0, 0],
     },
     {
       label: 'OVERDUE',
       value: analytics?.kpis.overdue || 0,
       sub: '⚠ needs attn',
       subColor: 'text-destructive',
-      sparkData: analytics?.trends.completion.map((v: number) => 100 - v) || [0, 0, 0, 0, 0, 0, 0],
+      sparkData: analytics?.trends?.completion?.map((v: number) => 100 - v) || [
+        0, 0, 0, 0, 0, 0, 0,
+      ],
       danger: true,
     },
     {
@@ -91,7 +93,7 @@ const AdminDashboardContent = () => {
       value: analytics?.kpis.teamHours || '0h',
       sub: 'this week',
       subColor: 'text-muted-foreground',
-      sparkData: analytics?.trends.hours || [0, 0, 0, 0, 0, 0, 0],
+      sparkData: analytics?.trends?.hours || [0, 0, 0, 0, 0, 0, 0],
     },
   ];
 
