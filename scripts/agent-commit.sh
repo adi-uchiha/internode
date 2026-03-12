@@ -14,7 +14,11 @@ fi
 
 echo "🚀 Starting agent commit process..."
 
-# 1. Format and Lint (auto-fix)
+# 1. TypeScript Check
+echo "🔍 Checking for TypeScript errors..."
+bun run typecheck
+
+# 2. Format and Lint (auto-fix)
 echo "🧹 Formatting and fixing lint issues..."
 bun run format
 bun run lint
