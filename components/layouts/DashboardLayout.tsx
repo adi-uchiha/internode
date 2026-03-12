@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutProps) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const { user, logout } = useAuth();
@@ -76,6 +76,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         animate={{ width: collapsed ? 72 : 260 }}
         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="fixed left-0 top-0 h-screen border-r border-border bg-card z-50 flex flex-col"
+        onMouseEnter={() => setCollapsed(false)}
+        onMouseLeave={() => setCollapsed(true)}
       >
         {/* Logo */}
         <div className="h-16 border-b border-border flex items-center px-4 justify-between">
@@ -222,8 +224,11 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
 
         {/* User section */}
         <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+          <Link
+            href={user?.role === 'admin' ? '/admin/profile' : '/member/profile'}
+            className="flex items-center gap-3 mb-4 hover:bg-muted/50 p-2 rounded-md transition-colors cursor-pointer w-full"
+          >
+            <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden rounded-full">
               {user?.image ? (
                 <Image
                   src={user.image}
@@ -242,7 +247,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden flex-1"
                 >
                   <div className="font-display font-semibold text-sm truncate">{user?.name}</div>
                   <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
@@ -251,7 +256,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </Link>
 
           <Button
             variant="hero"
@@ -263,28 +268,6 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
             {!collapsed && <span className="ml-2">Logout</span>}
           </Button>
         </div>
-
-        {/* Collapse Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/tasks/kanban')}
-          className={cn(
-            'absolute -right-3 top-12 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10',
-            collapsed && 'w-full justify-center px-0'
-          )}
-        >
-          <Icon icon="solar:kanban-board-linear" className="w-3 h-3 text-muted-foreground" />
-        </Button>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10"
-        >
-          <Icon
-            icon={collapsed ? 'solar:alt-arrow-right-linear' : 'solar:alt-arrow-left-linear'}
-            className="w-3 h-3 text-muted-foreground"
-          />
-        </button>
       </motion.aside>
 
       {/* Main Content */}

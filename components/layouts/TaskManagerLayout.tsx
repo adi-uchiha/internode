@@ -64,7 +64,7 @@ interface TaskManagerLayoutProps {
 }
 
 export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const { user, logout } = useAuth();
@@ -111,6 +111,8 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
         animate={{ width: collapsed ? 64 : 240 }}
         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="fixed left-0 top-0 h-screen border-r border-border bg-card z-50 flex flex-col"
+        onMouseEnter={() => setCollapsed(false)}
+        onMouseLeave={() => setCollapsed(true)}
       >
         {/* Logo area - matches top bar height */}
         <div className="h-12 border-b border-border flex items-center px-4">
@@ -218,8 +220,11 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
 
         {/* User card */}
         <div className="border-t border-border p-3">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 border border-border overflow-hidden shrink-0">
+          <Link
+            href={isAdmin ? '/admin/profile' : '/member/profile'}
+            className="flex items-center gap-3 hover:bg-muted/50 p-2 rounded-md transition-colors cursor-pointer w-full"
+          >
+            <div className="w-7 h-7 border border-border overflow-hidden shrink-0 rounded-full">
               {user?.image ? (
                 <Image
                   src={user.image}
@@ -240,14 +245,14 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden flex-1"
                 >
                   <div className="font-display font-semibold text-sm truncate">
                     {user?.name || 'Aditya Sharma'}
                   </div>
                   <span
                     className={cn(
-                      'font-mono text-[9px] uppercase px-1.5 py-0.5 tracking-widest opacity-60',
+                      'font-mono text-[9px] uppercase px-1.5 py-0.5 tracking-widest opacity-60 rounded-sm',
                       isAdmin ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                     )}
                   >
@@ -256,7 +261,7 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </Link>
 
           <Button
             variant="hero"
@@ -268,17 +273,6 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
             {!collapsed && <span className="ml-2">Logout</span>}
           </Button>
         </div>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-card border border-border flex items-center justify-center hover:border-primary/50 transition-colors z-10"
-        >
-          <Icon
-            icon={collapsed ? 'solar:alt-arrow-right-linear' : 'solar:alt-arrow-left-linear'}
-            className="w-3 h-3 text-muted-foreground"
-          />
-        </button>
       </motion.aside>
 
       {/* Main Content */}
@@ -289,12 +283,6 @@ export const TaskManagerLayout = ({ children, title }: TaskManagerLayoutProps) =
         {/* Top Bar (48px) */}
         <header className="h-12 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-1 hover:bg-muted/50 transition-colors"
-            >
-              <Icon icon="solar:hamburger-menu-linear" className="w-5 h-5 text-muted-foreground" />
-            </button>
             <h1 className="font-display font-semibold text-base">{title}</h1>
           </div>
 
