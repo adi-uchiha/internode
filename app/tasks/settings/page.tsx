@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { tmProjects } from '@/data/taskManagerData';
+import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects';
+import { useWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspace';
+import { useUpdateProfile } from '@/hooks/useUsers';
+import { useLabels, useCreateLabel, useDeleteLabel } from '@/hooks/useLabels';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const tabs = [
   { id: 'workspace', label: 'Workspace', icon: 'solar:buildings-linear' },
@@ -32,19 +37,108 @@ const defaultColumns = [
   { name: 'Unplanned', color: '#8b5cf6' },
 ];
 
-const defaultLabels = [
-  { name: 'bug', color: '#ef4444' },
-  { name: 'feature', color: '#3b82f6' },
-  { name: 'documentation', color: '#06b6d4' },
-  { name: 'performance', color: '#f59e0b' },
-  { name: 'auth', color: '#8b5cf6' },
-  { name: 'frontend', color: '#00ff88' },
-  { name: 'backend', color: '#f97316' },
-  { name: 'devops', color: '#ef4444' },
-];
+// Labels are now fetched via useLabels hook
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('workspace');
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: workspaceData, isLoading: workspaceLoading } = useWorkspace();
+  const { mutateAsync: updateWorkspace } = useUpdateWorkspace();
+  const { mutateAsync: updateProfile } = useUpdateProfile();
+  const { mutateAsync: createProject } = useCreateProject();
+  const { mutateAsync: deleteProject } = useDeleteProject();
+  const { data: labels, isLoading: labelsLoading } = useLabels();
+  const { mutateAsync: createLabel } = useCreateLabel();
+  const { mutateAsync: deleteLabel } = useDeleteLabel();
+
+  const handleDeleteLabel = async (id: string, name: string) => {
+    if (!confirm(`Remove classification "${name}" from system library?`)) return;
+    try {
+      await deleteLabel(id);
+      toast.success('Classification vector removed');
+    } catch {
+      toast.error('Deletion sequence failed');
+    }
+  };
+
+  const handleCreateLabel = async () => {
+    const name = prompt('Classification Name:');
+    if (!name) return;
+    const color = prompt('Color Hex (e.g. #ff0000):', '#3b82f6');
+    if (!color) return;
+    try {
+      await createLabel({ name, color });
+      toast.success('Classification vector established');
+    } catch {
+      toast.error('Initialization failed');
+    }
+  };
+
+  // Workspace Identity State
+  const [orgName, setOrgName] = useState('');
+  const [orgDomain, setOrgDomain] = useState('');
+
+  // Notifications State
+  const [notifPolicy, setNotifPolicy] = useState<{
+    email?: Record<string, boolean>;
+    inApp?: Record<string, boolean>;
+  } | null>(null);
+
+  useState(() => {
+    if (workspaceData) {
+      setOrgName(workspaceData.organizationName);
+      setOrgDomain(workspaceData.organizationDomain);
+    }
+    if (user?.notificationSettings) {
+      setNotifPolicy(user.notificationSettings);
+    }
+  });
+
+  const handleSync = async () => {
+    try {
+      if (isAdmin) {
+        await updateWorkspace({
+          organizationName: orgName || workspaceData?.organizationName,
+          organizationDomain: orgDomain || workspaceData?.organizationDomain,
+        });
+      }
+
+      await updateProfile({
+        notificationSettings: (notifPolicy ||
+          user?.notificationSettings || { email: {}, inApp: {} }) as {
+          email: Record<string, boolean>;
+          inApp: Record<string, boolean>;
+        },
+      });
+
+      toast.success('System parameters synchronized');
+    } catch {
+      toast.error('Synchronization failed');
+    }
+  };
+
+  const handleCreateProject = async () => {
+    const name = prompt('Project Name:');
+    if (!name) return;
+    try {
+      await createProject({ name });
+      toast.success('Project created');
+    } catch {
+      toast.error('Failed to create project');
+    }
+  };
+
+  const handleDeleteProject = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete project "${name}"?`)) return;
+    try {
+      await deleteProject(id);
+      toast.success('Project deleted');
+    } catch {
+      toast.error('Failed to delete project');
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto py-6 px-4">
@@ -124,8 +218,13 @@ export default function SettingsPage() {
                         Organization Name
                       </label>
                       <Input
-                        defaultValue="InternHub Central"
+                        value={orgName}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setOrgName(e.target.value)
+                        }
+                        placeholder={workspaceLoading ? 'Loading...' : 'InternHub Central'}
                         className="max-w-md bg-muted/30 border-border h-11 font-mono text-sm focus-visible:ring-primary/20"
+                        disabled={!isAdmin}
                       />
                     </div>
 
@@ -135,8 +234,13 @@ export default function SettingsPage() {
                       </label>
                       <div className="flex items-center max-w-md">
                         <Input
-                          defaultValue="internhub-hq"
+                          value={orgDomain}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setOrgDomain(e.target.value)
+                          }
+                          placeholder={workspaceLoading ? 'Loading...' : 'internhub-hq'}
                           className="bg-muted/30 border-border border-r-0 rounded-r-none h-11 font-mono text-sm focus-visible:ring-primary/20"
+                          disabled={!isAdmin}
                         />
                         <div className="h-11 px-4 flex items-center bg-muted border border-border border-l-0 rounded-r-md text-xs font-mono text-muted-foreground">
                           .internode.app
@@ -164,7 +268,11 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="pt-6 border-t border-border flex justify-end">
-                    <Button variant="hero" className="px-8 shadow-lg shadow-primary/20">
+                    <Button
+                      variant="hero"
+                      className="px-8 shadow-lg shadow-primary/20"
+                      onClick={handleSync}
+                    >
                       Synchronize Settings
                     </Button>
                   </div>
@@ -186,44 +294,54 @@ export default function SettingsPage() {
                       variant="outline"
                       size="sm"
                       className="h-8 font-mono text-[10px] uppercase"
+                      onClick={handleCreateProject}
+                      disabled={!isAdmin}
                     >
                       + New System
                     </Button>
                   </div>
 
                   <div className="grid gap-3">
-                    {tmProjects.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center gap-4 p-4 border border-border bg-muted/5 group hover:bg-muted/10 transition-all border-l-2"
-                        style={{ borderLeftColor: p.color }}
-                      >
-                        <Icon
-                          icon="solar:reorder-linear"
-                          className="w-4 h-4 text-muted-foreground cursor-grab opacity-30 hover:opacity-100"
-                        />
-                        <div className="flex-1 flex items-center gap-4">
-                          <Input
-                            defaultValue={p.name}
-                            className="bg-transparent border-none p-0 h-auto text-sm font-bold shadow-none focus-visible:ring-0"
-                          />
-                          <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-sm whitespace-nowrap">
-                            ID: {p.id.split('-')[1]}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-right">
-                            <div className="font-mono text-[9px] text-muted-foreground uppercase opacity-50">
-                              Members
-                            </div>
-                            <div className="text-xs font-bold">12</div>
-                          </div>
-                          <button className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-2 transition-all rounded-full">
-                            <Icon icon="solar:trash-bin-trash-linear" className="w-4 h-4" />
-                          </button>
-                        </div>
+                    {projectsLoading ? (
+                      <div className="text-center py-8 font-mono text-xs text-muted-foreground animate-pulse">
+                        LOADING_PROJECT_REGISTRY...
                       </div>
-                    ))}
+                    ) : (
+                      projects?.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center gap-4 p-4 border border-border bg-muted/5 group hover:bg-muted/10 transition-all border-l-2"
+                          style={{ borderLeftColor: p.color || '#3b82f6' }}
+                        >
+                          <Icon
+                            icon="solar:reorder-linear"
+                            className="w-4 h-4 text-muted-foreground cursor-grab opacity-30 hover:opacity-100"
+                          />
+                          <div className="flex-1 flex items-center gap-4">
+                            <div className="text-sm font-bold">{p.name}</div>
+                            <span className="font-mono text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-sm whitespace-nowrap">
+                              PREFIX: {p.id.slice(0, 8)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <div className="font-mono text-[9px] text-muted-foreground uppercase opacity-50">
+                                Status
+                              </div>
+                              <div className="text-xs font-bold capitalize">{p.status}</div>
+                            </div>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteProject(p.id, p.name)}
+                                className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-2 transition-all rounded-full"
+                              >
+                                <Icon icon="solar:trash-bin-trash-linear" className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -301,19 +419,28 @@ export default function SettingsPage() {
                       </TableHeader>
                       <TableBody>
                         {[
-                          { event: 'Ticket assignment sequence', email: true, inApp: true },
-                          { event: 'Deadline threshold bypass', email: true, inApp: true },
-                          { event: 'Activity log commit', email: false, inApp: true },
-                          { event: 'State transition update', email: false, inApp: true },
-                          { event: 'Critical priority escalation', email: true, inApp: true },
+                          { id: 'assignment', event: 'Ticket assignment sequence' },
+                          { id: 'deadline', event: 'Deadline threshold bypass' },
+                          { id: 'log', event: 'Activity log commit' },
+                          { id: 'transition', event: 'State transition update' },
+                          { id: 'critical', event: 'Critical priority escalation' },
                         ].map((row) => (
-                          <TableRow key={row.event} className="border-border hover:bg-muted/10">
+                          <TableRow key={row.id} className="border-border hover:bg-muted/10">
                             <TableCell className="font-medium text-sm py-4">{row.event}</TableCell>
                             <TableCell className="text-center py-4">
                               <div className="flex justify-center">
                                 <input
                                   type="checkbox"
-                                  defaultChecked={row.email}
+                                  checked={notifPolicy?.email?.[row.id] || false}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setNotifPolicy((prev) => {
+                                      const current = prev || { email: {}, inApp: {} };
+                                      return {
+                                        ...current,
+                                        email: { ...current.email, [row.id]: e.target.checked },
+                                      };
+                                    });
+                                  }}
                                   className="w-4 h-4 accent-primary"
                                 />
                               </div>
@@ -322,7 +449,16 @@ export default function SettingsPage() {
                               <div className="flex justify-center">
                                 <input
                                   type="checkbox"
-                                  defaultChecked={row.inApp}
+                                  checked={notifPolicy?.inApp?.[row.id] || false}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    setNotifPolicy((prev) => {
+                                      const current = prev || { email: {}, inApp: {} };
+                                      return {
+                                        ...current,
+                                        inApp: { ...current.inApp, [row.id]: e.target.checked },
+                                      };
+                                    });
+                                  }}
                                   className="w-4 h-4 accent-primary"
                                 />
                               </div>
@@ -350,34 +486,48 @@ export default function SettingsPage() {
                       variant="outline"
                       size="sm"
                       className="h-8 font-mono text-[10px] uppercase"
+                      onClick={handleCreateLabel}
+                      disabled={!isAdmin}
                     >
                       + Create Label
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {defaultLabels.map((label) => (
-                      <div
-                        key={label.name}
-                        className="flex items-center gap-3 p-3 border border-border bg-background group relative overflow-hidden"
-                      >
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-1"
-                          style={{ backgroundColor: label.color }}
-                        />
-                        <div className="flex-1 font-mono text-xs font-bold uppercase tracking-tight">
-                          {label.name}
-                        </div>
-                        <input
-                          type="color"
-                          defaultValue={label.color}
-                          className="w-6 h-6 bg-transparent border-0 cursor-pointer rounded-sm overflow-hidden"
-                        />
-                        <button className="text-muted-foreground hover:text-destructive transition-colors px-1">
-                          <Icon icon="solar:trash-bin-2-linear" className="w-4 h-4" />
-                        </button>
+                    {labelsLoading ? (
+                      <div className="col-span-2 py-12 text-center font-mono text-xs text-muted-foreground animate-pulse">
+                        LOADING_CLASSIFICATION_LIBRARY...
                       </div>
-                    ))}
+                    ) : (
+                      labels?.map((label) => (
+                        <div
+                          key={label.id}
+                          className="flex items-center gap-3 p-3 border border-border bg-background group relative overflow-hidden"
+                        >
+                          <div
+                            className="absolute left-0 top-0 bottom-0 w-1"
+                            style={{ backgroundColor: label.color }}
+                          />
+                          <div className="flex-1 font-mono text-xs font-bold uppercase tracking-tight">
+                            {label.name}
+                          </div>
+                          <input
+                            type="color"
+                            value={label.color}
+                            readOnly
+                            className="w-6 h-6 bg-transparent border-0 cursor-default rounded-sm overflow-hidden"
+                          />
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteLabel(label.id, label.name)}
+                              className="text-muted-foreground hover:text-destructive transition-colors px-1"
+                            >
+                              <Icon icon="solar:trash-bin-2-linear" className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}

@@ -8,21 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useCreateLog } from '@/hooks/useLogs';
-import { useProjects } from '@/hooks/useProjects';
+import { useTickets } from '@/hooks/useTickets';
 
 const MemberDashboard = () => {
-  const [whatIDid, setWhatIDid] = useState('');
-  const [whatILearned, setWhatILearned] = useState('');
-  const [hoursWorked, setHoursWorked] = useState('');
-  const [blockers, setBlockers] = useState('');
-  const [prLinks, setPrLinks] = useState('');
-  const [docLinks, setDocLinks] = useState('');
-  const [selectedProject, setSelectedProject] = useState('');
-  const [skillTags, setSkillTags] = useState('');
+  const [note, setNote] = useState('');
+  const [hours, setHours] = useState('');
+  const [selectedTicket, setSelectedTicket] = useState('');
   const [isBreakthrough, setIsBreakthrough] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const { data: projects } = useProjects();
+  const { data: tickets } = useTickets();
   const { mutateAsync: createLog, isPending: isSubmitting } = useCreateLog();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,31 +26,19 @@ const MemberDashboard = () => {
     try {
       await createLog({
         date: new Date(),
-        whatIDid,
-        whatILearned,
-        hoursWorked: hoursWorked ? parseFloat(hoursWorked) : 0,
-        blockers,
-        hasBlocker: !!blockers,
+        note,
+        hours: hours ? parseFloat(hours) : 0,
+        ticketId: selectedTicket,
         isBreakthrough,
-        skillTags: skillTags ? skillTags.split(',').map((s) => s.trim()) : [],
-        prLinks: prLinks ? prLinks.split(',').map((s) => s.trim()) : [],
-        docLinks: docLinks ? docLinks.split(',').map((s) => s.trim()) : [],
-        projectId: selectedProject || null,
-        status: 'submitted',
       });
 
       setSubmitted(true);
 
       // Reset after showing success
       setTimeout(() => {
-        setWhatIDid('');
-        setWhatILearned('');
-        setHoursWorked('');
-        setBlockers('');
-        setPrLinks('');
-        setDocLinks('');
-        setSelectedProject('');
-        setSkillTags('');
+        setNote('');
+        setHours('');
+        setSelectedTicket('');
         setIsBreakthrough(false);
         setSubmitted(false);
       }, 2000);
@@ -79,13 +62,13 @@ const MemberDashboard = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                [DAILY_LOG]
+                [TIME_LOG]
               </div>
               <h1 className="text-2xl font-display font-semibold">{today}</h1>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 border border-border bg-card">
               <Icon icon="solar:clock-circle-linear" className="w-4 h-4 text-muted-foreground" />
-              <span className="font-mono text-sm text-muted-foreground">Est. 3 min</span>
+              <span className="font-mono text-sm text-muted-foreground">Est. 1 min</span>
             </div>
           </div>
         </motion.div>
@@ -98,48 +81,34 @@ const MemberDashboard = () => {
           onSubmit={handleSubmit}
           className="space-y-6"
         >
-          {/* What I Did */}
+          {/* Note */}
           <div className="border border-border bg-card p-6">
             <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-3">
-              What I Did Today
+              Work Description
             </label>
             <Textarea
-              value={whatIDid}
-              onChange={(e) => setWhatIDid(e.target.value)}
-              placeholder="Describe your tasks, commits, and accomplishments..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Describe what you worked on..."
               className="min-h-[100px] bg-background border-border font-mono text-sm resize-none"
               required
             />
           </div>
 
-          {/* What I Learned */}
-          <div className="border border-border bg-card p-6">
-            <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-3">
-              What I Learned
-            </label>
-            <Textarea
-              value={whatILearned}
-              onChange={(e) => setWhatILearned(e.target.value)}
-              placeholder="New concepts, techniques, or insights gained..."
-              className="min-h-[100px] bg-background border-border font-mono text-sm resize-none"
-              required
-            />
-          </div>
-
-          {/* Grid: Hours, Project, Skills */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Grid: Hours, Ticket */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-border bg-card p-4">
               <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Hours Worked
+                Hours Spent
               </label>
               <Input
                 type="number"
                 min="0"
                 max="24"
                 step="0.5"
-                value={hoursWorked}
-                onChange={(e) => setHoursWorked(e.target.value)}
-                placeholder="8"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                placeholder="2"
                 className="bg-background border-border font-mono"
                 required
               />
@@ -147,86 +116,22 @@ const MemberDashboard = () => {
 
             <div className="border border-border bg-card p-4">
               <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Project
+                Select Ticket
               </label>
               <select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
+                value={selectedTicket}
+                onChange={(e) => setSelectedTicket(e.target.value)}
                 className="w-full h-10 px-3 bg-background border border-border font-mono text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 required
               >
-                <option value="">Select project...</option>
-                {projects?.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
+                <option value="">Select ticket...</option>
+                {tickets?.map((ticket) => (
+                  <option key={ticket.id} value={ticket.id}>
+                    [{ticket.ticketId}] {ticket.title}
                   </option>
                 ))}
               </select>
             </div>
-
-            <div className="border border-border bg-card p-4">
-              <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                Skill Tags
-              </label>
-              <Input
-                value={skillTags}
-                onChange={(e) => setSkillTags(e.target.value)}
-                placeholder="#react, #typescript"
-                className="bg-background border-border font-mono"
-              />
-            </div>
-          </div>
-
-          {/* Links */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-border bg-card p-4">
-              <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                <Icon icon="solar:link-linear" className="inline-block mr-2 w-4 h-4" />
-                PR Links
-              </label>
-              <Input
-                value={prLinks}
-                onChange={(e) => setPrLinks(e.target.value)}
-                placeholder="https://github.com/..."
-                className="bg-background border-border font-mono text-sm"
-              />
-            </div>
-
-            <div className="border border-border bg-card p-4">
-              <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                <Icon icon="solar:document-linear" className="inline-block mr-2 w-4 h-4" />
-                Documentation Links
-              </label>
-              <Input
-                value={docLinks}
-                onChange={(e) => setDocLinks(e.target.value)}
-                placeholder="https://notion.so/..."
-                className="bg-background border-border font-mono text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Blockers */}
-          <div className="border border-border bg-card p-6">
-            <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-3">
-              <Icon
-                icon="solar:danger-triangle-linear"
-                className="inline-block mr-2 w-4 h-4 text-yellow-500"
-              />
-              Blockers (Optional)
-            </label>
-            <Textarea
-              value={blockers}
-              onChange={(e) => setBlockers(e.target.value)}
-              placeholder="Any issues blocking your progress..."
-              className="min-h-[80px] bg-background border-border font-mono text-sm resize-none"
-            />
-            {blockers && (
-              <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 font-mono text-xs">
-                <Icon icon="solar:info-circle-linear" className="inline-block mr-2 w-4 h-4" />
-                This will be flagged for admin attention
-              </div>
-            )}
           </div>
 
           {/* Breakthrough Toggle */}
@@ -262,9 +167,6 @@ const MemberDashboard = () => {
 
           {/* Submit Button */}
           <div className="flex justify-end gap-4">
-            <Button type="button" variant="ghost">
-              Save as Draft
-            </Button>
             <Button type="submit" variant="hero" size="lg" disabled={isSubmitting || submitted}>
               {isSubmitting ? (
                 <>
@@ -279,7 +181,7 @@ const MemberDashboard = () => {
               ) : (
                 <>
                   <Icon icon="solar:upload-linear" className="w-4 h-4" />
-                  Push Today's Log
+                  Push Time Log
                 </>
               )}
             </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
@@ -9,21 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { startOfWeek, addDays, format } from 'date-fns';
 
 import {
-  tmTickets,
-  tmMembers,
-  tmActivities,
-  burnRateData,
-  projectHoursData,
-  getMemberById,
   getStatusColor,
   getStatusLabel,
   getTimeBarColor,
   getPriorityColor,
-  weeklySparkline,
-  tmLeaderboard,
-} from '@/data/taskManagerData';
+} from '@/lib/ticket-utils';
+
+import { useTickets } from '@/hooks/useTickets';
+import { useUsers } from '@/hooks/useUsers';
+import { useTaskAnalytics } from '@/hooks/useAnalytics';
+import { useActivities } from '@/hooks/useActivities';
+import { useLogs, useCreateLog } from '@/hooks/useLogs';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -44,62 +43,63 @@ const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; colo
 // Admin Dashboard
 const AdminDashboardContent = () => {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
-  useEffect(() => setMounted(true), []);
+  const { data: analytics, isLoading: analyticsLoading } = useTaskAnalytics();
+  const { data: activities, isLoading: activitiesLoading } = useActivities({ limit: 10 });
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
+  const { data: users } = useUsers();
 
-  const overBudgetTickets = tmTickets.filter((t) => t.loggedHours > t.estimatedHours);
+  // Dashboard loading state
 
-  const overdueTickets = useMemo(() => {
-    if (!mounted) return [];
-    const now = new Date();
-    return tmTickets.filter((t) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'done');
-  }, [mounted]);
   const [activityFilter, setActivityFilter] = useState('all');
 
-  const filteredActivities = tmActivities.filter((a) => {
-    if (activityFilter === 'all') return true;
-    if (activityFilter === 'time-logs') return a.type === 'time-log';
-    if (activityFilter === 'status') return a.type === 'status';
-    if (activityFilter === 'comments') return a.type === 'comment';
-    return true;
-  });
+  if (analyticsLoading || ticketsLoading || activitiesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_SYSTEM_DATA...
+      </div>
+    );
+  }
+
+  const overBudgetTickets = tickets?.filter((t) => t.loggedHours > t.estimatedHours) || [];
+
+  const kpis = [
+    {
+      label: 'TOTAL TICKETS',
+      value: analytics?.kpis.totalTickets || 0,
+      sub: 'overall entries',
+      subColor: 'text-primary',
+      sparkData: analytics?.trends.tickets || [0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      label: 'IN PROGRESS',
+      value: analytics?.kpis.inProgress || 0,
+      sub: 'currently active',
+      subColor: 'text-blue-400',
+      sparkData: analytics?.trends.velocity || [0, 0, 0, 0, 0, 0, 0],
+    },
+    {
+      label: 'OVERDUE',
+      value: analytics?.kpis.overdue || 0,
+      sub: '⚠ needs attn',
+      subColor: 'text-destructive',
+      sparkData: analytics?.trends.completion.map((v: number) => 100 - v) || [0, 0, 0, 0, 0, 0, 0],
+      danger: true,
+    },
+    {
+      label: 'TEAM HOURS',
+      value: analytics?.kpis.teamHours || '0h',
+      sub: 'this week',
+      subColor: 'text-muted-foreground',
+      sparkData: analytics?.trends.hours || [0, 0, 0, 0, 0, 0, 0],
+    },
+  ];
 
   return (
     <div className="space-y-6">
       {/* KPI Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          {
-            label: 'TOTAL TICKETS',
-            value: 47,
-            sub: '↑ 8 this wk',
-            subColor: 'text-primary',
-            sparkData: weeklySparkline,
-          },
-          {
-            label: 'IN PROGRESS',
-            value: 12,
-            sub: '↑ 2 from yd',
-            subColor: 'text-blue-400',
-            sparkData: [2, 4, 3, 5, 6, 4, 5],
-          },
-          {
-            label: 'OVERDUE',
-            value: mounted ? overdueTickets.length : '--',
-            sub: '⚠ needs attn',
-            subColor: 'text-destructive',
-            sparkData: [1, 2, 1, 3, 2, 3, 3],
-            danger: true,
-          },
-          {
-            label: 'TEAM HOURS',
-            value: '128.5h',
-            sub: 'this week',
-            subColor: 'text-muted-foreground',
-            sparkData: [18, 22, 20, 28, 24, 16, 0],
-          },
-        ].map((kpi, i) => (
+        {kpis.map((kpi, i) => (
           <motion.div
             key={kpi.label}
             initial={{ opacity: 0, y: 20 }}
@@ -149,7 +149,7 @@ const AdminDashboardContent = () => {
           </div>
           <div className="w-full h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={burnRateData}>
+              <AreaChart data={analytics?.burnRate || []}>
                 <defs>
                   <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(140 100% 50%)" stopOpacity={0.3} />
@@ -209,7 +209,7 @@ const AdminDashboardContent = () => {
                 const variance = Math.round(
                   ((t.loggedHours - t.estimatedHours) / t.estimatedHours) * 100
                 );
-                const member = getMemberById(t.assigneeId);
+                const member = users?.find((u) => u.id === t.assigneeId);
                 return (
                   <div
                     key={t.id}
@@ -232,13 +232,20 @@ const AdminDashboardContent = () => {
                         </div>
                       </div>
                     </div>
-                    <Image
-                      src={member?.avatar || ''}
-                      alt=""
-                      width={24}
-                      height={24}
-                      className="rounded-full border border-border"
-                    />
+                    <div className="w-6 h-6 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                      {member?.image ? (
+                        <Image
+                          src={member.image}
+                          alt=""
+                          width={24}
+                          height={24}
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <Icon icon="solar:user-linear" className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -268,7 +275,7 @@ const AdminDashboardContent = () => {
           </div>
           <h3 className="font-display font-semibold text-lg mb-4">Time by Project</h3>
           <div className="space-y-4">
-            {projectHoursData.map((p) => {
+            {analytics?.projectHours.map((p) => {
               const overBudget = p.actual > p.estimated;
               return (
                 <div key={p.project} className="flex items-center gap-3">
@@ -276,11 +283,11 @@ const AdminDashboardContent = () => {
                   <div className="flex-1 h-4 bg-muted relative overflow-hidden">
                     <div
                       className="absolute inset-0 border border-border/50"
-                      style={{ width: `${(p.estimated / 40) * 100}%` }}
+                      style={{ width: `${p.estimated > 0 ? (p.estimated / 40) * 100 : 0}%` }}
                     />
                     <div
                       className={`h-full ${overBudget ? 'bg-destructive' : 'bg-primary'}`}
-                      style={{ width: `${(p.actual / 40) * 100}%` }}
+                      style={{ width: `${p.actual > 0 ? (p.actual / 40) * 100 : 0}%` }}
                     />
                   </div>
                   <span className="font-mono text-xs text-muted-foreground w-16 text-right">
@@ -303,8 +310,8 @@ const AdminDashboardContent = () => {
           </div>
           <h3 className="font-display font-semibold text-lg mb-4">Live Member Activity</h3>
           <div className="space-y-1">
-            {tmMembers.slice(0, 5).map((member, i) => {
-              const ticket = tmTickets.find(
+            {users?.slice(0, 5).map((member, i) => {
+              const activeTicket = tickets?.find(
                 (t) => t.assigneeId === member.id && t.status === 'in-progress'
               );
               return (
@@ -313,30 +320,40 @@ const AdminDashboardContent = () => {
                   className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
                     i % 2 === 0 ? 'bg-card' : 'bg-muted/30'
                   }`}
-                  onClick={() => ticket && router.push(`/tasks/ticket/${ticket.id}`)}
+                  onClick={() => activeTicket && router.push(`/tasks/ticket/${activeTicket.id}`)}
                 >
-                  <Image
-                    src={member.avatar}
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="rounded-full border border-border"
-                  />
+                  <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                    {member.image ? (
+                      <Image
+                        src={member.image}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <Icon
+                        icon="solar:user-linear"
+                        className="w-3.5 h-3.5 text-muted-foreground"
+                      />
+                    )}
+                  </div>
                   <span className="text-sm flex-1 truncate">{member.name}</span>
                   <span className="font-mono text-xs text-muted-foreground truncate max-w-[150px]">
-                    {ticket?.title || '—'}
+                    {activeTicket?.title || '—'}
                   </span>
-                  {ticket && (
+                  {activeTicket && (
                     <span
                       className={`font-mono text-[10px] uppercase px-1.5 py-0.5 ${getStatusColor(
-                        ticket.status
+                        activeTicket.status
                       )}`}
                     >
-                      {getStatusLabel(ticket.status)}
+                      {getStatusLabel(activeTicket.status)}
                     </span>
                   )}
-                  <span className="font-mono text-xs text-right w-12">
-                    {(((i * 1.5) % 4) + 1).toFixed(1)}h
+                  <span className="font-mono text-xs text-right w-12 text-muted-foreground">
+                    active
                   </span>
                 </div>
               );
@@ -379,28 +396,40 @@ const AdminDashboardContent = () => {
         <div className="relative">
           <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
           <div className="space-y-3">
-            {filteredActivities.map((a) => {
-              const member = getMemberById(a.memberId);
+            {activities?.map((a) => {
               return (
                 <div
                   key={a.id}
-                  onClick={() => router.push(`/tasks/ticket/${a.ticketId}`)}
-                  className="flex items-center gap-3 pl-8 relative cursor-pointer hover:bg-muted/30 p-2 transition-colors"
+                  className="flex items-center gap-3 pl-8 relative p-2 transition-colors border-b border-border/10 last:border-0"
                 >
                   <div className="absolute left-[13px] w-[5px] h-[5px] bg-border rounded-full" />
-                  <Image
-                    src={member?.avatar || ''}
-                    alt=""
-                    width={24}
-                    height={24}
-                    className="rounded-full border border-border"
-                  />
+                  <div className="w-6 h-6 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                    {a.user?.image ? (
+                      <Image
+                        src={a.user.image}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <Icon icon="solar:user-linear" className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </div>
                   <span className="text-sm">
-                    <span className="font-medium">{member?.name}</span> {a.action}{' '}
-                    <span className="text-primary">{a.ticketTitle}</span>
+                    <span className="font-medium">{a.user?.name}</span> {a.action}{' '}
+                    {a.ticketId && (
+                      <span className="text-primary font-mono text-[10px]">
+                        [{a.ticketId.slice(0, 8)}]
+                      </span>
+                    )}
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground ml-auto shrink-0">
-                    {a.timestamp}
+                    {new Date(a.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
               );
@@ -415,25 +444,90 @@ const AdminDashboardContent = () => {
 // Member Dashboard
 const MemberDashboardContent = () => {
   const router = useRouter();
-  const focusTicket = tmTickets.find(
-    (t) => t.status === 'in-progress' && t.assigneeId === 'tm-002'
-  );
-  const upcomingTickets = tmTickets.filter((t) => t.status === 'todo' && t.assigneeId === 'tm-002');
-  const dailyHours = [4.5, 6.0, 5.5, 7.0, 5.0];
+  const { user } = useAuth();
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
+  const { data: logs } = useLogs();
+  const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
+  const { data: users } = useUsers();
+  const totalHours = logs?.reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
+  const activeTickets =
+    tickets?.filter((t) => t.status !== 'done' && t.assigneeId === user?.id).length || 0;
+
+  const focusTicket = tickets?.find((t) => t.status === 'in-progress' && t.assigneeId === user?.id);
+  const upcomingTickets =
+    tickets?.filter((t) => t.status === 'todo' && t.assigneeId === user?.id) || [];
+
+  // Weekly stats calculation from real logs
+  const startOfCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weeklyLogs = logs?.filter((l) => new Date(l.date) >= startOfCurrentWeek) || [];
+  const weeklyHours = weeklyLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
+
+  const dailyHours = [0, 0, 0, 0, 0].map((_, i) => {
+    const date = format(addDays(startOfCurrentWeek, i), 'yyyy-MM-dd');
+    return weeklyLogs
+      .filter((l) => format(new Date(l.date), 'yyyy-MM-dd') === date)
+      .reduce((sum, l) => sum + (l.hours || 0), 0);
+  });
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  // Leaderboard calculation (Simplified for now: count of done tickets in last 7 days)
+  const leaderboard = useMemo(() => {
+    if (!users || !tickets) return [];
+    return users
+      .map((u) => {
+        const doneTickets = tickets.filter(
+          (t) => t.assigneeId === u.id && t.status === 'done'
+        ).length;
+        const hours = tickets
+          .filter((t) => t.assigneeId === u.id)
+          .reduce((sum, t) => sum + (t.loggedHours || 0), 0);
+        return {
+          id: u.id,
+          name: u.name,
+          image: u.image,
+          ticketsDone: doneTickets,
+          hoursLogged: hours.toFixed(1),
+          efficiency: hours > 0 ? Math.min(100, Math.round(((doneTickets * 4) / hours) * 100)) : 0,
+        };
+      })
+      .sort(
+        (a: { ticketsDone: number }, b: { ticketsDone: number }) => b.ticketsDone - a.ticketsDone
+      )
+      .slice(0, 5);
+  }, [users, tickets]);
 
   // Quick Log state
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogHours, setQuickLogHours] = useState('');
   const [quickLogNote, setQuickLogNote] = useState('');
+  const { mutateAsync: createLog, isPending: isLogging } = useCreateLog();
 
-  const handleQuickLog = () => {
-    if (!quickLogHours || parseFloat(quickLogHours) <= 0) return;
-    toast.success(`Logged ${quickLogHours}h on "${focusTicket?.title}" (local only)`);
-    setShowQuickLog(false);
-    setQuickLogHours('');
-    setQuickLogNote('');
+  const handleQuickLog = async () => {
+    if (!quickLogHours || parseFloat(quickLogHours) <= 0 || !focusTicket) return;
+    try {
+      await createLog({
+        ticketId: focusTicket.id,
+        hours: parseFloat(quickLogHours),
+        note: quickLogNote,
+        date: new Date(),
+      });
+      toast.success(`Logged ${quickLogHours}h on "${focusTicket.title}"`);
+      setShowQuickLog(false);
+      setQuickLogHours('');
+      setQuickLogNote('');
+    } catch (err: unknown) {
+      console.error('ERROR_SYNCING_LOG_VECTORS:', err);
+    }
   };
+
+  if (ticketsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_PERSONAL_WORKSPACE...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -466,7 +560,9 @@ const MemberDashboardContent = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="font-mono text-xs text-muted-foreground">{focusTicket.project}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                Ticket ID: {focusTicket.ticketId}
+              </span>
               <span className="text-muted-foreground">·</span>
               <div className={`w-2 h-2 rounded-full ${getPriorityColor(focusTicket.priority)}`} />
               <span className="font-mono text-xs capitalize">{focusTicket.priority}</span>
@@ -542,7 +638,7 @@ const MemberDashboardContent = () => {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-display text-2xl font-bold">32.5h</span>
+                <span className="font-display text-2xl font-bold">{weeklyHours.toFixed(1)}h</span>
                 <span className="font-mono text-[10px] text-muted-foreground">/ 40h</span>
               </div>
             </div>
@@ -583,14 +679,16 @@ const MemberDashboardContent = () => {
                   <div className={`w-2 h-2 rounded-full ${getPriorityColor(t.priority)}`} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{t.title}</div>
-                    <div className="font-mono text-[10px] text-muted-foreground">{t.project}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      ID: {t.ticketId}
+                    </div>
                   </div>
                   <span className="font-mono text-[10px] text-muted-foreground">
                     ~{t.estimatedHours}h
                   </span>
                   {t.dueDate && (
                     <span className="font-mono text-[10px] text-amber-400">
-                      Due {t.dueDate.slice(5)}
+                      Due {new Date(t.dueDate).toLocaleDateString()}
                     </span>
                   )}
                 </div>
@@ -634,13 +732,12 @@ const MemberDashboardContent = () => {
           ))}
         </div>
         <div className="space-y-2">
-          {tmLeaderboard.map((entry, i) => {
-            const member = getMemberById(entry.memberId);
-            const isYou = entry.memberId === 'tm-002';
+          {leaderboard.map((entry, i) => {
+            const isYou = entry.id === user?.id;
             const medals = ['🥇', '🥈', '🥉'];
             return (
               <div
-                key={entry.memberId}
+                key={entry.id}
                 className={`flex items-center gap-4 p-3 ${
                   isYou ? 'bg-primary/10 border border-primary/30' : 'border border-border'
                 }`}
@@ -652,15 +749,22 @@ const MemberDashboardContent = () => {
                 >
                   #{i + 1} {medals[i] || ''}
                 </span>
-                <Image
-                  src={member?.avatar || ''}
-                  alt=""
-                  width={28}
-                  height={28}
-                  className="rounded-full border border-border"
-                />
+                <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                  {entry.image ? (
+                    <Image
+                      src={entry.image}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <Icon icon="solar:user-linear" className="w-3.5 h-3.5 text-muted-foreground" />
+                  )}
+                </div>
                 <span className="text-sm flex-1">
-                  {isYou ? <span className="text-primary font-medium">You</span> : member?.name}
+                  {isYou ? <span className="text-primary font-medium">You</span> : entry.name}
                 </span>
                 <span className="font-mono text-xs text-muted-foreground">
                   {entry.ticketsDone} tickets done
@@ -698,31 +802,38 @@ const MemberDashboardContent = () => {
           [RECENT ACTIVITY]
         </div>
         <div className="space-y-3">
-          {tmActivities
-            .filter((a) => a.memberId === 'tm-002')
-            .slice(0, 5)
-            .map((a) => (
-              <div
-                key={a.id}
-                onClick={() => router.push(`/tasks/ticket/${a.ticketId}`)}
-                className="flex items-center gap-3 p-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 transition-colors"
-              >
-                <Icon
-                  icon={
-                    a.type === 'time-log'
-                      ? 'solar:clock-circle-linear'
-                      : a.type === 'completed'
-                        ? 'solar:check-circle-linear'
-                        : 'solar:document-text-linear'
-                  }
-                  className="w-4 h-4 text-muted-foreground"
-                />
-                <span className="text-sm flex-1">
-                  {a.action} <span className="text-primary">{a.ticketTitle}</span>
-                </span>
-                <span className="font-mono text-[10px] text-muted-foreground">{a.timestamp}</span>
-              </div>
-            ))}
+          {activities?.map((a) => (
+            <div
+              key={a.id}
+              onClick={() => a.ticketId && router.push(`/tasks/ticket/${a.ticketId}`)}
+              className="flex items-center gap-3 p-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 transition-colors"
+            >
+              <Icon
+                icon={
+                  a.type === 'time-log'
+                    ? 'solar:clock-circle-linear'
+                    : a.type === 'completed'
+                      ? 'solar:check-circle-linear'
+                      : 'solar:document-text-linear'
+                }
+                className="w-4 h-4 text-muted-foreground"
+              />
+              <span className="text-sm flex-1">
+                {a.action}{' '}
+                {a.ticketId && (
+                  <span className="text-primary font-mono text-[10px]">
+                    [{a.ticketId.slice(0, 8)}]
+                  </span>
+                )}
+              </span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {new Date(a.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+          ))}
         </div>
       </motion.div>
 
@@ -765,9 +876,16 @@ const MemberDashboardContent = () => {
               <Button
                 variant="hero"
                 onClick={handleQuickLog}
-                disabled={!quickLogHours || parseFloat(quickLogHours) <= 0}
+                disabled={!quickLogHours || parseFloat(quickLogHours) <= 0 || isLogging}
               >
-                Log Time
+                {isLogging ? (
+                  <>
+                    <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin mr-2" />
+                    LOGGING...
+                  </>
+                ) : (
+                  'Log Time'
+                )}
               </Button>
             </div>
           </div>

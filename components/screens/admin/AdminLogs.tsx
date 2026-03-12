@@ -34,32 +34,21 @@ const AdminLogs = () => {
                     <div className="font-mono text-sm font-semibold">
                       {new Date(log.date).toLocaleDateString()}
                     </div>
-                    <div className="font-mono text-xs text-muted-foreground">Log Entry</div>
+                    <div className="font-mono text-xs text-muted-foreground">
+                      Log Entry - {log.hours}h
+                    </div>
                   </div>
                 </div>
-                {log.hasBlocker && (
-                  <span className="px-2 py-1 bg-yellow-500/10 text-yellow-500 font-mono text-[10px] uppercase tracking-wider">
-                    Blocker
+                {log.isBreakthrough && (
+                  <span className="px-2 py-1 bg-primary/10 text-primary font-mono text-[10px] uppercase tracking-wider">
+                    Breakthrough
                   </span>
                 )}
               </div>
-              <h3 className="font-display font-semibold mb-2">What was done:</h3>
+              <h3 className="font-display font-semibold mb-2">Note:</h3>
               <p className="font-mono text-sm text-foreground/80 mb-4 whitespace-pre-wrap">
-                {log.whatIDid}
+                {log.note}
               </p>
-
-              {log.skillTags && log.skillTags.length > 0 && (
-                <div className="flex gap-2 flex-wrap mt-4">
-                  {log.skillTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 border border-border font-mono text-[10px] opacity-80 hover:opacity-100 transition-opacity"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           ))
         )}

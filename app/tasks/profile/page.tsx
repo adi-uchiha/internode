@@ -1,29 +1,84 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTickets } from '@/hooks/useTickets';
+import { useLogs } from '@/hooks/useLogs';
+import { useActivities } from '@/hooks/useActivities';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { useAuth } from '@/contexts/AuthContext';
-import { tmMembers, tmTickets, tmActivities, generateHeatmapData } from '@/data/taskManagerData';
-import { Button } from '@/components/ui/button';
+import { format, subDays, startOfDay, isSameDay } from 'date-fns';
 import Image from 'next/image';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
-  const member = tmMembers.find((m) => m.role === (user?.role || 'member')) || tmMembers[1];
-  const heatmap = useMemo(() => generateHeatmapData(), []);
+
+  const { data: tickets } = useTickets({ assigneeId: user?.id });
+  const { data: logs } = useLogs(); // This gets daily logs, maybe filter by user if API supports it
+  const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
+
+  const userLogs = useMemo(() => {
+    if (!logs || !user) return [];
+    return logs.filter((l) => l.userId === user.id);
+  }, [logs, user]);
+
+  const stats = useMemo(() => {
+    if (!tickets || !user)
+      return { totalTickets: 0, doneCount: 0, efficiency: 0, totalHours: 0, monthHours: 0 };
+
+    const myTickets = tickets.filter((t) => t.assigneeId === user.id);
+    const doneTickets = myTickets.filter((t) => t.status === 'done');
+
+    const totalHours = myTickets.reduce((sum, t) => sum + (t.loggedHours || 0), 0);
+
+    // Efficiency calculation: average (estimated / logged) for completed tasks
+    const efficiency =
+      doneTickets.length > 0
+        ? Math.round(
+            (doneTickets.reduce((sum, t) => {
+              const ratio =
+                t.estimatedHours > 0 ? t.estimatedHours / Math.max(t.loggedHours, 0.1) : 1;
+              return sum + Math.min(ratio, 1.5); // cap at 150%
+            }, 0) /
+              doneTickets.length) *
+              100
+          )
+        : 0;
+
+    const monthHours = userLogs
+      .filter((l) => {
+        const d = new Date(l.date);
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, l) => sum + (l.hours || 0), 0);
+
+    return {
+      totalTickets: myTickets.length,
+      doneCount: doneTickets.length,
+      efficiency,
+      totalHours,
+      monthHours,
+    };
+  }, [tickets, user, userLogs]);
+
+  const heatmap = useMemo(() => {
+    const data = [];
+    for (let i = 90; i >= 0; i--) {
+      const date = startOfDay(subDays(new Date(), i));
+      const dayLogs = userLogs.filter((l) => isSameDay(new Date(l.date), date));
+      const hours = dayLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
+      data.push({ date: format(date, 'yyyy-MM-dd'), hours });
+    }
+    return data;
+  }, [userLogs]);
+
   const weeks = useMemo(() => {
-    const r: (typeof heatmap)[] = [];
+    const r = [];
     for (let i = 0; i < heatmap.length; i += 7) r.push(heatmap.slice(i, i + 7));
     return r;
   }, [heatmap]);
-
-  const doneCount =
-    tmTickets.filter((t) => t.assigneeId === member.id && t.status === 'done').length + 15;
-  const totalTickets = tmTickets.filter((t) => t.assigneeId === member.id).length + 20;
-  const totalHours = member.hoursThisWeek * 12;
-
-  const activities = tmActivities.filter((a) => a.memberId === member.id).slice(0, 10);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-6 px-4">
@@ -36,37 +91,41 @@ export default function ProfilePage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -z-10" />
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="relative">
-            <Image
-              src={member.avatar}
-              alt={member.name}
-              width={96}
-              height={96}
-              className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 transition-all group-hover:ring-primary/50"
-            />
+            {user?.image ? (
+              <Image
+                src={user.image}
+                alt={user.name || 'User'}
+                width={96}
+                height={96}
+                className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 transition-all group-hover:ring-primary/50"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 bg-muted flex items-center justify-center transition-all group-hover:ring-primary/50">
+                <Icon icon="solar:user-bold-duotone" className="w-12 h-12 text-muted-foreground" />
+              </div>
+            )}
             <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary border-4 border-card flex items-center justify-center">
               <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             </div>
           </div>
           <div className="text-center md:text-left">
             <h2 className="font-display text-4xl font-bold tracking-tight text-foreground">
-              {member.name}
+              {user?.name || 'Anonymous User'}
             </h2>
-            <p className="font-mono text-sm text-muted-foreground mt-1 opacity-70">
-              {member.email}
-            </p>
+            <p className="font-mono text-sm text-muted-foreground mt-1 opacity-70">{user?.email}</p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-4">
               <span
                 className={`font-mono text-[11px] uppercase px-3 py-1 rounded-sm border shadow-sm ${
-                  member.role === 'admin'
+                  user?.role === 'admin'
                     ? 'bg-primary/10 text-primary border-primary/20'
                     : 'bg-muted/50 border-border text-muted-foreground'
                 }`}
               >
-                {member.role}
+                {user?.role || 'member'}
               </span>
               <span className="font-mono text-[11px] text-muted-foreground flex items-center gap-1.5 bg-muted/20 px-3 py-1 border border-border rounded-sm">
                 <Icon icon="solar:calendar-linear" className="w-3.5 h-3.5" />
-                Joined: {member.joinedDate}
+                Joined: {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
               </span>
             </div>
           </div>
@@ -76,11 +135,19 @@ export default function ProfilePage() {
       {/* Impact Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Tickets', value: totalTickets, color: 'text-foreground' },
-          { label: 'Completed', value: doneCount, color: 'text-primary' },
-          { label: 'Efficiency', value: `${member.efficiency}%`, color: 'text-blue-500' },
-          { label: 'Total Hours', value: `${totalHours}h`, color: 'text-foreground' },
-          { label: 'This Month', value: `${member.hoursThisWeek * 4}h`, color: 'text-amber-500' },
+          { label: 'Total Tickets', value: stats.totalTickets, color: 'text-foreground' },
+          { label: 'Completed', value: stats.doneCount, color: 'text-primary' },
+          { label: 'Efficiency', value: `${stats.efficiency}%`, color: 'text-blue-500' },
+          {
+            label: 'Total Hours',
+            value: `${stats.totalHours.toFixed(1)}h`,
+            color: 'text-foreground',
+          },
+          {
+            label: 'This Month',
+            value: `${stats.monthHours.toFixed(1)}h`,
+            color: 'text-amber-500',
+          },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -166,7 +233,7 @@ export default function ProfilePage() {
             </h3>
           </div>
           <div className="space-y-1">
-            {activities.map((a) => (
+            {activities?.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center gap-4 py-4 border-b border-border/50 last:border-0 group px-2 hover:bg-muted/10 transition-colors"
@@ -174,32 +241,27 @@ export default function ProfilePage() {
                 <div className="p-2 rounded-sm bg-muted/30 group-hover:bg-primary/10 transition-colors">
                   <Icon
                     icon={
-                      a.type === 'time-log'
-                        ? 'solar:clock-circle-linear'
-                        : a.type === 'completed'
-                          ? 'solar:check-circle-linear'
+                      a.type === 'status'
+                        ? 'solar:check-circle-linear'
+                        : a.type === 'time-log'
+                          ? 'solar:clock-circle-linear'
                           : 'solar:document-text-linear'
                     }
                     className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"
                   />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium">
-                    {a.action}{' '}
-                    <span className="text-primary font-mono text-[11px] font-bold">
-                      [{a.ticketTitle}]
-                    </span>
-                  </div>
+                  <div className="text-sm font-medium">{a.action}</div>
                   <div className="font-mono text-[10px] text-muted-foreground mt-0.5 opacity-60">
                     ID: {a.id}
                   </div>
                 </div>
                 <span className="font-mono text-[10px] text-muted-foreground whitespace-nowrap bg-muted/50 px-2 py-1 rounded-sm">
-                  {a.timestamp}
+                  {format(new Date(a.createdAt), 'MMM d, HH:mm')}
                 </span>
               </div>
             ))}
-            {activities.length === 0 && (
+            {activities?.length === 0 && (
               <div className="text-center py-12 border border-dashed border-border rounded-lg bg-muted/5">
                 <Icon icon="solar:ghost-linear" className="w-10 h-10 mx-auto mb-2 opacity-10" />
                 <p className="font-mono text-xs text-muted-foreground">

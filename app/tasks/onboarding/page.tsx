@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -11,6 +12,7 @@ import Image from 'next/image';
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const router = useRouter();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -45,15 +47,19 @@ export default function OnboardingPage() {
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-24 h-24 mx-auto border-2 border-primary bg-primary/5 rounded-full flex items-center justify-center relative z-10 p-1"
+                    className="w-24 h-24 mx-auto border-2 border-primary bg-primary/5 rounded-full flex items-center justify-center relative z-10 p-1 overflow-hidden"
                   >
-                    <Image
-                      src="https://api.dicebear.com/7.x/initials/svg?seed=Internode&backgroundColor=00ff88&textColor=000000"
-                      alt="Avatar"
-                      width={96}
-                      height={96}
-                      className="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all duration-500"
-                    />
+                    {user?.image ? (
+                      <Image
+                        src={user.image}
+                        alt={user.name || 'User'}
+                        width={96}
+                        height={96}
+                        className="w-full h-full rounded-full object-cover transition-all duration-500"
+                      />
+                    ) : (
+                      <Icon icon="solar:user-bold-duotone" className="w-12 h-12 text-primary" />
+                    )}
                   </motion.div>
                   <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse -z-10" />
                 </div>
@@ -64,13 +70,13 @@ export default function OnboardingPage() {
                   </h1>
                   <p className="text-muted-foreground font-mono text-sm opacity-60">
                     Welcome to the <span className="text-primary font-bold">INTERNODE</span>{' '}
-                    ecosystem
+                    ecosystem, <span className="text-foreground">{user?.name || 'Architect'}</span>
                   </p>
                 </div>
 
                 <div className="flex justify-center">
                   <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(0,255,136,0.1)]">
-                    Access Level: ARCHITECT
+                    Access Level: {user?.role === 'admin' ? 'ARCHITECT' : 'DEVELOPER'}
                   </span>
                 </div>
 

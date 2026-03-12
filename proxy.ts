@@ -12,12 +12,14 @@ export async function proxy(request: NextRequest) {
 
   // Optimistic session check using getSessionCookie
   const sessionCookie = getSessionCookie(request);
-  const isAuthenticated = !!sessionCookie;
+  // Also check for the token directly in case the helper is too strict
+  const token = request.cookies.get('better-auth.session-token');
+  const isAuthenticated = !!sessionCookie || !!token;
 
   if (isAuthRoute) {
     if (isAuthenticated) {
       // Redirect logged in users away from auth pages
-      return NextResponse.redirect(new URL('/tasks', request.url));
+      return NextResponse.redirect(new URL('/tasks/dashboard', request.url));
     }
     return NextResponse.next();
   }

@@ -9,7 +9,17 @@ const memberNavItems = [
   { label: 'Breakthroughs', href: '/member/breakthroughs', icon: 'solar:star-linear' },
   { label: 'Leave', href: '/member/leave', icon: 'solar:calendar-mark-linear' },
   { label: 'Profile', href: '/member/profile', icon: 'solar:user-circle-linear' },
-  { label: '── Task Manager', href: '/tasks/dashboard', icon: 'solar:widget-4-linear' },
+  {
+    label: 'Task Manager',
+    href: '/tasks/dashboard',
+    icon: 'solar:widget-4-linear',
+    subItems: [
+      { label: 'Dashboard', href: '/tasks/dashboard' },
+      { label: 'Kanban Board', href: '/tasks/kanban' },
+      { label: 'My Tickets', href: '/tasks/my-tickets' },
+      { label: 'Time Logs', href: '/tasks/time-logs' },
+    ],
+  },
 ];
 
 interface MemberLayoutProps {

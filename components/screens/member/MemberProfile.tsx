@@ -12,19 +12,15 @@ const MemberProfile = () => {
   const { data: logs } = useLogs();
 
   const totalDaysLogged = new Set(logs?.map((l) => new Date(l.date).toDateString())).size || 0;
-  const totalHours = logs?.reduce((sum, l) => sum + (l.hoursWorked || 0), 0) || 0;
+  const totalHours = logs?.reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
   const avgHoursPerDay = totalDaysLogged > 0 ? (totalHours / totalDaysLogged).toFixed(1) : '0.0';
   const breakthroughs = logs?.filter((l) => l.isBreakthrough).length || 0;
-
-  const skills = Array.from(new Set(logs?.flatMap((l) => l.skillTags || [])));
 
   const recentActivity =
     logs?.slice(0, 5).map((l) => ({
       id: l.id,
-      action: l.isBreakthrough
-        ? `Breakthrough: ${l.whatIDid}`
-        : `Logged ${l.hoursWorked}h: ${l.whatIDid}`,
-      time: new Date(l.createdAt).toLocaleDateString(),
+      action: l.isBreakthrough ? `Breakthrough: ${l.note}` : `Logged ${l.hours}h: ${l.note}`,
+      time: new Date(l.date).toLocaleDateString(),
       icon: l.isBreakthrough ? 'solar:star-linear' : 'solar:document-add-linear',
     })) || [];
 
@@ -98,7 +94,6 @@ const MemberProfile = () => {
             },
             { label: 'Avg Hours/Day', value: avgHoursPerDay, icon: 'solar:clock-circle-linear' },
             { label: 'Breakthroughs', value: breakthroughs.toString(), icon: 'solar:star-linear' },
-            { label: 'Skills', value: skills.length.toString(), icon: 'solar:code-square-linear' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -117,34 +112,6 @@ const MemberProfile = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Skills Section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="border border-border bg-card p-6"
-        >
-          <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">
-            [SKILL_CLOUD]
-          </div>
-          {skills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="px-3 py-2 border border-border bg-muted font-mono text-sm hover:border-primary/50 transition-colors"
-                >
-                  #{skill}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="font-mono text-sm text-muted-foreground">
-              No skills recorded yet. Log daily entries to populate your skill cloud.
-            </p>
-          )}
-        </motion.div>
 
         {/* Recent Activity */}
         <motion.div

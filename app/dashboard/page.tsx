@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gray-50 p-8 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         <h3 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">
-          Whereas disregard and contempt for human rights have resulted
+          Welcome to Internode
         </h3>
         <div className="rounded-lg bg-white p-6 shadow dark:bg-zinc-900">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Welcome back!</h2>

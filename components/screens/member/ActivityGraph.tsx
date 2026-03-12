@@ -18,21 +18,17 @@ const ActivityGraph = () => {
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       }) || [];
 
-    const totalHoursThisMonth =
-      currentMonthLogs.reduce((sum, l) => sum + (l.hoursWorked || 0), 0) || 0;
+    const totalHoursThisMonth = currentMonthLogs.reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
     const daysLogged = new Set(currentMonthLogs.map((l) => new Date(l.date).toDateString())).size;
     const avgHoursPerDay = daysLogged > 0 ? totalHoursThisMonth / daysLogged : 0;
-    const learningDays = currentMonthLogs.filter((l) => (l.whatILearned?.length || 0) > 20).length;
-    const executionDays = currentMonthLogs.filter(
-      (l) => (l.hoursWorked || 0) > 0 && l.whatIDid
-    ).length;
+    const executionDays = currentMonthLogs.filter((l) => (l.hours || 0) > 0 && l.note).length;
 
     // Roughly days / total days in month
     const logCompletionRate = Math.round(
       (daysLogged / new Date(currentYear, currentMonth + 1, 0).getDate()) * 100
     );
 
-    return { totalHoursThisMonth, avgHoursPerDay, learningDays, executionDays, logCompletionRate };
+    return { totalHoursThisMonth, avgHoursPerDay, executionDays, logCompletionRate };
   }, [logs]);
 
   // Group data by weeks for the contribution grid
@@ -57,7 +53,7 @@ const ActivityGraph = () => {
     const logMap = new Map();
     logs?.forEach((l) => {
       const d = new Date(l.date).toDateString();
-      logMap.set(d, (logMap.get(d) || 0) + (l.hoursWorked || 0));
+      logMap.set(d, (logMap.get(d) || 0) + (l.hours || 0));
     });
 
     while (iterator <= today || currentWeek.length > 0) {
@@ -126,10 +122,10 @@ const ActivityGraph = () => {
               icon: 'solar:chart-linear',
             },
             {
-              label: 'Learning Days',
-              value: metrics.learningDays,
+              label: 'Execution Days',
+              value: metrics.executionDays,
               suffix: '',
-              icon: 'solar:book-linear',
+              icon: 'solar:code-linear',
             },
             {
               label: 'Log Rate',
@@ -224,7 +220,7 @@ const ActivityGraph = () => {
           </div>
         </motion.div>
 
-        {/* Learning vs Execution */}
+        {/* Breakthrough and Execution Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -233,23 +229,23 @@ const ActivityGraph = () => {
             className="border border-border bg-card p-6"
           >
             <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">
-              [LEARNING_DAYS]
+              [ACTIVITY_DAYS]
             </h3>
             <div className="flex items-end gap-4">
               <div className="font-display text-5xl font-bold text-primary">
-                {metrics.learningDays}
+                {metrics.executionDays}
               </div>
               <div className="pb-2">
                 <div className="font-mono text-sm text-foreground">days this month</div>
                 <div className="font-mono text-xs text-muted-foreground">
-                  Focused on new concepts
+                  Days with logged activities
                 </div>
               </div>
             </div>
             <div className="mt-4 h-2 bg-muted overflow-hidden">
               <div
                 className="h-full bg-primary transition-all"
-                style={{ width: `${(metrics.learningDays / 30) * 100}%` }}
+                style={{ width: `${(metrics.executionDays / 30) * 100}%` }}
               />
             </div>
           </motion.div>
@@ -261,23 +257,23 @@ const ActivityGraph = () => {
             className="border border-border bg-card p-6"
           >
             <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-4">
-              [EXECUTION_DAYS]
+              [HOURS_OVERVIEW]
             </h3>
             <div className="flex items-end gap-4">
               <div className="font-display text-5xl font-bold text-foreground">
-                {metrics.executionDays}
+                {metrics.totalHoursThisMonth}
               </div>
               <div className="pb-2">
-                <div className="font-mono text-sm text-foreground">days this month</div>
+                <div className="font-mono text-sm text-foreground">hours this month</div>
                 <div className="font-mono text-xs text-muted-foreground">
-                  Building & shipping code
+                  Total productive time logged
                 </div>
               </div>
             </div>
             <div className="mt-4 h-2 bg-muted overflow-hidden">
               <div
                 className="h-full bg-foreground transition-all"
-                style={{ width: `${(metrics.executionDays / 30) * 100}%` }}
+                style={{ width: `${(metrics.totalHoursThisMonth / 160) * 100}%` }}
               />
             </div>
           </motion.div>

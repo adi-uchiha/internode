@@ -135,11 +135,24 @@ export const HeroSection = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {/* Placeholder logos */}
-              <span className="font-mono text-sm text-muted-foreground opacity-50">YC</span>
-              <span className="font-mono text-sm text-muted-foreground opacity-50">a16z</span>
-              <span className="font-display text-sm text-muted-foreground opacity-50">Vercel</span>
-              <span className="font-mono text-sm text-muted-foreground opacity-50">Stripe</span>
+              <div className="flex items-center gap-10">
+                <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity cursor-default grayscale hover:grayscale-0">
+                  <Icon icon="cib:y-combinator" className="w-5 h-5 text-[#ff6600]" />
+                  <span className="font-mono text-[10px] font-bold tracking-tighter">
+                    COMBINATOR
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity cursor-default grayscale hover:grayscale-0">
+                  <Icon icon="simple-icons:a16z" className="w-5 h-5 text-foreground" />
+                </div>
+                <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity cursor-default grayscale hover:grayscale-0">
+                  <Icon icon="cib:vercel" className="w-5 h-5 text-foreground" />
+                  <span className="font-display text-[10px] font-bold tracking-widest">VERCEL</span>
+                </div>
+                <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity cursor-default grayscale hover:grayscale-0">
+                  <Icon icon="cib:stripe" className="w-8 h-8 text-[#635bff]" />
+                </div>
+              </div>
             </div>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground font-mono">
               <span className="opacity-50">[</span>

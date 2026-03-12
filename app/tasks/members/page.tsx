@@ -1,21 +1,80 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { tmMembers } from '@/data/taskManagerData';
+import { useUsers } from '@/hooks/useUsers';
+import { useTickets } from '@/hooks/useTickets';
+import { useLogs } from '@/hooks/useLogs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useInvites, useCreateInvite } from '@/hooks/useInvites';
+import { startOfWeek, format } from 'date-fns';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 
 export default function MembersPage() {
   const [showInvite, setShowInvite] = useState(false);
+  const { user: currentUser } = useAuth();
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: tickets } = useTickets();
+  const { data: logs } = useLogs();
+  const { data: invites, isLoading: invitesLoading } = useInvites();
+  const { mutateAsync: createInvite, isPending: isInviting } = useCreateInvite();
 
-  const pendingInvites = [
-    { email: 'neha@company.com', role: 'member', status: 'Pending' },
-    { email: 'vikram@company.com', role: 'member', status: 'Expired' },
-  ];
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('member');
+
+  const members = useMemo(() => {
+    if (!users) return [];
+    const now = new Date();
+    const startWeek = startOfWeek(now, { weekStartsOn: 1 });
+
+    return users.map((user) => {
+      const activeTickets =
+        tickets?.filter((t) => t.assigneeId === user.id && t.status !== 'done').length || 0;
+      const hoursThisWeek =
+        logs
+          ?.filter((l) => l.userId === user.id && new Date(l.date) >= startWeek)
+          .reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
+
+      // Mock efficiency for now as we don't have enough data points, but based on real hours
+      const efficiency = Math.min(100, Math.round((hoursThisWeek / 40) * 100));
+
+      return {
+        ...user,
+        activeTickets,
+        hoursThisWeek,
+        efficiency,
+      };
+    });
+  }, [users, tickets, logs]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail) {
+      toast.error('Email is required');
+      return;
+    }
+    try {
+      await createInvite({ email: inviteEmail, role: inviteRole });
+      toast.success('Invitation sent');
+      setShowInvite(false);
+      setInviteEmail('');
+    } catch {
+      toast.error('Failed to send invitation');
+    }
+  };
+
+  if (usersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_BIOMETRIC_DATA...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -24,7 +83,7 @@ export default function MembersPage() {
         <div>
           <h2 className="font-display text-2xl font-bold tracking-tight">Team Members</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {tmMembers.length} active members in InternHub
+            {members.length} active members in InternHub
           </p>
         </div>
         <Button variant="hero" onClick={() => setShowInvite(true)} className="w-full md:w-auto">
@@ -35,7 +94,7 @@ export default function MembersPage() {
 
       {/* Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tmMembers.map((member, i) => (
+        {members.map((member, i) => (
           <motion.div
             key={member.id}
             initial={{ opacity: 0, y: 20 }}
@@ -45,17 +104,26 @@ export default function MembersPage() {
           >
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
-                <Image
-                  src={member.avatar}
-                  alt={member.name}
-                  width={56}
-                  height={56}
-                  className="w-14 h-14 rounded-full border border-border group-hover:border-primary/50 transition-colors"
-                />
+                <div className="w-14 h-14 rounded-full border border-border group-hover:border-primary/50 transition-colors overflow-hidden bg-muted flex items-center justify-center">
+                  {member.image ? (
+                    <Image
+                      src={member.image}
+                      alt={member.name || ''}
+                      width={56}
+                      height={56}
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <Icon icon="solar:user-linear" className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary border-2 border-card" />
               </div>
               <div>
-                <h3 className="font-display font-semibold text-lg">{member.name}</h3>
+                <h3 className="font-display font-semibold text-lg">
+                  {member.name || 'Anonymous User'}
+                </h3>
                 <p className="font-mono text-[11px] text-muted-foreground break-all">
                   {member.email}
                 </p>
@@ -75,21 +143,21 @@ export default function MembersPage() {
                       : 'bg-muted text-muted-foreground'
                   )}
                 >
-                  {member.role}
+                  {member.role || 'user'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
                   Tickets
                 </span>
-                <span className="text-sm font-medium">{member.ticketsActive} active</span>
+                <span className="text-sm font-medium">{member.activeTickets} active</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
                   Hours (this week)
                 </span>
                 <span className="font-mono text-sm font-bold text-foreground">
-                  {member.hoursThisWeek}h
+                  {member.hoursThisWeek.toFixed(1)}h
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -119,7 +187,7 @@ export default function MembersPage() {
               >
                 View Profile
               </Button>
-              {member.role !== 'admin' && (
+              {member.role !== 'admin' && currentUser?.role === 'admin' && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -173,6 +241,8 @@ export default function MembersPage() {
                   <Input
                     placeholder="user@company.com"
                     className="w-full bg-muted/30 border-border"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
                   />
                 </div>
                 <div>
@@ -183,12 +253,18 @@ export default function MembersPage() {
                     {['Admin', 'Member'].map((r) => (
                       <label
                         key={r}
-                        className="flex-1 flex items-center justify-center gap-2 p-3 border border-border bg-muted/20 cursor-pointer hover:border-primary/50 transition-colors group"
+                        className={cn(
+                          'flex-1 flex items-center justify-center gap-2 p-3 border border-border cursor-pointer hover:border-primary/50 transition-colors group',
+                          inviteRole === r.toLowerCase()
+                            ? 'bg-primary/10 border-primary'
+                            : 'bg-muted/20'
+                        )}
                       >
                         <input
                           type="radio"
                           name="role"
-                          defaultChecked={r === 'Member'}
+                          checked={inviteRole === r.toLowerCase()}
+                          onChange={() => setInviteRole(r.toLowerCase())}
                           className="accent-primary w-4 h-4"
                         />
                         <span className="text-sm font-medium group-hover:text-primary transition-colors">
@@ -201,9 +277,10 @@ export default function MembersPage() {
                 <Button
                   variant="hero"
                   className="w-full py-6 text-sm"
-                  onClick={() => setShowInvite(false)}
+                  onClick={handleInvite}
+                  disabled={isInviting}
                 >
-                  Send Invitation
+                  {isInviting ? 'Sending...' : 'Send Invitation'}
                 </Button>
               </div>
 
@@ -212,27 +289,41 @@ export default function MembersPage() {
                   Pending Invites
                 </div>
                 <div className="space-y-2">
-                  {pendingInvites.map((invite, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-3 bg-muted/10 border border-border/50"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-mono text-xs">{invite.email}</span>
-                        <span className="text-[10px] text-muted-foreground">{invite.role}</span>
-                      </div>
-                      <span
-                        className={cn(
-                          'font-mono text-[10px] uppercase px-2 py-0.5 rounded-sm',
-                          invite.status === 'Pending'
-                            ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
-                            : 'bg-muted text-muted-foreground'
-                        )}
-                      >
-                        {invite.status}
-                      </span>
+                  {invitesLoading ? (
+                    <div className="p-4 text-center font-mono text-[10px] text-muted-foreground animate-pulse">
+                      LOADING_INVITE_SEQUENCE...
                     </div>
-                  ))}
+                  ) : invites?.filter((inv) => inv.status === 'pending').length === 0 ? (
+                    <div className="p-4 text-center font-mono text-[10px] text-muted-foreground opacity-50 italic">
+                      NO_PENDING_VECTORS_DETECTED
+                    </div>
+                  ) : (
+                    invites
+                      ?.filter((inv) => inv.status === 'pending')
+                      .map((invite) => (
+                        <div
+                          key={invite.id}
+                          className="flex items-center justify-between p-3 bg-muted/10 border border-border/50"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-mono text-xs">{invite.email}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">
+                              {invite.role}
+                            </span>
+                          </div>
+                          <span
+                            className={cn(
+                              'font-mono text-[10px] uppercase px-2 py-0.5 rounded-sm',
+                              invite.status === 'pending'
+                                ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
+                                : 'bg-muted text-muted-foreground'
+                            )}
+                          >
+                            {invite.status}
+                          </span>
+                        </div>
+                      ))
+                  )}
                 </div>
               </div>
             </motion.div>

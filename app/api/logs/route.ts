@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { dailyLogs } from '@/db/schema';
+import { timeLogs } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { desc, eq } from 'drizzle-orm';
@@ -20,19 +20,16 @@ export async function GET(request: Request) {
 
   try {
     const isAdmin = session.user.role === 'admin';
-    // If admin and NO specific id requested, return all logs
-    // If admin and specific id requested, return that id's logs
-    // If member, ALWAYS return only their logs
     let condition = undefined;
     if (isAdmin && userIdQuery) {
-      condition = eq(dailyLogs.userId, userIdQuery);
+      condition = eq(timeLogs.userId, userIdQuery);
     } else if (!isAdmin) {
-      condition = eq(dailyLogs.userId, session.user.id);
-    } // else (isAdmin && !userIdQuery) -> condition remains undefined
+      condition = eq(timeLogs.userId, session.user.id);
+    }
 
-    const logs = await db.query.dailyLogs.findMany({
+    const logs = await db.query.timeLogs.findMany({
       where: condition,
-      orderBy: [desc(dailyLogs.date)],
+      orderBy: [desc(timeLogs.date)],
     });
 
     return NextResponse.json(logs);
@@ -53,38 +50,18 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const {
-      date,
-      whatIDid,
-      whatILearned,
-      hoursWorked,
-      blockers,
-      hasBlocker,
-      isBreakthrough,
-      skillTags,
-      prLinks,
-      docLinks,
-      projectId,
-      status, // 'draft' or 'submitted'
-    } = body;
+    const { date, hours, note, ticketId, isBreakthrough } = body;
 
     const [newLog] = await db
-      .insert(dailyLogs)
+      .insert(timeLogs)
       .values({
         id: nanoid(),
         userId: session.user.id,
+        ticketId,
+        hours: hours || 0,
+        note: note || '',
         date: new Date(date),
-        whatIDid,
-        whatILearned: whatILearned || '',
-        hoursWorked: hoursWorked || 0,
-        blockers,
-        hasBlocker: !!hasBlocker || !!blockers,
         isBreakthrough: !!isBreakthrough,
-        skillTags: skillTags || [],
-        prLinks: prLinks || [],
-        docLinks: docLinks || [],
-        projectId,
-        status: status || 'submitted',
       })
       .returning();
 

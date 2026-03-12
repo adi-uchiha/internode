@@ -31,7 +31,7 @@ import {
   getTimeBarColor,
   type TicketStatus,
   type TicketPriority,
-} from '@/data/taskManagerData';
+} from '@/lib/ticket-utils';
 import {
   useTicket,
   useUpdateTicket,
@@ -319,7 +319,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   Assignee
                 </span>
                 <div className="flex items-center gap-2 px-2 py-1 bg-muted/20 border border-border rounded-full">
-                  {ticket.assignee?.image && (
+                  {ticket.assignee?.image ? (
                     <Image
                       src={ticket.assignee.image}
                       alt={ticket.assignee.name || ''}
@@ -327,6 +327,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                       height={16}
                       className="rounded-full"
                     />
+                  ) : (
+                    <Icon icon="solar:user-linear" className="w-4 h-4 text-muted-foreground" />
                   )}
                   <span className="text-xs font-medium">
                     {ticket.assignee?.name || 'Unassigned'}
@@ -443,7 +445,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
                         )}
                       >
-                        {log.user?.image && (
+                        {log.user?.image ? (
                           <Image
                             src={log.user.image}
                             alt={log.user.name || ''}
@@ -451,6 +453,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             height={24}
                             className="w-6 h-6 rounded-full border border-border object-cover"
                           />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center border border-border">
+                            <Icon
+                              icon="solar:user-linear"
+                              className="w-3 h-3 text-muted-foreground"
+                            />
+                          </div>
                         )}
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
                           <span className="font-mono text-[11px] text-muted-foreground">
@@ -499,7 +508,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     key={c.id}
                     className="flex gap-4 border border-border bg-card/80 p-5 shadow-sm group"
                   >
-                    {c.user?.image && (
+                    {c.user?.image ? (
                       <Image
                         src={c.user.image}
                         alt={c.user.name || ''}
@@ -507,6 +516,10 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         height={40}
                         className="w-10 h-10 rounded-full border border-border shrink-0 group-hover:border-primary/50 transition-colors object-cover"
                       />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border shrink-0 group-hover:border-primary/50 transition-colors">
+                        <Icon icon="solar:user-bold" className="w-5 h-5 text-muted-foreground" />
+                      </div>
                     )}
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center justify-between">
@@ -778,7 +791,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     Author
                   </span>
                   <div className="flex items-center gap-2">
-                    {ticket.createdBy?.image && (
+                    {ticket.createdBy?.image ? (
                       <Image
                         src={ticket.createdBy.image}
                         alt={ticket.createdBy.name || ''}
@@ -786,6 +799,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                         height={20}
                         className="w-5 h-5 rounded-full object-cover"
                       />
+                    ) : (
+                      <Icon icon="solar:user-linear" className="w-5 h-5 text-muted-foreground" />
                     )}
                     <span className="text-xs font-medium">
                       {ticket.createdBy?.name || 'Unknown'}

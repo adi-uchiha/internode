@@ -32,6 +32,11 @@ export async function GET(request: Request) {
         assignee: true,
         createdBy: true,
         project: true,
+        timeLogs: {
+          with: {
+            user: true,
+          },
+        },
       },
       orderBy: [desc(tickets.createdAt)],
     });

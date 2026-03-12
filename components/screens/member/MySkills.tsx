@@ -16,21 +16,19 @@ const MySkills = () => {
   const skillData = useMemo(() => {
     const tagCount: Record<string, number> = {};
 
-    if (logs) {
-      logs.forEach((log) => {
-        if (log.skillTags) {
-          log.skillTags.forEach((tag) => {
-            const normalizedTag = tag.toLowerCase();
-            tagCount[normalizedTag] = (tagCount[normalizedTag] || 0) + 1;
-          });
-        }
+    // Aggregation from logs is no longer possible as skillTags were moved to user profile or breakthroughs
+    // For now, we'll return an empty array or use user profile skillTags
+    if (user?.skillTags) {
+      user.skillTags.forEach((tag) => {
+        const normalizedTag = tag.toLowerCase();
+        tagCount[normalizedTag] = (tagCount[normalizedTag] || 0) + 1;
       });
     }
 
     return Object.entries(tagCount)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [logs]);
+  }, [user]);
 
   const maxCount = skillData[0]?.count || 1;
 
@@ -68,7 +66,14 @@ const MySkills = () => {
             },
             {
               label: 'Skill Score',
-              value: isLoading ? '...' : '87',
+              value: isLoading
+                ? '...'
+                : Math.min(
+                    100,
+                    Math.round(
+                      skillData.length * 5 + logs.reduce((sum, l) => sum + (l.hours || 0), 0) / 10
+                    )
+                  ).toString(),
               suffix: '/100',
               icon: 'solar:graph-up-linear',
             },

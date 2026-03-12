@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users, dailyLogs } from '@/db/schema';
+import { users, timeLogs, tickets } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { eq, sql, and } from 'drizzle-orm';
+import { sql, and, eq } from 'drizzle-orm';
 
 export async function GET() {
   const session = await auth.api.getSession({
@@ -24,16 +24,12 @@ export async function GET() {
 
     // 2. Total Hours Logged
     const totalHoursRes = await db
-      .select({ total: sql<number>`sum(${dailyLogs.hoursWorked})::float` })
-      .from(dailyLogs)
-      .where(eq(dailyLogs.status, 'submitted'));
+      .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
+      .from(timeLogs);
     const totalHours = totalHoursRes[0]?.total || 0;
 
     // 3. Log Rate (Simple estimate for UI)
-    const logsCountRes = await db
-      .select({ count: sql<number>`count(*)::integer` })
-      .from(dailyLogs)
-      .where(eq(dailyLogs.status, 'submitted'));
+    const logsCountRes = await db.select({ count: sql<number>`count(*)::integer` }).from(timeLogs);
     const logsCount = logsCountRes[0]?.count || 0;
 
     // Assuming 10 expected logs per intern over some period for a rough gauge
@@ -42,9 +38,25 @@ export async function GET() {
         ? Math.min(Math.round((logsCount / (activeInternsCount * 10)) * 100), 100)
         : 0;
 
-    // 4. Avg Resolve Time (Placeholder string format for UI layout)
-    // Could eventually calculate difference between createdAt and updatedAt for tickets marked 'done'
-    const avgResolveTime = '2.4h';
+    // 4. Avg Resolve Time
+    const resolvedTickets = await db
+      .select({
+        createdAt: tickets.createdAt,
+        updatedAt: tickets.updatedAt,
+      })
+      .from(tickets)
+      .where(eq(tickets.status, 'done'));
+
+    let avgResolveTime = 'N/A';
+    if (resolvedTickets.length > 0) {
+      const totalTime = resolvedTickets.reduce((acc, t) => {
+        const diff = t.updatedAt.getTime() - t.createdAt.getTime();
+        return acc + diff;
+      }, 0);
+      const avgMs = totalTime / resolvedTickets.length;
+      const avgHours = avgMs / (1000 * 60 * 60);
+      avgResolveTime = `${avgHours.toFixed(1)}h`;
+    }
 
     return NextResponse.json({
       logRate: `${logRate}%`,

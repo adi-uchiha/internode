@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-import { getPriorityColor, getTimeBarColor, type TicketPriority } from '@/data/taskManagerData';
+import { getPriorityColor, getTimeBarColor, type TicketPriority } from '@/lib/ticket-utils';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -310,9 +310,7 @@ export default function KanbanPage() {
                         <KanbanCard
                           key={ticket.id}
                           ticket={ticket}
-                          onClick={() =>
-                            router.push(`/tasks/ticket/${ticket.ticketId}?dbId=${ticket.id}`)
-                          }
+                          onClick={() => router.push(`/tasks/ticket/${ticket.id}`)}
                           mounted={mounted}
                         />
                       ))}

@@ -82,14 +82,18 @@ const InternsList = () => {
                     <td className="p-4 font-mono text-sm">{intern.logStatus || '-'}</td>
                     <td className="p-4">
                       <div className="flex gap-1">
-                        {intern.skillTags?.slice(0, 2).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 border border-border font-mono text-xs"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                        {intern.skillTags && Array.isArray(intern.skillTags) ? (
+                          intern.skillTags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 border border-border font-mono text-xs"
+                            >
+                              #{tag}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground font-mono text-xs">-</span>
+                        )}
                       </div>
                     </td>
                   </tr>

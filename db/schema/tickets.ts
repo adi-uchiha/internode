@@ -40,6 +40,7 @@ export const timeLogs = pgTable('time_logs', {
   note: text('note').notNull(),
   date: timestamp('date').notNull(),
   isBreakthrough: boolean('is_breakthrough').notNull().default(false),
+  adminComment: text('admin_comment'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

@@ -5,27 +5,88 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { tmTickets, getMemberById, generateHeatmapData } from '@/data/taskManagerData';
+import { useLogs } from '@/hooks/useLogs';
+import { useUsers } from '@/hooks/useUsers';
+import { useTickets } from '@/hooks/useTickets';
+import { Icon } from '@iconify/react';
+import { format, startOfWeek, subDays } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function TimeLogsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { data: allLogs, isLoading: logsLoading } = useLogs(isAdmin ? undefined : user?.id);
+  const { data: users } = useUsers();
+  const { data: tickets } = useTickets();
 
-  // Gather all time logs
-  const allLogs = useMemo(() => {
-    return tmTickets
-      .flatMap((t) => t.timeLogs.map((log) => ({ ...log, ticketTitle: t.title, ticketId: t.id })))
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, []);
+  const logs = useMemo(() => {
+    if (!allLogs || !tickets) return [];
+    return allLogs
+      .map((log) => {
+        const ticket = tickets.find((t) => t.id === log.ticketId);
+        return {
+          ...log,
+          ticketTitle: ticket?.title || 'Unknown Ticket',
+          ticketDbId: ticket?.ticketId || '?',
+        };
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [allLogs, tickets]);
 
-  const logs = isAdmin ? allLogs : allLogs.filter((l) => l.memberId === 'tm-002');
-  const totalHoursWeek = logs
-    .filter((l) => l.date >= '2026-03-03')
-    .reduce((s, l) => s + l.hours, 0);
-  const totalHoursMonth = logs.reduce((s, l) => s + l.hours, 0);
-  const avgPerDay = logs.length > 0 ? (totalHoursMonth / 7).toFixed(1) : '0';
+  const stats = useMemo(() => {
+    if (!logs) return { week: 0, month: 0, avg: 0 };
+    const now = new Date();
+    const startWeek = startOfWeek(now, { weekStartsOn: 1 });
+    const weekHours = logs
+      .filter((l) => new Date(l.date) >= startWeek)
+      .reduce((s, l) => s + (l.hours || 0), 0);
+    const monthHours = logs.reduce((s, l) => s + (l.hours || 0), 0);
+    const avg = logs.length > 0 ? (monthHours / 30).toFixed(1) : '0';
+    return { week: weekHours, month: monthHours, avg };
+  }, [logs]);
 
-  const heatmapData = useMemo(() => generateHeatmapData(), []);
+  const handleExportCSV = () => {
+    if (!logs?.length) {
+      toast.error('No logs available for export');
+      return;
+    }
+
+    const headers = ['Date', 'Ticket', 'Hours', 'Note', 'User'];
+    const rows = logs.map((l) => [
+      format(new Date(l.date), 'yyyy-MM-dd'),
+      l.ticketTitle,
+      l.hours.toString(),
+      l.note || '',
+      users?.find((u) => u.id === l.userId)?.name || 'Unknown',
+    ]);
+
+    const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `time-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('CSV export initiated');
+  };
+
+  const heatmapData = useMemo(() => {
+    const data: { date: string; hours: number }[] = [];
+    const today = new Date();
+    for (let i = 84; i >= 0; i--) {
+      const d = subDays(today, i);
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const hours =
+        logs
+          ?.filter((l) => format(new Date(l.date), 'yyyy-MM-dd') === dateStr)
+          .reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
+      data.push({ date: dateStr, hours });
+    }
+    return data;
+  }, [logs]);
 
   const getHeatmapIntensity = (hours: number) => {
     if (hours === 0) return 'bg-border/50';
@@ -35,7 +96,6 @@ export default function TimeLogsPage() {
     return 'bg-primary';
   };
 
-  // Group heatmap by weeks
   const weeks = useMemo(() => {
     const result: (typeof heatmapData)[] = [];
     for (let i = 0; i < heatmapData.length; i += 7) {
@@ -44,6 +104,15 @@ export default function TimeLogsPage() {
     return result;
   }, [heatmapData]);
 
+  if (logsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_TEMPORAL_LOGS...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -51,13 +120,13 @@ export default function TimeLogsPage() {
         {[
           {
             label: isAdmin ? 'Team Hours This Week' : 'My Hours This Week',
-            value: `${totalHoursWeek}h`,
+            value: `${stats.week.toFixed(1)}h`,
           },
           {
             label: isAdmin ? 'Team Hours This Month' : 'My Hours This Month',
-            value: `${totalHoursMonth}h`,
+            value: `${stats.month.toFixed(1)}h`,
           },
-          { label: 'Avg Hours / Day', value: `${avgPerDay}h` },
+          { label: 'Avg Hours / Day', value: `${stats.avg}h` },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -83,7 +152,10 @@ export default function TimeLogsPage() {
       >
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/20">
           <h3 className="font-display font-semibold">Time Log History</h3>
-          <button className="font-mono text-xs text-muted-foreground border border-border px-3 py-1 hover:bg-muted transition-colors">
+          <button
+            onClick={handleExportCSV}
+            className="font-mono text-xs text-muted-foreground border border-border px-3 py-1 hover:bg-muted transition-colors"
+          >
             [Export CSV]
           </button>
         </div>
@@ -115,7 +187,7 @@ export default function TimeLogsPage() {
             </thead>
             <tbody>
               {logs.map((log, i) => {
-                const member = getMemberById(log.memberId);
+                const member = users?.find((u) => u.id === log.userId);
                 return (
                   <tr
                     key={log.id}
@@ -124,29 +196,44 @@ export default function TimeLogsPage() {
                       i % 2 === 0 ? '' : 'bg-muted/5'
                     )}
                   >
-                    <td className="p-4 font-mono text-xs">{log.date}</td>
+                    <td className="p-4 font-mono text-xs">
+                      {format(new Date(log.date), 'yyyy-MM-dd')}
+                    </td>
                     {isAdmin && (
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          {member?.avatar && (
-                            <Image
-                              src={member.avatar}
-                              alt={member.name || ''}
-                              width={20}
-                              height={20}
-                              className="rounded-full border border-border"
-                            />
-                          )}
+                          <div className="w-5 h-5 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center">
+                            {member?.image ? (
+                              <Image
+                                src={member.image}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className="object-cover"
+                                unoptimized
+                              />
+                            ) : (
+                              <Icon
+                                icon="solar:user-linear"
+                                className="w-3 h-3 text-muted-foreground"
+                              />
+                            )}
+                          </div>
                           <span className="text-sm font-medium">{member?.name}</span>
                         </div>
                       </td>
                     )}
-                    <td className="p-4 text-sm text-primary font-medium">{log.ticketTitle}</td>
+                    <td className="p-4 text-sm text-primary font-medium">
+                      {log.ticketTitle}{' '}
+                      <span className="text-muted-foreground text-[10px] font-mono">
+                        [{log.ticketDbId.slice(0, 8)}]
+                      </span>
+                    </td>
                     <td className="p-4 font-mono text-xs font-bold text-right text-foreground">
-                      {log.hours.toFixed(1)}h
+                      {(log.hours || 0).toFixed(1)}h
                     </td>
                     <td className="p-4 text-sm text-muted-foreground max-w-[300px] truncate">
-                      {log.note}
+                      {log.note || '---'}
                     </td>
                     <td className="p-4">
                       <span className="font-mono text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-sm">

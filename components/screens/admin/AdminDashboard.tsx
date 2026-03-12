@@ -153,16 +153,22 @@ const AdminDashboard = () => {
                 >
                   <div className="flex gap-4 items-center">
                     <div className="relative w-10 h-10 overflow-hidden border border-border shrink-0">
-                      <Image
-                        src={
-                          leave.user?.image ||
-                          'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'
-                        }
-                        alt={leave.user?.name || 'Intern'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
+                      {leave.user?.image ? (
+                        <Image
+                          src={leave.user.image}
+                          alt={leave.user.name || 'Intern'}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Icon
+                            icon="solar:user-linear"
+                            className="w-5 h-5 text-muted-foreground"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <div className="font-mono text-sm font-semibold">{leave.user?.name}</div>

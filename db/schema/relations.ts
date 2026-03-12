@@ -2,11 +2,9 @@ import { relations } from 'drizzle-orm';
 import { users } from './users';
 import { projects, projectMembers } from './projects';
 import { tickets, timeLogs, comments } from './tickets';
-import { dailyLogs } from './logs';
 import { leaveRequests } from './leaves';
 import { weeklyGoals, goalItems } from './goals';
 import { activities, notifications } from './system';
-
 // Users Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projectMembers: many(projectMembers),
@@ -14,7 +12,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdTickets: many(tickets, { relationName: 'creator' }),
   timeLogs: many(timeLogs),
   comments: many(comments),
-  dailyLogs: many(dailyLogs),
   leaveRequests: many(leaveRequests),
   weeklyGoals: many(weeklyGoals),
   activities: many(activities),
@@ -25,7 +22,6 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const projectsRelations = relations(projects, ({ many }) => ({
   members: many(projectMembers),
   tickets: many(tickets),
-  dailyLogs: many(dailyLogs),
 }));
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
@@ -81,18 +77,6 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   user: one(users, {
     fields: [comments.userId],
     references: [users.id],
-  }),
-}));
-
-// Daily Logs
-export const dailyLogsRelations = relations(dailyLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [dailyLogs.userId],
-    references: [users.id],
-  }),
-  project: one(projects, {
-    fields: [dailyLogs.projectId],
-    references: [projects.id],
   }),
 }));
 

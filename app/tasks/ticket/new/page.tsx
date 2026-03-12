@@ -15,7 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { tmMembers, tmProjects } from '@/data/taskManagerData';
+import { useProjects } from '@/hooks/useProjects';
+import { useUsers } from '@/hooks/useUsers';
+import { useCreateTicket } from '@/hooks/useTickets';
 import { toast } from 'sonner';
 
 export default function NewTicketPage() {
@@ -25,12 +27,16 @@ export default function NewTicketPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [project, setProject] = useState('');
-  const [assignee, setAssignee] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
   const [estimate, setEstimate] = useState('');
   const [priority, setPriority] = useState('medium');
   const [labels, setLabels] = useState('');
   const [dueDate, setDueDate] = useState('');
+
+  const { data: projects } = useProjects();
+  const { data: users } = useUsers();
+  const { mutateAsync: createTicket, isPending: isCreating } = useCreateTicket();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -42,13 +48,36 @@ export default function NewTicketPage() {
     }
   }, [isAdmin, user, router]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) {
       toast.error('Title is required');
       return;
     }
-    toast.success(`Ticket "${title}" created (local only)`);
-    router.push('/tasks/kanban');
+    if (!projectId) {
+      toast.error('Project is required');
+      return;
+    }
+
+    try {
+      await createTicket({
+        title,
+        description,
+        projectId,
+        assigneeId: assigneeId || null,
+        priority: priority as 'critical' | 'high' | 'medium' | 'low',
+        estimatedHours: parseFloat(estimate) || 0,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        labels: labels
+          .split(',')
+          .map((l) => l.trim())
+          .filter(Boolean),
+      });
+      toast.success(`Ticket "${title}" initialized successfully`);
+      router.push('/tasks/kanban');
+    } catch (err) {
+      toast.error('Failed to initialize ticket');
+      console.error(err);
+    }
   };
 
   if (!mounted) return null;
@@ -90,13 +119,13 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   System / Project
                 </label>
-                <Select value={project} onValueChange={(val) => setProject(val || '')}>
+                <Select value={projectId} onValueChange={(val) => setProjectId(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tmProjects.map((p) => (
-                      <SelectItem key={p.id} value={p.name}>
+                    {projects?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
                         {p.name}
                       </SelectItem>
                     ))}
@@ -107,14 +136,14 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   Assignee
                 </label>
-                <Select value={assignee} onValueChange={(val) => setAssignee(val || '')}>
+                <Select value={assigneeId} onValueChange={(val) => setAssigneeId(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tmMembers.map((m) => (
+                    {users?.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.name} ({m.role})
+                        {m.name || m.email} ({m.role})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -200,7 +229,7 @@ export default function NewTicketPage() {
               size="lg"
               className="px-8 shadow-lg shadow-primary/20"
               onClick={handleCreate}
-              disabled={!title.trim()}
+              disabled={!title.trim() || !projectId || isCreating}
             >
               <Icon icon="solar:check-circle-linear" className="w-5 h-5 mr-2" />
               Initialize Ticket

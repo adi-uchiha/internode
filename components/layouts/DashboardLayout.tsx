@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -9,11 +9,17 @@ import { cn } from '@/lib/utils';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import Image from 'next/image';
 
+interface NavSubItem {
+  label: string;
+  href: string;
+}
+
 interface NavItem {
   label: string;
   href: string;
   icon: string;
   badge?: number;
+  subItems?: NavSubItem[];
 }
 
 interface DashboardLayoutProps {
@@ -25,6 +31,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -42,6 +49,23 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  useEffect(() => {
+    navItems.forEach((item) => {
+      if (
+        item.subItems?.some((sub) => pathname === sub.href || pathname.startsWith(sub.href + '/'))
+      ) {
+        setExpandedItems((prev) => (prev.includes(item.label) ? prev : [...prev, item.label]));
+      }
+    });
+  }, [pathname, navItems]);
+
+  const toggleExpand = (label: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setExpandedItems((prev) =>
+      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]
+    );
   };
 
   return (
@@ -78,18 +102,17 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         <nav className="flex-1 py-4 px-2 overflow-y-auto">
           <div className="space-y-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
-                    isActive
-                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
-                  )}
-                >
+              const hasSub = !!item.subItems?.length;
+              const isChildActive =
+                hasSub &&
+                item.subItems!.some(
+                  (sub) => pathname === sub.href || pathname.startsWith(sub.href + '/')
+                );
+              const isActive = pathname === item.href || isChildActive;
+              const isExpanded = expandedItems.includes(item.label);
+
+              const content = (
+                <>
                   <Icon
                     icon={item.icon}
                     className={cn('w-5 h-5 shrink-0 transition-colors', isActive && 'text-primary')}
@@ -100,13 +123,14 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="font-display text-sm truncate tracking-tight font-medium"
+                        className="font-display text-sm truncate tracking-tight font-medium flex-1 text-left"
                       >
                         {item.label}
                       </motion.span>
                     )}
                   </AnimatePresence>
-                  {item.badge && item.badge > 0 && (
+
+                  {!hasSub && item.badge && item.badge > 0 && (
                     <span
                       className={cn(
                         'absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5',
@@ -116,7 +140,81 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                       {item.badge}
                     </span>
                   )}
-                </Link>
+
+                  {hasSub && !collapsed && (
+                    <Icon
+                      icon="solar:alt-arrow-down-linear"
+                      className={cn(
+                        'w-4 h-4 text-muted-foreground transition-transform shrink-0',
+                        isExpanded && 'rotate-180'
+                      )}
+                    />
+                  )}
+                </>
+              );
+
+              return (
+                <div key={item.label} className="relative">
+                  {hasSub ? (
+                    <button
+                      onClick={(e) => toggleExpand(item.label, e)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
+                        isActive
+                          ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
+                      )}
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
+                        isActive
+                          ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
+                      )}
+                    >
+                      {content}
+                    </Link>
+                  )}
+
+                  {hasSub && (
+                    <AnimatePresence>
+                      {isExpanded && !collapsed && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-11 pr-3 py-1 space-y-1 mt-1">
+                            {item.subItems!.map((sub) => {
+                              const isSubActive =
+                                pathname === sub.href || pathname.startsWith(sub.href + '/');
+                              return (
+                                <Link
+                                  key={sub.href}
+                                  href={sub.href}
+                                  className={cn(
+                                    'block py-1.5 text-sm font-display truncate transition-colors',
+                                    isSubActive
+                                      ? 'text-primary font-medium'
+                                      : 'text-muted-foreground hover:text-foreground'
+                                  )}
+                                >
+                                  {sub.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  )}
+                </div>
               );
             })}
           </div>

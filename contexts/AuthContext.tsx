@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useEffect } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import type { User } from '@/lib/auth-types';
 
 type UserRole = 'admin' | 'member';
@@ -19,9 +19,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
-  const { data: sessionData, isPending: isLoading } = authClient.useSession();
+  const pathname = usePathname();
+  const { data: sessionData, isPending: isLoading, error } = authClient.useSession();
 
   const user = sessionData?.user as User | null;
+
+  // Redirect if session is invalid on protected routes
+  useEffect(() => {
+    const isPublicRoute = ['/', '/login', '/register'].includes(pathname);
+    const isAuthRoute = ['/login', '/register'].includes(pathname);
+
+    if (!isLoading) {
+      if (!sessionData && !isPublicRoute) {
+        router.push('/login');
+      } else if (sessionData && isAuthRoute) {
+        router.push('/tasks/dashboard');
+      }
+    }
+
+    if (error) {
+      console.error('Session error:', error);
+      // If there's a serious session error (like the 500s we saw), treat as logged out
+      if (!isPublicRoute) {
+        router.push('/login');
+      }
+    }
+  }, [sessionData, isLoading, error, pathname, router]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const { data, error } = await authClient.signIn.email({

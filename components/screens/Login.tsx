@@ -7,6 +7,7 @@ import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { authClient } from '@/lib/auth-client';
 import Link from 'next/link';
 
 type LoginMode = 'admin' | 'member';
@@ -212,6 +213,28 @@ const Login = () => {
                 )}
               </Button>
             </form>
+
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={async () => {
+                  await authClient.signIn.social({
+                    provider: 'github',
+                    callbackURL: '/tasks/dashboard',
+                  });
+                }}
+              >
+                <img
+                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
+                  className="w-5 h-5 invert dark:invert-0"
+                  alt="GitHub"
+                />
+                Sign in with GitHub
+              </Button>
+            </div>
 
             {/* Demo credentials */}
             <div className="mt-6 pt-6 border-t border-border">

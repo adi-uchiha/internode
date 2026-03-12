@@ -11,13 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTickets, type TicketWithRelations } from '@/hooks/useTickets';
+import { useAuth } from '@/contexts/AuthContext';
 import {
-  tmTickets,
   getStatusColor,
   getStatusLabel,
   getPriorityColor,
   getTimeBarColor,
-} from '@/data/taskManagerData';
+} from '@/lib/ticket-utils';
 import { cn } from '@/lib/utils';
 
 export default function MyTicketsPage() {
@@ -25,10 +26,43 @@ export default function MyTicketsPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [search, setSearch] = useState('');
   const router = useRouter();
+  const { user } = useAuth();
+  const { data: allTickets, isLoading: ticketsLoading } = useTickets();
 
-  const myTickets = tmTickets
-    .filter((t) => t.assigneeId === 'tm-002')
-    .filter((t) => statusFilter === 'all' || t.status === statusFilter);
+  const myTickets = useMemo(() => {
+    if (!allTickets || !user) return [];
+    return allTickets
+      .filter((t: TicketWithRelations) => t.assigneeId === user.id)
+      .filter((t: TicketWithRelations) => statusFilter === 'all' || t.status === statusFilter)
+      .filter((t: TicketWithRelations) => t.title.toLowerCase().includes(search.toLowerCase()))
+      .map((t: TicketWithRelations) => {
+        const loggedHours = t.timeLogs?.reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
+        return { ...t, loggedHours };
+      })
+      .sort((a, b) => {
+        if (sortBy === 'newest')
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (sortBy === 'due-date') {
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
+        if (sortBy === 'priority') {
+          const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+          return (
+            (priorityOrder[a.priority as keyof typeof priorityOrder] || 4) -
+            (priorityOrder[b.priority as keyof typeof priorityOrder] || 4)
+          );
+        }
+        if (sortBy === 'time')
+          return (
+            (b as TicketWithRelations & { loggedHours: number }).loggedHours -
+            (a as TicketWithRelations & { loggedHours: number }).loggedHours
+          );
+        return 0;
+      });
+  }, [allTickets, user, statusFilter, search, sortBy]);
+
   const { now, threeDaysFromNow } = useMemo(() => {
     const d = new Date();
     return {
@@ -36,6 +70,15 @@ export default function MyTicketsPage() {
       threeDaysFromNow: new Date(d.getTime() + 3 * 86400000),
     };
   }, []);
+
+  if (ticketsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_PERSONAL_TASK_MATRIX...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,16 +163,17 @@ export default function MyTicketsPage() {
                       'text-destructive': ticketDueDate && ticketDueDate < now,
                       'text-amber-400':
                         ticketDueDate && ticketDueDate >= now && ticketDueDate < threeDaysFromNow,
-                      'text-muted-foreground':
-                        !ticketDueDate || (ticketDueDate >= threeDaysFromNow && true),
+                      'text-muted-foreground': !ticketDueDate || ticketDueDate >= threeDaysFromNow,
                     })}
                   >
-                    Due {ticket.dueDate}
+                    Due {ticket.dueDate ? new Date(ticket.dueDate).toLocaleDateString() : 'No Date'}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-4 ml-5">
-                <span className="font-mono text-xs text-muted-foreground">{ticket.project}</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  ID: {ticket.ticketId}
+                </span>
                 <div className="flex-1 flex items-center gap-2 max-w-[400px]">
                   <div className="flex-1 h-1.5 bg-muted overflow-hidden">
                     <div

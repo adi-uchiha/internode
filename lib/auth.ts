@@ -15,16 +15,31 @@ export const auth = betterAuth({
   }),
   user: {
     additionalFields: {
-      role: { type: 'string' },
+      username: { type: 'string', required: false },
+      role: { type: 'string', input: false },
       status: { type: 'string' },
       joinDate: { type: 'date' },
       department: { type: 'string' },
       skillTags: { type: 'string[]', input: false },
       logStatus: { type: 'string' },
       lastLogTime: { type: 'date' },
+      notificationSettings: { type: 'string' },
+      organizationName: { type: 'string' },
+      organizationDomain: { type: 'string' },
     },
   },
   emailAndPassword: {
     enabled: true,
+  },
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      mapProfileToUser: (profile) => {
+        return {
+          username: profile.login,
+        };
+      },
+    },
   },
 });

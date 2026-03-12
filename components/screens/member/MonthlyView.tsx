@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
-import { useLogs, type DailyLog } from '@/hooks/useLogs';
+import { useLogs, type TimerLog } from '@/hooks/useLogs';
 
 const MonthlyView = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -18,7 +18,7 @@ const MonthlyView = () => {
           d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear()
         );
       }) || [];
-    const totalHoursThisMonth = currentMonthLogs.reduce((sum, l) => sum + (l.hoursWorked || 0), 0);
+    const totalHoursThisMonth = currentMonthLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
     const daysLogged = new Set(currentMonthLogs.map((l) => new Date(l.date).toDateString())).size;
     const breakthroughs = currentMonthLogs.filter((l) => l.isBreakthrough).length;
     const avgHoursPerDay = daysLogged > 0 ? totalHoursThisMonth / daysLogged : 0;
@@ -35,7 +35,7 @@ const MonthlyView = () => {
     const daysInMonth = lastDay.getDate();
     const startingDay = firstDay.getDay();
 
-    const days: { date: Date | null; log?: DailyLog }[] = [];
+    const days: { date: Date | null; log?: TimerLog }[] = [];
 
     // Empty cells for days before month starts
     for (let i = 0; i < startingDay; i++) {
@@ -63,9 +63,8 @@ const MonthlyView = () => {
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const getDayStatus = (log?: DailyLog) => {
+  const getDayStatus = (log?: TimerLog) => {
     if (!log) return 'none';
-    if (log.hasBlocker) return 'blocker';
     if (log.isBreakthrough) return 'breakthrough';
     return 'logged';
   };
@@ -166,7 +165,6 @@ const MonthlyView = () => {
 
               const status = getDayStatus(day.log);
               const isToday = day.date.toDateString() === new Date().toDateString();
-              const isPast = day.date < new Date() && !isToday;
 
               return (
                 <motion.div
@@ -177,7 +175,7 @@ const MonthlyView = () => {
                   className={`
                     aspect-square border p-2 flex flex-col justify-between cursor-pointer transition-all
                     ${isToday ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}
-                    ${status === 'none' && isPast ? 'opacity-50' : ''}
+                    ${status === 'none' && day.date < new Date() && !isToday ? 'opacity-50' : ''}
                   `}
                 >
                   <div className="flex items-center justify-between">
@@ -188,13 +186,7 @@ const MonthlyView = () => {
                     </span>
                     {status !== 'none' && (
                       <div
-                        className={`w-2 h-2 ${
-                          status === 'breakthrough'
-                            ? 'bg-yellow-500'
-                            : status === 'blocker'
-                              ? 'bg-orange-500'
-                              : 'bg-primary'
-                        }`}
+                        className={`w-2 h-2 ${status === 'breakthrough' ? 'bg-yellow-500' : 'bg-primary'}`}
                       />
                     )}
                   </div>
@@ -202,7 +194,7 @@ const MonthlyView = () => {
                   {day.log && (
                     <div className="text-right">
                       <span className="font-mono text-xs text-muted-foreground">
-                        {day.log.hoursWorked}h
+                        {day.log.hours}h
                       </span>
                     </div>
                   )}
@@ -220,10 +212,6 @@ const MonthlyView = () => {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-500" />
               <span className="font-mono text-xs text-muted-foreground">Breakthrough</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-orange-500" />
-              <span className="font-mono text-xs text-muted-foreground">Has Blocker</span>
             </div>
           </div>
         </motion.div>

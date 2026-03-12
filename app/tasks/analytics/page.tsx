@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { startOfMonth, subMonths, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { cn } from '@/lib/utils';
-import {
-  tmMembers,
-  tmTickets,
-  projectHoursData,
-  getMemberById,
-  weeklySparkline,
-} from '@/data/taskManagerData';
+import { useTaskAnalytics } from '@/hooks/useAnalytics';
+import { useUsers } from '@/hooks/useUsers';
+import { useTickets } from '@/hooks/useTickets';
+import { getPriorityColor } from '@/lib/ticket-utils';
 import {
   PieChart,
   Pie,
@@ -48,10 +46,13 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('This Week');
   const [selectedMember, setSelectedMember] = useState('');
 
-  const doneTickets = tmTickets.filter((t) => t.status === 'done');
-  const totalHours = tmTickets.flatMap((t) => t.timeLogs).reduce((s, l) => s + l.hours, 0);
+  const { data: analytics, isLoading: analyticsLoading } = useTaskAnalytics();
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
 
-  // Status flow data for stacked bar
+  const isLoading = analyticsLoading || usersLoading || ticketsLoading;
+
+  // Status flow data for stacked bar (Placeholder for now, could be dynamic)
   const statusFlowData = [
     { week: 'W1', todo: 8, inProgress: 3, inReview: 2, done: 5 },
     { week: 'W2', todo: 6, inProgress: 5, inReview: 3, done: 8 },
@@ -59,31 +60,66 @@ export default function AnalyticsPage() {
     { week: 'W4', todo: 5, inProgress: 3, inReview: 2, done: 15 },
   ];
 
-  const pieData = projectHoursData.map((p) => ({
-    name: p.project,
-    value: p.actual,
-    color: p.color,
-  }));
+  const pieData =
+    analytics?.projectHours.map((p) => ({
+      name: p.project,
+      value: p.actual,
+      color: p.color,
+    })) || [];
 
-  // Member ranking
-  const memberRanking = tmMembers
-    .filter((m) => m.role === 'member')
-    .map((m, i) => ({
-      rank: i + 1,
-      member: m,
-      ticketsDone: doneTickets.filter((t) => t.assigneeId === m.id).length + (i % 5) + 3,
-      hoursLogged: m.hoursThisWeek + (i % 10),
-      efficiency: m.efficiency,
-      trend: weeklySparkline.map((v, j) => v + ((i + j) % 3)),
-    }))
-    .sort((a, b) => b.ticketsDone - a.ticketsDone);
+  // Member ranking calculation from real data
+  const memberRanking = useMemo(() => {
+    if (!users || !tickets) return [];
+    return users
+      .filter((u) => u.role === 'member')
+      .map((u) => {
+        const userTickets = tickets.filter((t) => t.assigneeId === u.id);
+        const doneTicketsCount = userTickets.filter((t) => t.status === 'done').length;
+        const totalLoggedHours = userTickets.reduce((sum, t) => sum + (t.loggedHours || 0), 0);
+        const estHours = userTickets.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+        const efficiency =
+          estHours > 0 ? Math.min(100, Math.round((totalLoggedHours / estHours) * 100)) : 0;
+
+        return {
+          rank: 0, // Will be set after sort
+          member: u,
+          ticketsDone: doneTicketsCount,
+          hoursLogged: totalLoggedHours.toFixed(1),
+          efficiency,
+          trend: analytics?.trend || [4, 5, 3, 6, 7, 5, 8],
+        };
+      })
+      .sort((a, b) => b.ticketsDone - a.ticketsDone)
+      .map((item, index) => ({ ...item, rank: index + 1 }));
+  }, [users, tickets, analytics?.trend]);
 
   // Individual deep dive
-  const selectedMemberData = selectedMember ? getMemberById(selectedMember) : null;
+  const selectedUserData = users?.find((u) => u.id === selectedMember);
   const memberBarData = Array.from({ length: 14 }, (_, i) => ({
     day: `Day ${i + 1}`,
     hours: (i % 6) + 2,
   }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        INITIALIZING_ANALYTICS_ENGINE...
+      </div>
+    );
+  }
+
+  const kpis = analytics?.kpis || {
+    totalTickets: 0,
+    completedTickets: 0,
+    totalHours: 0,
+    overdue: 0,
+    avgVelocity: 0,
+    teamHours: '0',
+    inProgress: 0,
+  };
+  const efficiency =
+    kpis.totalTickets > 0 ? Math.round((kpis.completedTickets / kpis.totalTickets) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -118,11 +154,11 @@ export default function AnalyticsPage() {
             Team Velocity
           </div>
           <div className="font-display text-4xl font-bold mb-2 text-foreground">
-            {doneTickets.length + 15}
+            {kpis.completedTickets}
           </div>
           <div className="text-xs text-primary mb-3 flex items-center gap-1 font-mono">
-            <Icon icon="solar:round-alt-arrow-up-linear" className="w-3 h-3" />
-            15% vs last week
+            <Icon icon="solar:round-alt-arrow-up-linear" className="w-3 h-3" />+
+            {Number(analytics?.kpis?.avgVelocity || 0).toFixed(0)} avg/week
           </div>
           <Sparkline data={[8, 10, 12, 15, 18, 22, 24]} />
         </motion.div>
@@ -156,7 +192,7 @@ export default function AnalyticsPage() {
                 />
               </svg>
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 font-display text-2xl font-bold">
-                94%
+                {efficiency}%
               </div>
             </div>
           </div>
@@ -175,20 +211,23 @@ export default function AnalyticsPage() {
             Total Hours Logged
           </div>
           <div className="font-display text-4xl font-bold mb-3 text-foreground">
-            {totalHours.toFixed(1)}h
+            {parseFloat(kpis.teamHours).toFixed(1)}h
           </div>
           <div className="h-4 bg-muted flex overflow-hidden rounded-sm ring-1 ring-border">
-            {projectHoursData.map((p) => (
+            {analytics?.projectHours.map((p) => (
               <div
                 key={p.project}
                 className="h-full transition-all duration-500"
-                style={{ width: `${(p.actual / totalHours) * 100}%`, backgroundColor: p.color }}
+                style={{
+                  width: `${(p.actual / (kpis.totalHours || 1)) * 100}%`,
+                  backgroundColor: p.color,
+                }}
                 title={p.project}
               />
             ))}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
-            {projectHoursData.map((p) => (
+            {analytics?.projectHours.map((p) => (
               <div key={p.project} className="flex items-center gap-1.5 mr-2">
                 <div className="w-2 h-2 rounded-[1px]" style={{ backgroundColor: p.color }} />
                 <span className="font-mono text-[9px] text-muted-foreground font-bold">
@@ -249,13 +288,23 @@ export default function AnalyticsPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <Image
-                        src={row.member.avatar}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="rounded-full border border-border group-hover:border-primary/50 transition-colors"
-                      />
+                      <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                        {row.member.image ? (
+                          <Image
+                            src={row.member.image}
+                            alt=""
+                            width={28}
+                            height={28}
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <Icon
+                            icon="solar:user-linear"
+                            className="w-3.5 h-3.5 text-muted-foreground"
+                          />
+                        )}
+                      </div>
                       <span className="text-sm font-medium">{row.member.name}</span>
                     </div>
                   </td>
@@ -363,7 +412,7 @@ export default function AnalyticsPage() {
                   fill="white"
                   className="font-display text-3xl font-bold"
                 >
-                  {totalHours.toFixed(0)}
+                  {parseFloat(kpis.teamHours).toFixed(0)}
                 </text>
                 <text
                   x="50%"
@@ -387,7 +436,7 @@ export default function AnalyticsPage() {
                   </span>
                 </div>
                 <span className="font-mono text-[10px] font-bold">
-                  {Math.round((p.value / totalHours) * 100)}%
+                  {kpis.totalHours > 0 ? Math.round((p.value / kpis.totalHours) * 100) : 0}%
                 </span>
               </div>
             ))}
@@ -417,8 +466,8 @@ export default function AnalyticsPage() {
               <SelectValue placeholder="Select member for analysis" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border shadow-2xl">
-              {tmMembers
-                .filter((m) => m.role === 'member')
+              {users
+                ?.filter((m) => m.role === 'member')
                 .map((m) => (
                   <SelectItem key={m.id} value={m.id} className="cursor-pointer">
                     {m.name}
@@ -428,7 +477,7 @@ export default function AnalyticsPage() {
           </Select>
         </div>
 
-        {selectedMemberData ? (
+        {selectedUserData ? (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <div className="lg:col-span-3">
               <div className="font-mono text-[10px] text-muted-foreground uppercase mb-6 tracking-widest opacity-50 flex items-center gap-2">
@@ -468,19 +517,19 @@ export default function AnalyticsPage() {
               {[
                 {
                   label: 'System Efficiency',
-                  value: `${selectedMemberData.efficiency}%`,
+                  value: `${memberRanking.find((r) => r.member.id === selectedMember)?.efficiency || 0}%`,
                   icon: 'solar:bolt-circle-linear',
                   color: 'text-primary',
                 },
                 {
                   label: 'Weekly Bandwidth',
-                  value: `${selectedMemberData.hoursThisWeek}h / 40h`,
+                  value: `${memberRanking.find((r) => r.member.id === selectedMember)?.hoursLogged || 0}h / 40h`,
                   icon: 'solar:watch-square-linear',
                   color: 'text-blue-500',
                 },
                 {
                   label: 'Queue Capacity',
-                  value: `${selectedMemberData.ticketsActive} Active`,
+                  value: `${tickets?.filter((t) => t.assigneeId === selectedMember && t.status !== 'done').length || 0} Active`,
                   icon: 'solar:clipboard-list-linear',
                   color: 'text-amber-500',
                 },
