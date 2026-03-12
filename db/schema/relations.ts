@@ -5,6 +5,7 @@ import { tickets, timeLogs, comments } from './tickets';
 import { leaveRequests } from './leaves';
 import { weeklyGoals, goalItems } from './goals';
 import { activities, notifications } from './system';
+import { breakthroughs } from './breakthroughs';
 // Users Relations
 export const usersRelations = relations(users, ({ many }) => ({
   projectMembers: many(projectMembers),
@@ -16,12 +17,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   weeklyGoals: many(weeklyGoals),
   activities: many(activities),
   notifications: many(notifications),
+  breakthroughs: many(breakthroughs),
 }));
 
 // Projects Relations
 export const projectsRelations = relations(projects, ({ many }) => ({
   members: many(projectMembers),
   tickets: many(tickets),
+  breakthroughs: many(breakthroughs),
 }));
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
@@ -120,5 +123,16 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
     references: [users.id],
+  }),
+}));
+
+export const breakthroughsRelations = relations(breakthroughs, ({ one }) => ({
+  user: one(users, {
+    fields: [breakthroughs.userId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [breakthroughs.projectId],
+    references: [projects.id],
   }),
 }));
