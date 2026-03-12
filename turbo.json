@@ -2,6 +2,13 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build:next": {
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET"
+      ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
