@@ -117,7 +117,10 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 <>
                   <Icon
                     icon={item.icon}
-                    className={cn('w-5 h-5 shrink-0 transition-colors', isActive && 'text-primary')}
+                    className={cn(
+                      'w-5 h-5 shrink-0 transition-all duration-300 group-hover:text-emerald-500 group-hover:scale-110',
+                      isActive ? 'text-primary' : 'text-muted-foreground/70'
+                    )}
                   />
                   <AnimatePresence>
                     {!collapsed && (

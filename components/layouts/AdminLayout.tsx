@@ -1,24 +1,24 @@
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 
 const adminNavItems = [
-  { label: 'Dashboard', href: '/admin', icon: 'solar:monitor-linear', badge: 2 },
-  { label: 'Board', href: '/tasks/kanban', icon: 'solar:widget-4-linear' },
-  { label: 'My Tickets', href: '/tasks/my-tickets', icon: 'solar:folder-open-linear' },
-  { label: 'Quick Log', href: '/admin/logs', icon: 'solar:document-text-linear' },
-  { label: 'Time Logs', href: '/tasks/time-logs', icon: 'solar:clock-circle-linear' },
-  { label: 'All Interns', href: '/admin/interns', icon: 'solar:users-group-rounded-linear' },
-  { label: 'Projects', href: '/admin/projects', icon: 'solar:folder-linear' },
-  { label: 'Feedback', href: '/admin/feedback', icon: 'solar:chat-round-dots-linear', badge: 3 },
-  { label: 'Analytics', href: '/admin/analytics', icon: 'solar:chart-2-linear' },
-  { label: 'Reports', href: '/admin/reports', icon: 'solar:file-text-linear' },
-  { label: 'TM Analytics', href: '/tasks/analytics', icon: 'solar:graph-up-linear' },
+  { label: 'Dashboard', href: '/admin', icon: 'ph:monitor-duotone', badge: 2 },
+  { label: 'Board', href: '/tasks/kanban', icon: 'ph:kanban-duotone' },
+  { label: 'My Tickets', href: '/tasks/my-tickets', icon: 'ph:ticket-duotone' },
+  { label: 'Quick Log', href: '/admin/logs', icon: 'ph:article-duotone' },
+  { label: 'Time Logs', href: '/tasks/time-logs', icon: 'ph:clock-duotone' },
+  { label: 'All Interns', href: '/admin/interns', icon: 'ph:users-duotone' },
+  { label: 'Projects', href: '/admin/projects', icon: 'ph:folder-duotone' },
+  { label: 'Feedback', href: '/admin/feedback', icon: 'ph:chat-circle-dots-duotone', badge: 3 },
+  { label: 'Analytics', href: '/admin/analytics', icon: 'ph:chart-bar-duotone' },
+  { label: 'Reports', href: '/admin/reports', icon: 'ph:file-pdf-duotone' },
+  { label: 'TM Analytics', href: '/tasks/analytics', icon: 'ph:presentation-chart-duotone' },
   {
     label: 'TM Members',
     href: '/tasks/members',
-    icon: 'solar:users-group-two-rounded-linear',
+    icon: 'ph:users-three-duotone',
   },
-  { label: 'Team Settings', href: '/admin/settings', icon: 'solar:settings-linear' },
-  { label: 'TM Settings', href: '/tasks/settings', icon: 'solar:settings-linear' },
+  { label: 'Team Settings', href: '/admin/settings', icon: 'ph:gear-duotone' },
+  { label: 'TM Settings', href: '/tasks/settings', icon: 'ph:wrench-duotone' },
 ];
 
 interface AdminLayoutProps {
