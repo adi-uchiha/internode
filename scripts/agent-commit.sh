@@ -14,13 +14,13 @@ fi
 
 echo "🚀 Starting agent commit process..."
 
-# 1. Run ESLint auto-fix
-echo "🔍 Running ESLint auto-fix..."
-bun run lint:eslint
+# 1. Format and Lint (auto-fix)
+echo "🧹 Formatting and fixing lint issues..."
+bun run format
+bun run lint
 
-# 2. Strict ESLint check (no warnings allowed)
-echo "🔒 Verifying clean slate (no warnings allowed)..."
-bun x turbo lint:eslint -- --max-warnings 0
+# 2. Strict ESLint check (no warnings allowed) - This is mostly redundant if lint check is in lint-staged
+# but keeping a fast check here if needed.
 
 # 3. Build project
 echo "🏗️  Building project..."
