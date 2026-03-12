@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import Image from 'next/image';
+import { getFeatureStatus } from '@/lib/feature-flags';
 
 interface NavSubItem {
   label: string;
@@ -112,30 +113,44 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 );
               const isActive = pathname === item.href || isChildActive;
               const isExpanded = expandedItems.includes(item.label);
+              const featureStatus = getFeatureStatus(user?.role || 'member', item.href);
+              const isComingSoon = featureStatus === 'coming-soon';
+              const isHidden = featureStatus === 'hidden';
 
-              const content = (
+              if (isHidden) return null;
+
+              const innerContent = (
                 <>
                   <Icon
                     icon={item.icon}
                     className={cn(
-                      'w-6 h-6 shrink-0 transition-all duration-300 group-hover:text-primary',
-                      isActive ? 'text-primary' : 'text-muted-foreground/70'
+                      'w-6 h-6 shrink-0 transition-all duration-300',
+                      !isComingSoon && 'group-hover:text-primary',
+                      isActive ? 'text-primary' : 'text-muted-foreground/70',
+                      isComingSoon && 'opacity-40'
                     )}
                   />
                   <AnimatePresence>
                     {!collapsed && (
-                      <motion.span
+                      <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="font-display text-sm truncate tracking-tight font-medium flex-1 text-left"
+                        className="font-display text-sm truncate tracking-tight font-medium flex-1 text-left flex items-center justify-between"
                       >
-                        {item.label}
-                      </motion.span>
+                        <span className={cn(isComingSoon && 'opacity-40 text-muted-foreground')}>
+                          {item.label}
+                        </span>
+                        {isComingSoon && (
+                          <span className="font-mono text-[8px] uppercase tracking-tighter bg-muted px-1 py-0.5 rounded ml-2 text-muted-foreground/50">
+                            Coming Soon
+                          </span>
+                        )}
+                      </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {!hasSub && item.badge && item.badge > 0 && (
+                  {!hasSub && item.badge && item.badge > 0 && !isComingSoon && (
                     <span
                       className={cn(
                         'absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5',
@@ -151,7 +166,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                       icon="solar:alt-arrow-down-linear"
                       className={cn(
                         'w-4 h-4 text-muted-foreground transition-transform shrink-0',
-                        isExpanded && 'rotate-180'
+                        isExpanded && 'rotate-180',
+                        isComingSoon && 'opacity-40'
                       )}
                     />
                   )}
@@ -162,16 +178,28 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 <div key={item.label} className="relative">
                   {hasSub ? (
                     <button
-                      onClick={(e) => toggleExpand(item.label, e)}
+                      disabled={isComingSoon}
+                      onClick={(e) => !isComingSoon && toggleExpand(item.label, e)}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
                         isActive
                           ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
+                          : isComingSoon
+                            ? 'text-muted-foreground/50 border-l-2 border-transparent cursor-not-allowed'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
                       )}
                     >
-                      {content}
+                      {innerContent}
                     </button>
+                  ) : isComingSoon ? (
+                    <div
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 transition-all duration-200 group relative',
+                        'text-muted-foreground/50 border-l-2 border-transparent cursor-not-allowed'
+                      )}
+                    >
+                      {innerContent}
+                    </div>
                   ) : (
                     <Link
                       href={item.href}
@@ -182,7 +210,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-2 border-transparent'
                       )}
                     >
-                      {content}
+                      {innerContent}
                     </Link>
                   )}
 
