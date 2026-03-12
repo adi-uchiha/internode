@@ -1,5 +1,5 @@
 ---
-description: Post-walkthrough completion workflow
+trigger: always_on
 ---
 
 When concluding a task and after completing your walkthrough, you must always execute the following steps:
@@ -22,5 +22,8 @@ bun run build
 
 ```bash
 git add .
-# Commit changes
+# Commit changes write proper title and description to the commit
 ```
+
+Whenever making changes to database schema you have to run the migration properly before concluding your changes.
+bun run db:generate

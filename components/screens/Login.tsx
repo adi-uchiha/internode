@@ -210,7 +210,7 @@ const Login = () => {
                 onClick={async () => {
                   await authClient.signIn.social({
                     provider: 'github',
-                    callbackURL: '/',
+                    callbackURL: '/dashboard',
                   });
                 }}
               >

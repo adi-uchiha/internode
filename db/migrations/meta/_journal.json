@@ -15,6 +15,13 @@
       "when": 1773064777612,
       "tag": "0001_plain_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773317754311,
+      "tag": "0002_fantastic_grim_reaper",
+      "breakpoints": true
     }
   ]
 }
