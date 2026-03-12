@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { timeLogs, breakthroughs } from '@/db/schema';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { isNull, desc } from 'drizzle-orm';
+import { withErrorHandler } from '@/lib/api-handler';
 
-export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
+export const GET = withErrorHandler(
+  async () => {
     const pendingLogs = await db.query.timeLogs.findMany({
       where: isNull(timeLogs.adminComment),
       with: {
@@ -35,8 +26,6 @@ export async function GET() {
       logs: pendingLogs,
       breakthroughs: pendingBreakthroughs,
     });
-  } catch (error) {
-    console.error('Error fetching feedback data:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+  },
+  { requiredRole: 'admin' }
+);

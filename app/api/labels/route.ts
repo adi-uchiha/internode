@@ -1,36 +1,24 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { labels } from '@/db/schema';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { withErrorHandler } from '@/lib/api-handler';
+import { BadRequestError } from '@/lib/api-error';
 
-export async function GET() {
-  try {
-    const allLabels = await db.query.labels.findMany({
-      orderBy: (labels, { asc }) => [asc(labels.name)],
-    });
-    return NextResponse.json(allLabels);
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-export async function POST(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+export const GET = withErrorHandler(async () => {
+  const allLabels = await db.query.labels.findMany({
+    orderBy: (labels, { asc }) => [asc(labels.name)],
   });
+  return NextResponse.json(allLabels);
+});
 
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
+export const POST = withErrorHandler(
+  async (req) => {
     const { name, color } = await req.json();
 
     if (!name || !color) {
-      return NextResponse.json({ error: 'Name and color are required' }, { status: 400 });
+      throw new BadRequestError('Name and color are required');
     }
 
     const newLabel = await db
@@ -43,31 +31,21 @@ export async function POST(req: Request) {
       .returning();
 
     return NextResponse.json(newLabel[0]);
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+  },
+  { requiredRole: 'admin' }
+);
 
-export async function DELETE(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export const DELETE = withErrorHandler(
+  async (req) => {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+    if (!id) {
+      throw new BadRequestError('ID is required');
+    }
 
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-  }
-
-  try {
     await db.delete(labels).where(eq(labels.id, id));
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+  },
+  { requiredRole: 'admin' }
+);

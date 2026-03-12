@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type LoginMode = 'admin' | 'member';
 
@@ -20,7 +21,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
-  const router = useRouter();
+  useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,10 +215,12 @@ const Login = () => {
                   });
                 }}
               >
-                <img
+                <Image
                   src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
                   className="w-5 h-5 invert dark:invert-0"
                   alt="GitHub"
+                  width={20}
+                  height={20}
                 />
                 Sign in with GitHub
               </Button>

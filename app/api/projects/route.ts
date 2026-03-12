@@ -1,42 +1,20 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { desc } from 'drizzle-orm';
+import { withErrorHandler } from '@/lib/api-handler';
 
-export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export const GET = withErrorHandler(async () => {
   // Fetch all projects, optionally ordered by created at
-  try {
-    const allProjects = await db.query.projects.findMany({
-      orderBy: [desc(projects.createdAt)],
-    });
-
-    return NextResponse.json(allProjects);
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-export async function POST(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+  const allProjects = await db.query.projects.findMany({
+    orderBy: [desc(projects.createdAt)],
   });
 
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  return NextResponse.json(allProjects);
+});
 
-  try {
+export const POST = withErrorHandler(
+  async (req) => {
     const data = await req.json();
     const id = data.id || `proj_${Math.random().toString(36).slice(2, 9)}`;
 
@@ -54,8 +32,6 @@ export async function POST(req: Request) {
       .returning();
 
     return NextResponse.json(newProject[0]);
-  } catch (error) {
-    console.error('Error creating project:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+  },
+  { requiredRole: 'admin' }
+);

@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { users, timeLogs, tickets } from '@/db/schema';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { sql, and, eq } from 'drizzle-orm';
+import { withErrorHandler } from '@/lib/api-handler';
 
-export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
+export const GET = withErrorHandler(
+  async () => {
     // 1. Total Active Interns
     const activeInternsRes = await db
       .select({ count: sql<number>`count(*)::integer` })
@@ -64,8 +55,6 @@ export async function GET() {
       activeInterns: activeInternsCount.toString(),
       totalHours: Math.round(totalHours).toLocaleString(),
     });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+  },
+  { requiredRole: 'admin' }
+);

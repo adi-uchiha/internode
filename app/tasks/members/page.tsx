@@ -8,7 +8,7 @@ import { useTickets } from '@/hooks/useTickets';
 import { useLogs } from '@/hooks/useLogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvites, useCreateInvite } from '@/hooks/useInvites';
-import { startOfWeek, format } from 'date-fns';
+import { startOfWeek } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

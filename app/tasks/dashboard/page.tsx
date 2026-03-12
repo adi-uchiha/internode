@@ -449,9 +449,6 @@ const MemberDashboardContent = () => {
   const { data: logs } = useLogs();
   const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
   const { data: users } = useUsers();
-  const totalHours = logs?.reduce((sum, l) => sum + (l.hours || 0), 0) || 0;
-  const activeTickets =
-    tickets?.filter((t) => t.status !== 'done' && t.assigneeId === user?.id).length || 0;
 
   const focusTicket = tickets?.find((t) => t.status === 'in-progress' && t.assigneeId === user?.id);
   const upcomingTickets =

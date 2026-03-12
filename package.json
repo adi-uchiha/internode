@@ -17,7 +17,8 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "agent:commit": "bash scripts/agent-commit.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -86,7 +87,7 @@
   ],
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+      "eslint --fix --max-warnings 0",
       "prettier --write"
     ],
     "*.{json,css,md}": [

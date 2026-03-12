@@ -1,14 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { startOfMonth, subMonths, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { cn } from '@/lib/utils';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useUsers } from '@/hooks/useUsers';
 import { useTickets } from '@/hooks/useTickets';
-import { getPriorityColor } from '@/lib/ticket-utils';
 import {
   PieChart,
   Pie,
