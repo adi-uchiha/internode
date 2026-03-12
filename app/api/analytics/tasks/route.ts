@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tickets, projects, timeLogs } from '@/db/schema';
 import { eq, sql, and, gte } from 'drizzle-orm';
-import { startOfWeek, subDays, format } from 'date-fns';
+import { startOfWeek, subDays, format, startOfDay } from 'date-fns';
 import { withErrorHandler } from '@/lib/api-handler';
 
 export const GET = withErrorHandler(async () => {
@@ -54,6 +54,81 @@ export const GET = withErrorHandler(async () => {
     .innerJoin(projects, eq(tickets.projectId, projects.id))
     .groupBy(projects.name);
 
+  // 5. Status Flow Data (Last 4 Weeks)
+  const statusFlowData = [];
+  for (let i = 3; i >= 0; i--) {
+    const weekStart = subDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i * 7);
+    const weekEnd = subDays(weekStart, -6);
+    const weekLabel = i === 0 ? 'Current' : `W-${i}`;
+
+    const weekTickets = await db
+      .select({
+        status: tickets.status,
+        count: sql<number>`count(*)::integer`,
+      })
+      .from(tickets)
+      .where(and(gte(tickets.updatedAt, weekStart), sql`${tickets.updatedAt} <= ${weekEnd}`))
+      .groupBy(tickets.status);
+
+    const counts = {
+      todo: 0,
+      'in-progress': 0,
+      'in-review': 0,
+      done: 0,
+    };
+
+    weekTickets.forEach((t) => {
+      if (t.status in counts) {
+        counts[t.status as keyof typeof counts] = t.count;
+      }
+    });
+
+    statusFlowData.push({
+      week: weekLabel,
+      todo: counts.todo,
+      inProgress: counts['in-progress'],
+      inReview: counts['in-review'],
+      done: counts.done,
+    });
+  }
+
+  // 6. Real Trends (Last 7 Days)
+  const teamTrends = {
+    tickets: [] as number[],
+    hours: [] as number[],
+    completion: [] as number[],
+    velocity: [] as number[],
+  };
+
+  for (let i = 6; i >= 0; i--) {
+    const date = subDays(startOfDay(new Date()), i);
+    const dateStr = format(date, 'yyyy-MM-dd');
+
+    const dayStats = await db
+      .select({
+        logged: sql<number>`sum(${timeLogs.hours})::float`,
+        doneCount: sql<number>`count(CASE WHEN ${tickets.status} = 'done' AND date_trunc('day', ${tickets.updatedAt}) = ${dateStr} THEN 1 END)::integer`,
+        totalCount: sql<number>`count(*)::integer`,
+      })
+      .from(tickets)
+      .leftJoin(timeLogs, eq(tickets.id, timeLogs.ticketId));
+
+    // This is a bit simplified but gives real-ish movement
+    teamTrends.hours.push(dayStats[0]?.logged || 0);
+    teamTrends.tickets.push(dayStats[0]?.totalCount || 0);
+    teamTrends.completion.push(dayStats[0]?.doneCount || 0);
+    const vel = dayStats[0]?.logged ? (dayStats[0]?.doneCount / (dayStats[0]?.logged || 1)) * 5 : 0;
+    teamTrends.velocity.push(Number(vel.toFixed(1)));
+  }
+
+  const COLORS = [
+    'hsl(140 100% 50%)',
+    'hsl(200 100% 50%)',
+    'hsl(280 100% 50%)',
+    'hsl(30 100% 50%)',
+    'hsl(330 100% 50%)',
+  ];
+
   return NextResponse.json({
     kpis: {
       totalTickets: totalTicketsRes[0]?.count || 0,
@@ -61,18 +136,17 @@ export const GET = withErrorHandler(async () => {
       inProgress: inProgressTicketsRes[0]?.count || 0,
       overdue: overdueTicketsRes[0]?.count || 0,
       teamHours: (weeklyHoursRes[0]?.total || 0).toFixed(1) + 'h',
+      totalHours: weeklyHoursRes[0]?.total || 0,
+      avgVelocity: teamTrends.velocity[teamTrends.velocity.length - 1],
     },
     burnRate: burnRateData,
-    projectHours: projectHoursRes.map((p) => ({
+    projectHours: projectHoursRes.map((p, idx) => ({
       project: p.name,
       actual: p.actual || 0,
       estimated: p.estimated || 0,
+      color: COLORS[idx % COLORS.length],
     })),
-    trends: {
-      tickets: [12, 19, 15, 22, 18, 25, 21],
-      hours: [45, 52, 48, 61, 55, 68, 62],
-      completion: [85, 92, 88, 95, 90, 98, 94],
-      velocity: [4.2, 4.8, 4.5, 5.1, 4.7, 5.4, 5.0],
-    },
+    statusFlow: statusFlowData,
+    trends: teamTrends,
   });
 });

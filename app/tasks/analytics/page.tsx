@@ -6,7 +6,8 @@ import { Icon } from '@iconify/react';
 import { cn } from '@/lib/utils';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useUsers } from '@/hooks/useUsers';
-import { useTickets } from '@/hooks/useTickets';
+import { useTickets, type TicketWithRelations } from '@/hooks/useTickets';
+import { format, subDays, startOfDay, isSameDay } from 'date-fns';
 import {
   PieChart,
   Pie,
@@ -34,7 +35,7 @@ const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; colo
       stroke={color}
       strokeWidth="1.5"
       points={data
-        .map((v, i) => `${(i / (data.length - 1)) * 50},${16 - (v / Math.max(...data)) * 14}`)
+        .map((v, i) => `${(i / (data.length - 1)) * 50},${16 - (v / Math.max(...data, 1)) * 14}`)
         .join(' ')}
     />
   </svg>
@@ -46,17 +47,15 @@ export default function AnalyticsPage() {
 
   const { data: analytics, isLoading: analyticsLoading } = useTaskAnalytics();
   const { data: users, isLoading: usersLoading } = useUsers();
-  const { data: tickets, isLoading: ticketsLoading } = useTickets();
+  const { data: tickets, isLoading: ticketsLoading } = useTickets() as {
+    data: TicketWithRelations[] | undefined;
+    isLoading: boolean;
+  };
 
   const isLoading = analyticsLoading || usersLoading || ticketsLoading;
 
-  // Status flow data for stacked bar (Placeholder for now, could be dynamic)
-  const statusFlowData = [
-    { week: 'W1', todo: 8, inProgress: 3, inReview: 2, done: 5 },
-    { week: 'W2', todo: 6, inProgress: 5, inReview: 3, done: 8 },
-    { week: 'W3', todo: 4, inProgress: 4, inReview: 4, done: 12 },
-    { week: 'W4', todo: 5, inProgress: 3, inReview: 2, done: 15 },
-  ];
+  // Status flow data from API
+  const statusFlowData = analytics?.statusFlow || [];
 
   const pieData =
     analytics?.projectHours.map((p) => ({
@@ -78,25 +77,50 @@ export default function AnalyticsPage() {
         const efficiency =
           estHours > 0 ? Math.min(100, Math.round((totalLoggedHours / estHours) * 100)) : 0;
 
+        // Calculate real trend (last 7 days of logs)
+        const trend = Array.from({ length: 7 }, (_, i) => {
+          const date = subDays(startOfDay(new Date()), 6 - i);
+          return userTickets.reduce((sum, t) => {
+            const dayLogs = t.timeLogs?.filter((l) => isSameDay(new Date(l.date), date)) || [];
+            return sum + dayLogs.reduce((s, l) => s + l.hours, 0);
+          }, 0);
+        });
+
         return {
           rank: 0, // Will be set after sort
           member: u,
           ticketsDone: doneTicketsCount,
           hoursLogged: totalLoggedHours.toFixed(1),
           efficiency,
-          trend: analytics?.trend || [4, 5, 3, 6, 7, 5, 8],
+          trend,
         };
       })
       .sort((a, b) => b.ticketsDone - a.ticketsDone)
       .map((item, index) => ({ ...item, rank: index + 1 }));
-  }, [users, tickets, analytics?.trend]);
+  }, [users, tickets]);
 
   // Individual deep dive
   const selectedUserData = users?.find((u) => u.id === selectedMember);
-  const memberBarData = Array.from({ length: 14 }, (_, i) => ({
-    day: `Day ${i + 1}`,
-    hours: (i % 6) + 2,
-  }));
+
+  const memberBarData = useMemo(() => {
+    if (!selectedMember || !tickets) return [];
+
+    return Array.from({ length: 14 }, (_, i) => {
+      const date = subDays(startOfDay(new Date()), 13 - i);
+      const dayHours = tickets.reduce((sum, t) => {
+        const dayLogs =
+          t.timeLogs?.filter(
+            (l) => l.userId === selectedMember && isSameDay(new Date(l.date), date)
+          ) || [];
+        return sum + dayLogs.reduce((s, l) => s + l.hours, 0);
+      }, 0);
+
+      return {
+        day: format(date, 'MMM dd'),
+        hours: dayHours,
+      };
+    });
+  }, [selectedMember, tickets]);
 
   if (isLoading) {
     return (
@@ -158,7 +182,7 @@ export default function AnalyticsPage() {
             <Icon icon="solar:round-alt-arrow-up-linear" className="w-3 h-3" />+
             {Number(analytics?.kpis?.avgVelocity || 0).toFixed(0)} avg/week
           </div>
-          <Sparkline data={[8, 10, 12, 15, 18, 22, 24]} />
+          <Sparkline data={analytics?.trends?.completion || [2, 4, 3, 5, 4, 6, 8]} />
         </motion.div>
 
         <motion.div
@@ -186,7 +210,7 @@ export default function AnalyticsPage() {
                   stroke="hsl(var(--primary))"
                   strokeWidth="8"
                   strokeLinecap="butt"
-                  strokeDasharray={`${(94 / 100) * 125.6} 125.6`}
+                  strokeDasharray={`${(efficiency / 100) * 125.6} 125.6`}
                 />
               </svg>
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 font-display text-2xl font-bold">

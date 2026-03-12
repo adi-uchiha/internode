@@ -28,6 +28,13 @@ export interface TaskAnalyticsData {
     estimated: number;
     color: string;
   }[];
+  statusFlow: {
+    week: string;
+    todo: number;
+    inProgress: number;
+    inReview: number;
+    done: number;
+  }[];
   trend: number[];
   trends?: {
     tickets: number[];
