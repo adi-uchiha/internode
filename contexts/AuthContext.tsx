@@ -50,14 +50,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [sessionData, isLoading, error, pathname, router, user?.role]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const { data, error } = await authClient.signIn.email({
+  const login = async (
+    email: string,
+    password: string,
+    requiredRole?: UserRole
+  ): Promise<boolean> => {
+    const { data: signInData, error } = await authClient.signIn.email({
       email,
       password,
     });
 
-    if (error || !data) {
+    if (error || !signInData) {
       return false;
+    }
+
+    // Check role if required
+    if (requiredRole) {
+      const { data: sessionData } = await authClient.getSession();
+      const user = sessionData?.user as User | null;
+
+      if (user?.role !== requiredRole) {
+        // If they logged in but have the wrong role, log them out immediately
+        await authClient.signOut();
+        return false;
+      }
     }
 
     router.refresh(); // Refresh Next.js cache to re-run layout/middleware conditionally

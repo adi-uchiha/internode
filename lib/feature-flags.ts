@@ -28,3 +28,7 @@ export const getFeatureStatus = (role: string, href: string): FeatureStatus => {
 
   return roleConfig[href] || 'available';
 };
+
+export const AUTH_FLAGS = {
+  ENABLE_EMAIL_SIGNUP: false,
+} as const;

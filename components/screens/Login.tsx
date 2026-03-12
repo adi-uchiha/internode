@@ -19,6 +19,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGithubLoading, setIsGithubLoading] = useState(false);
 
   const { login } = useAuth();
   useRouter();
@@ -28,10 +29,10 @@ const Login = () => {
     setError('');
     setIsLoading(true);
 
-    const success = await login(email, password);
+    const success = await login(email, password, mode);
 
     if (!success) {
-      setError('Invalid credentials.');
+      setError(mode === 'admin' ? 'Email or password Not correct' : 'Invalid credentials.');
       setIsLoading(false);
     }
   };
@@ -202,29 +203,42 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="w-full flex items-center justify-center gap-2"
-                onClick={async () => {
-                  await authClient.signIn.social({
-                    provider: 'github',
-                    callbackURL: '/tasks/dashboard',
-                  });
-                }}
-              >
-                <Image
-                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
-                  className="w-5 h-5 invert dark:invert-0"
-                  alt="GitHub"
-                  width={20}
-                  height={20}
-                />
-                Sign in with GitHub
-              </Button>
-            </div>
+            {mode === 'member' && (
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full flex items-center justify-center gap-2"
+                  disabled={isGithubLoading}
+                  onClick={async () => {
+                    setIsGithubLoading(true);
+                    try {
+                      await authClient.signIn.social({
+                        provider: 'github',
+                        callbackURL: '/tasks/dashboard',
+                      });
+                    } catch (err) {
+                      console.error('GitHub sign-in error:', err);
+                      setIsGithubLoading(false);
+                    }
+                  }}
+                >
+                  {isGithubLoading ? (
+                    <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Image
+                      src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
+                      className="w-5 h-5 invert dark:invert-0"
+                      alt="GitHub"
+                      width={20}
+                      height={20}
+                    />
+                  )}
+                  {isGithubLoading ? 'Connecting...' : 'Sign in with GitHub'}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 text-center">
