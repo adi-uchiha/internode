@@ -13,6 +13,7 @@ Example commands:
 
 ```bash
 bun run format
+bun run lint:eslint
 bun run lint
 bun run build
 ```
