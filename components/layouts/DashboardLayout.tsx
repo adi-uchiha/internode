@@ -33,7 +33,13 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const [collapsed, setCollapsed] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -260,7 +266,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
             className="flex items-center gap-3 mb-4 hover:bg-muted/50 p-2 rounded-md transition-colors cursor-pointer w-full"
           >
             <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden rounded-full">
-              {user?.image ? (
+              {mounted && user?.image ? (
                 <Image
                   src={user.image}
                   alt={user.name || ''}

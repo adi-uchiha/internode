@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
+import { AUTH_FLAGS } from '@/lib/feature-flags';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -21,10 +22,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -33,6 +34,19 @@ const Login = () => {
 
     if (!success) {
       setError(mode === 'admin' ? 'Email or password Not correct' : 'Invalid credentials.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const success = await signup(email, password);
+
+    if (!success) {
+      setError('Signup failed. Please try again.');
       setIsLoading(false);
     }
   };
@@ -146,62 +160,93 @@ const Login = () => {
               </h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                  Email Address
-                </label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.dev"
-                  className="bg-background border-border font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-background border-border font-mono"
-                  required
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 border border-destructive/50 bg-destructive/10 text-destructive text-sm font-mono">
-                  <Icon icon="solar:danger-triangle-linear" className="inline-block mr-2 w-4 h-4" />
-                  {error}
+            {(mode === 'admin' || AUTH_FLAGS.ENABLE_EMAIL_SIGNUP) && (
+              <div className="space-y-4">
+                <div>
+                  <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                    Email Address
+                  </label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.dev"
+                    className="bg-background border-border font-mono"
+                    required
+                  />
                 </div>
-              )}
 
-              <Button
-                type="submit"
-                variant="hero"
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    Initialize Session
-                    <Icon icon="solar:arrow-right-linear" className="w-4 h-4" />
-                  </>
+                <div>
+                  <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                    Password
+                  </label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-background border-border font-mono"
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-3 border border-destructive/50 bg-destructive/10 text-destructive text-sm font-mono">
+                    <Icon
+                      icon="solar:danger-triangle-linear"
+                      className="inline-block mr-2 w-4 h-4"
+                    />
+                    {error}
+                  </div>
                 )}
-              </Button>
-            </form>
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="hero"
+                    size="lg"
+                    className="flex-1"
+                    disabled={isLoading}
+                    onClick={handleLogin}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+                        Validating...
+                      </>
+                    ) : (
+                      <>
+                        Log In
+                        <Icon icon="solar:login-2-linear" className="w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+
+                  {mode === 'member' && AUTH_FLAGS.ENABLE_EMAIL_SIGNUP && (
+                    <Button
+                      type="button"
+                      variant="hero-outline"
+                      size="lg"
+                      className="flex-1"
+                      disabled={isLoading}
+                      onClick={handleSignup}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          Sign Up
+                          <Icon icon="solar:user-plus-linear" className="w-4 h-4" />
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {mode === 'member' && (
               <div className="mt-4">

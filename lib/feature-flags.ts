@@ -30,5 +30,5 @@ export const getFeatureStatus = (role: string, href: string): FeatureStatus => {
 };
 
 export const AUTH_FLAGS = {
-  ENABLE_EMAIL_SIGNUP: false,
+  ENABLE_EMAIL_SIGNUP: true,
 } as const;

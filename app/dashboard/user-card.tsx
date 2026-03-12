@@ -2,16 +2,9 @@
 
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { jetBrainsMono } from '@/lib/fonts';
 import NextImage from 'next/image';
-
-interface Session {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
+import { SessionDetails } from '@/components/shared/SessionDetails';
+import type { Session } from '@/lib/auth-types';
 
 export default function UserCard({ session }: { session: Session }) {
   const router = useRouter();
@@ -50,13 +43,8 @@ export default function UserCard({ session }: { session: Session }) {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-gray-100 pt-6 dark:border-gray-700">
-        <h4 className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Session Info</h4>
-        <pre
-          className={`overflow-auto rounded p-4 text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-300 ${jetBrainsMono.className}`}
-        >
-          {JSON.stringify(session, null, 2)}
-        </pre>
+      <div className="mt-8 border-t border-gray-100 pt-8 dark:border-gray-700">
+        <SessionDetails session={session} />
       </div>
 
       <button

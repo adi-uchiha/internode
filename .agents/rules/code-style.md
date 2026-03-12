@@ -16,3 +16,41 @@ bun run agent:commit "Refactor auth logic" "Extracted session handling to a sepa
 
 Whenever making changes to database schema you have to run the migration properly before concluding your changes.
 bun run db:generate
+
+## Authentication & Signup Flow Reference
+
+### Overview
+
+The project uses `Better Auth` for session management with a custom Drizzle adapter for PostgreSQL (Neon).
+
+### Dual Login Modes (Login.tsx)
+
+The login screen features two modes: **Member** and **Admin**.
+
+- **Member**: Accesses the "Developer Portal". Primarily uses GitHub Social Sign-in. Email/Password form visibility is controlled by `AUTH_FLAGS.ENABLE_EMAIL_SIGNUP`.
+- **Admin**: Accesses the "Admin Dashboard". **Only** supports Email/Password login. GitHub sign-in is hidden for security.
+
+### Role Enforcement (AuthContext.tsx)
+
+The `login` function in `AuthContext` is responsible for cross-checking roles:
+
+- It accepts a `requiredRole` argument.
+- After successful `signIn.email`, it fetches the session and checks if the user's role matches `requiredRole`.
+- If the role does not match, the user is automatically logged out and notified of invalid credentials.
+
+ADMIN CAN ONLY BE CREATED FROM DATABASE BY CHANGING ROLE DIRECTLY FROM DATABASE. There is no option in project to create admin. This is a enforcement.
+
+### Signup Logic (Login.tsx & AuthContext.tsx)
+
+To ensure a seamless onboarding experience for members:
+
+- Explicit **Log In** and **Sign Up** buttons are provided for Members when `AUTH_FLAGS.ENABLE_EMAIL_SIGNUP` is enabled.
+- The **Sign Up** button triggers `signUp.email` using the email as a credential and the email prefix as a default `name`.
+- **Admins** only have a **Log In** button. Signup is never allowed for admins.
+- If the feature flag is OFF, the email/password form is hidden for members, leaving only GitHub login.
+
+### Environment & Config (lib/auth.ts)
+
+- `baseURL` must be explicitly configured in the server `auth` config to prevent `ERR_INVALID_URL` errors during social sign-ins.
+- `DATABASE_URL` in `.env` must not have trailing quotes.
+- `role` field in `users` table defaults to `member`.

@@ -6,9 +6,10 @@ import Image from 'next/image';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLogs } from '@/hooks/useLogs';
+import { SessionDetails } from '@/components/shared/SessionDetails';
 
 const MemberProfile = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { data: logs } = useLogs();
 
   const totalDaysLogged = new Set(logs?.map((l) => new Date(l.date).toDateString())).size || 0;
@@ -141,6 +142,19 @@ const MemberProfile = () => {
               No recent activity found. Start logging your work to build your profile.
             </p>
           )}
+        </motion.div>
+
+        {/* Session Metadata */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="border border-border bg-card p-6"
+        >
+          <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-6">
+            [SESSION_METADATA_DEBUG]
+          </div>
+          <SessionDetails session={session} />
         </motion.div>
       </div>
     </MemberLayout>
