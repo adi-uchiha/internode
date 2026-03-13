@@ -113,6 +113,20 @@ export default function TaskManagerLayout({
     },
   ].filter((item) => !item.roles || item.roles.includes(orgRole));
 
+  if (authLoading || orgsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
+        <Icon
+          icon="solar:round-transfer-diagonal-linear"
+          className="w-8 h-8 text-primary animate-spin mb-4"
+        />
+        <div className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
+          WAKING_SYSTEM...
+        </div>
+      </div>
+    );
+  }
+
   if (isRedirectingToOnboarding) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
