@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { labels } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
@@ -45,7 +45,7 @@ export const POST = withErrorHandler(
 );
 
 export const DELETE = withErrorHandler(
-  async (req) => {
+  async (req, { session }) => {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -53,7 +53,10 @@ export const DELETE = withErrorHandler(
       throw new BadRequestError('ID is required');
     }
 
-    await db.delete(labels).where(eq(labels.id, id));
+    const orgId = await getActiveOrgId(session!.user.id);
+    if (!orgId) throw new Error('No organization found for user');
+
+    await db.delete(labels).where(and(eq(labels.id, id), eq(labels.organizationId, orgId)));
     return NextResponse.json({ success: true });
   },
   { requiredRole: 'admin' }

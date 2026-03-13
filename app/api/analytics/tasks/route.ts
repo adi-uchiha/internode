@@ -4,25 +4,37 @@ import { tickets, projects, timeLogs } from '@/db/schema';
 import { eq, sql, and, gte } from 'drizzle-orm';
 import { startOfWeek, subDays, format, startOfDay } from 'date-fns';
 import { withErrorHandler } from '@/lib/api-handler';
+import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async () => {
+export const GET = withErrorHandler(async (req, { session }) => {
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json({});
   // 1. KPI Counts
-  const totalTicketsRes = await db.select({ count: sql<number>`count(*)::integer` }).from(tickets);
+  const totalTicketsRes = await db
+    .select({ count: sql<number>`count(*)::integer` })
+    .from(tickets)
+    .where(eq(tickets.organizationId, orgId));
   const inProgressTicketsRes = await db
     .select({ count: sql<number>`count(*)::integer` })
     .from(tickets)
-    .where(eq(tickets.status, 'in-progress'));
+    .where(and(eq(tickets.organizationId, orgId), eq(tickets.status, 'in-progress')));
   const overdueTicketsRes = await db
     .select({ count: sql<number>`count(*)::integer` })
     .from(tickets)
-    .where(and(sql`${tickets.dueDate} < now()`, sql`${tickets.status} != 'done'`));
+    .where(
+      and(
+        eq(tickets.organizationId, orgId),
+        sql`${tickets.dueDate} < now()`,
+        sql`${tickets.status} != 'done'`
+      )
+    );
 
   // 2. Weekly Team Hours
   const startOfCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weeklyHoursRes = await db
     .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
     .from(timeLogs)
-    .where(gte(timeLogs.date, startOfCurrentWeek));
+    .where(and(eq(timeLogs.organizationId, orgId), gte(timeLogs.date, startOfCurrentWeek)));
 
   // 3. Burn Rate Data (Estimated vs Actual for last 7 days)
   const burnRateData = [];
@@ -34,7 +46,12 @@ export const GET = withErrorHandler(async () => {
     const dayHoursRes = await db
       .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
       .from(timeLogs)
-      .where(sql`date_trunc('day', ${timeLogs.date}) = ${dateStr}`);
+      .where(
+        and(
+          eq(timeLogs.organizationId, orgId),
+          sql`date_trunc('day', ${timeLogs.date}) = ${dateStr}`
+        )
+      );
 
     burnRateData.push({
       day: dayLabel,
@@ -51,7 +68,7 @@ export const GET = withErrorHandler(async () => {
       estimated: sql<number>`sum(${tickets.estimatedHours})::float`,
     })
     .from(tickets)
-    .innerJoin(projects, eq(tickets.projectId, projects.id))
+    .where(eq(tickets.organizationId, orgId))
     .groupBy(projects.name);
 
   // 5. Status Flow Data (Last 4 Weeks)
@@ -67,7 +84,13 @@ export const GET = withErrorHandler(async () => {
         count: sql<number>`count(*)::integer`,
       })
       .from(tickets)
-      .where(and(gte(tickets.updatedAt, weekStart), sql`${tickets.updatedAt} <= ${weekEnd}`))
+      .where(
+        and(
+          eq(tickets.organizationId, orgId),
+          gte(tickets.updatedAt, weekStart),
+          sql`${tickets.updatedAt} <= ${weekEnd}`
+        )
+      )
       .groupBy(tickets.status);
 
     const counts = {
@@ -111,6 +134,7 @@ export const GET = withErrorHandler(async () => {
         totalCount: sql<number>`count(*)::integer`,
       })
       .from(tickets)
+      .where(eq(tickets.organizationId, orgId))
       .leftJoin(timeLogs, eq(tickets.id, timeLogs.ticketId));
 
     // This is a bit simplified but gives real-ish movement

@@ -45,7 +45,7 @@ This document provides a surgical, step-by-step roadmap for implementing the mul
 
 - **Tasks:**
   1. **Better-Auth Invites:** Entirely replace `/api/invites` with the `better-auth` invitation API. (Ref: [Section 8.1](./multi-tenant-architecture.md#81-generating-the-invite--email-dispatch-mechanism))
-  2. **Email Templates:** Build and configure React-Email templates for invitations. (Ref: [Section 8.1 Task 5](./multi-tenant-architecture.md#81-generating-the-invite--email-dispatch-mechanism))
+  2. **Email Templates:** Build and configure React-Email templates for invitations. The email template theme should match the project theme (ref: /home/aditya/proj/internode/docs/style.md, /home/aditya/proj/internode/docs/landing-page.md). (Ref: [Section 8.1 Task 5](./multi-tenant-architecture.md#81-generating-the-invite--email-dispatch-mechanism))
   3. **Acceptance Landing Page:** Create `/accept-invite` to handle magic link tokens and confirm user acceptance. (Ref: [Section 17.7](./multi-tenant-architecture.md#177-accept-invite-confirmation-screen))
   4. **Members Page Refactor:** Update `MembersPage` to show pending invites and manage active member roles (Promote/Demote/Remove). (Ref: [Section 17.4](./multi-tenant-architecture.md#174-team-management--invitations))
 

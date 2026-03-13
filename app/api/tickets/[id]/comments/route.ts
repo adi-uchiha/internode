@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { comments, tickets } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
 
-export const GET = withErrorHandler(async (request, { params }) => {
+import { getActiveOrgId } from '@/lib/api-utils';
+
+export const GET = withErrorHandler(async (request, { params, session }) => {
   const { id: ticketId } = await params;
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json([]);
+
   const ticketComments = await db.query.comments.findMany({
-    where: eq(comments.ticketId, ticketId),
+    where: and(eq(comments.ticketId, ticketId), eq(comments.organizationId, orgId)),
     with: {
       user: true,
     },

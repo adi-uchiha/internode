@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tickets } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 
-export const GET = withErrorHandler(async (request, { params }) => {
+import { getActiveOrgId } from '@/lib/api-utils';
+
+export const GET = withErrorHandler(async (request, { params, session }) => {
   const { id } = await params;
 
   // Check if ID is a PK or a ticketId (like INT-1234)
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) throw new Error('No organization found for user');
+
   const ticket = await db.query.tickets.findFirst({
-    where: ticketQuery,
+    where: and(ticketQuery, eq(tickets.organizationId, orgId)),
     with: {
       assignee: true,
       createdBy: true,
@@ -34,7 +39,7 @@ export const GET = withErrorHandler(async (request, { params }) => {
   return NextResponse.json(ticket);
 });
 
-export const PATCH = withErrorHandler(async (request, { params }) => {
+export const PATCH = withErrorHandler(async (request, { params, session }) => {
   const { id } = await params;
   const body = await request.json();
 
@@ -42,8 +47,11 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) throw new Error('No organization found for user');
+
   const existingTicket = await db.query.tickets.findFirst({
-    where: ticketQuery,
+    where: and(ticketQuery, eq(tickets.organizationId, orgId)),
   });
 
   if (!existingTicket) {
@@ -73,7 +81,11 @@ export const PATCH = withErrorHandler(async (request, { params }) => {
 
   updateData.updatedAt = new Date();
 
-  const [updatedTicket] = await db.update(tickets).set(updateData).where(ticketQuery).returning();
+  const [updatedTicket] = await db
+    .update(tickets)
+    .set(updateData)
+    .where(and(ticketQuery, eq(tickets.organizationId, orgId)))
+    .returning();
 
   return NextResponse.json(updatedTicket);
 });

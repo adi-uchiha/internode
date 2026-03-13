@@ -1,12 +1,17 @@
 import { db } from '@/db';
 import { searchHistory } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { withErrorHandler } from '@/lib/api-handler';
 
+import { getActiveOrgId } from '@/lib/api-utils';
+
 export const GET = withErrorHandler(async (req, { session }) => {
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json([]);
+
   const history = await db.query.searchHistory.findMany({
-    where: eq(searchHistory.userId, session!.user.id),
+    where: and(eq(searchHistory.userId, session!.user.id), eq(searchHistory.organizationId, orgId)),
     orderBy: [desc(searchHistory.lastAccessedAt)],
     limit: 5,
   });
@@ -32,13 +37,14 @@ export const POST = withErrorHandler(async (req, { session }) => {
     return NextResponse.json(existing);
   }
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) throw new Error('No organization found for user');
+
   const [newItem] = await db
     .insert(searchHistory)
     .values({
       userId: session!.user.id,
-      organizationId:
-        (await db.query.members.findFirst({ where: (m, { eq }) => eq(m.userId, session!.user.id) }))
-          ?.organizationId || '',
+      organizationId: orgId,
       entityType,
       entityId,
       title,
