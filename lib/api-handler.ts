@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { auth } from './auth';
+import { Session } from './auth-types';
 import { ApiError, ValidationError } from './api-error';
 
 type HandlerContext = {
   params: Promise<Record<string, string>>;
-  session?: {
-    user: {
-      id: string;
-      role: string;
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
+  session?: Session;
+  orgId?: string;
 };
 
 type ApiHandler = (req: Request, context: HandlerContext) => Promise<Response> | Response;
@@ -23,17 +18,37 @@ interface HandlerOptions {
 }
 
 export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = {}) {
-  return async (req: Request, context: { params: Promise<unknown> }) => {
+  return async (req: Request, context: { params: Promise<Record<string, string>> }) => {
     try {
-      let session = null;
+      let session: Session | null = null;
 
       if (!options.skipAuth) {
-        session = await auth.api.getSession({
+        const authSession = await auth.api.getSession({
           headers: await headers(),
         });
 
-        if (!session) {
+        if (!authSession) {
           throw new ApiError('Unauthorized', 401, 'unauthorized');
+        }
+
+        session = authSession as Session;
+
+        const orgId = session.session.activeOrganizationId;
+        if (!orgId) {
+          throw new ApiError('No active organization', 403, 'no_active_org');
+        }
+
+        // Fetch user context from members table
+        const { db } = await import('@/db');
+        const { members } = await import('@/db/schema');
+        const { and, eq } = await import('drizzle-orm');
+
+        const member = await db.query.members.findFirst({
+          where: and(eq(members.userId, session.user.id), eq(members.organizationId, orgId)),
+        });
+
+        if (!member) {
+          throw new ApiError('Not a member of this organization', 403, 'not_a_member');
         }
 
         if (options.requiredRole) {
@@ -41,13 +56,17 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
             ? options.requiredRole
             : [options.requiredRole];
 
-          if (!roles.includes(session.user.role)) {
-            throw new ApiError('Forbidden', 403, 'forbidden');
+          if (!roles.includes(member.role)) {
+            throw new ApiError('Forbidden: Insufficient organization privileges', 403, 'forbidden');
           }
         }
       }
 
-      return await handler(req, { params: context.params, session } as HandlerContext);
+      return await handler(req, {
+        params: context.params,
+        session: session as Session,
+        orgId: session?.session.activeOrganizationId || undefined,
+      });
     } catch (error) {
       console.error('[API_ERROR]', error);
 

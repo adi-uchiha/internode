@@ -22,8 +22,8 @@ import { toast } from 'sonner';
 
 export default function NewTicketPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { user, orgRole } = useAuth();
+  const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects';
-import { useWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspace';
+import { useOrganization, useUpdateOrganization } from '@/hooks/useOrganization';
 import { useUpdateProfile } from '@/hooks/useUsers';
 import { useLabels, useCreateLabel, useDeleteLabel } from '@/hooks/useLabels';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const tabs = [
-  { id: 'workspace', label: 'Workspace', icon: 'solar:buildings-linear' },
+  { id: 'organization', label: 'Organization', icon: 'solar:buildings-linear' },
   { id: 'projects', label: 'Projects', icon: 'solar:folder-linear' },
   { id: 'kanban', label: 'Kanban Columns', icon: 'solar:widget-4-linear' },
   { id: 'notifications', label: 'Notifications', icon: 'solar:bell-linear' },
@@ -38,14 +38,12 @@ const defaultColumns = [
   { name: 'Unplanned', color: '#8b5cf6' },
 ];
 
-// Labels are now fetched via useLabels hook
-
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('workspace');
+  const [activeTab, setActiveTab] = useState('organization');
   const { user } = useAuth();
   const { data: projects, isLoading: projectsLoading } = useProjects();
-  const { data: workspaceData, isLoading: workspaceLoading } = useWorkspace();
-  const { mutateAsync: updateWorkspace } = useUpdateWorkspace();
+  const { data: organizationData, isLoading: organizationLoading } = useOrganization();
+  const { mutateAsync: updateOrganization } = useUpdateOrganization();
   const { mutateAsync: updateProfile } = useUpdateProfile();
   const { mutateAsync: createProject } = useCreateProject();
   const { mutateAsync: deleteProject } = useDeleteProject();
@@ -76,7 +74,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Workspace Identity State
+  // Organization Identity State
   const [orgName, setOrgName] = useState('');
   const [orgDomain, setOrgDomain] = useState('');
 
@@ -87,9 +85,9 @@ export default function SettingsPage() {
   } | null>(null);
 
   useState(() => {
-    if (workspaceData) {
-      setOrgName(workspaceData.organizationName);
-      setOrgDomain(workspaceData.organizationDomain);
+    if (organizationData) {
+      setOrgName(organizationData.organizationName);
+      setOrgDomain(organizationData.organizationDomain);
     }
     if (user?.notificationSettings) {
       setNotifPolicy(user.notificationSettings);
@@ -98,9 +96,9 @@ export default function SettingsPage() {
 
   const handleSync = async () => {
     try {
-      await updateWorkspace({
-        organizationName: orgName || workspaceData?.organizationName,
-        organizationDomain: orgDomain || workspaceData?.organizationDomain,
+      await updateOrganization({
+        organizationName: orgName || organizationData?.organizationName,
+        organizationDomain: orgDomain || organizationData?.organizationDomain,
       });
 
       await updateProfile({
@@ -199,14 +197,14 @@ export default function SettingsPage() {
             </div>
 
             <div className="p-8">
-              {activeTab === 'workspace' && (
+              {activeTab === 'organization' && (
                 <div className="space-y-8">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-sm bg-primary/10">
                       <Icon icon="solar:buildings-linear" className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-display font-bold text-xl tracking-tight">
-                      Workspace Identity
+                      Organization Identity
                     </h3>
                   </div>
 
@@ -220,14 +218,14 @@ export default function SettingsPage() {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setOrgName(e.target.value)
                         }
-                        placeholder={workspaceLoading ? 'Loading...' : 'InternHub Central'}
+                        placeholder={organizationLoading ? 'Loading...' : 'InternHub Central'}
                         className="max-w-md bg-muted/30 border-border h-11 font-mono text-sm focus-visible:ring-primary/20"
                       />
                     </div>
 
                     <div className="space-y-2">
                       <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block font-bold">
-                        Workspace Domain
+                        Organization Domain
                       </label>
                       <div className="flex items-center max-w-md">
                         <Input
@@ -235,7 +233,7 @@ export default function SettingsPage() {
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             setOrgDomain(e.target.value)
                           }
-                          placeholder={workspaceLoading ? 'Loading...' : 'internhub-hq'}
+                          placeholder={organizationLoading ? 'Loading...' : 'internhub-hq'}
                           className="bg-muted/30 border-border border-r-0 rounded-r-none h-11 font-mono text-sm focus-visible:ring-primary/20"
                         />
                         <div className="h-11 px-4 flex items-center bg-muted border border-border border-l-0 rounded-r-md text-xs font-mono text-muted-foreground">
@@ -246,7 +244,7 @@ export default function SettingsPage() {
 
                     <div className="space-y-2">
                       <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block font-bold">
-                        System Logo
+                        Organization Logo
                       </label>
                       <div className="border-2 border-dashed border-border p-12 text-center max-w-md bg-muted/5 group hover:border-primary/40 transition-colors cursor-pointer rounded-lg">
                         <Icon

@@ -149,7 +149,7 @@ export default function OnboardingPage() {
       if (error) {
         // Handle slug-taken conflict gracefully
         if (error.message?.includes('slug') || error.message?.includes('unique')) {
-          toast.error('That workspace URL is already taken. Please choose a different slug.');
+          toast.error('That organization URL is already taken. Please choose a different slug.');
         } else {
           toast.error(error.message ?? 'Failed to create organization.');
         }
@@ -232,7 +232,7 @@ export default function OnboardingPage() {
                     <span className="text-foreground font-semibold">
                       {user?.name || user?.email?.split('@')[0] || 'Developer'}
                     </span>
-                    . Let&apos;s set up your workspace.
+                    . Let&apos;s set up your organization.
                   </p>
                 </div>
 
@@ -282,7 +282,7 @@ export default function OnboardingPage() {
                     className="w-full h-14 text-sm font-bold tracking-widest uppercase shadow-xl shadow-primary/20"
                     onClick={() => setStep('create-org')}
                   >
-                    Create Your Workspace
+                    Create Your Organization
                     <Icon icon="solar:buildings-2-linear" className="w-5 h-5 ml-2" />
                   </Button>
                 )}
@@ -297,7 +297,7 @@ export default function OnboardingPage() {
                     Pending Invitations
                   </h2>
                   <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest opacity-60">
-                    Accept to join an existing workspace
+                    Accept to join an existing organization
                   </p>
                 </div>
 
@@ -366,7 +366,7 @@ export default function OnboardingPage() {
               <div className="space-y-7">
                 <div className="space-y-1">
                   <h2 className="font-display text-2xl font-bold tracking-tight">
-                    Create Your Workspace
+                    Create Your Organization
                   </h2>
                   <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest opacity-60">
                     You will be the Owner
@@ -396,7 +396,7 @@ export default function OnboardingPage() {
                   {/* Slug */}
                   <div className="space-y-2">
                     <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block">
-                      Workspace URL
+                      Organization URL
                     </label>
                     <div className="flex items-center border border-border bg-background overflow-hidden">
                       <span className="px-3 py-2 font-mono text-xs text-muted-foreground bg-muted/30 border-r border-border shrink-0">
@@ -462,7 +462,7 @@ export default function OnboardingPage() {
                         </>
                       ) : (
                         <>
-                          Launch Workspace
+                          Launch Organization
                           <Icon icon="solar:rocket-2-linear" className="w-4 h-4 ml-2" />
                         </>
                       )}
@@ -487,10 +487,10 @@ export default function OnboardingPage() {
 
                 <div className="space-y-2">
                   <h2 className="font-display text-3xl font-bold tracking-tight text-primary">
-                    Workspace Ready
+                    Organization Ready
                   </h2>
                   <p className="text-muted-foreground font-mono text-sm">
-                    Your workspace has been initialized. Redirecting to your dashboard...
+                    Your organization has been initialized. Redirecting to your dashboard...
                   </p>
                 </div>
 

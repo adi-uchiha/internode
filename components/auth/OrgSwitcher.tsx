@@ -44,7 +44,7 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
       <div className="px-2 py-2 flex justify-center">
         <div
           className="w-8 h-8 rounded-md bg-muted/50 border border-border flex items-center justify-center cursor-pointer group hover:bg-muted transition-colors"
-          title={activeOrg?.name || 'Switch Workspace'}
+          title={activeOrg?.name || 'Switch Organization'}
         >
           <Icon
             icon="solar:buildings-linear"
@@ -58,11 +58,11 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   return (
     <div className="px-4 py-2">
       <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-2 px-1 opacity-60">
-        Workspace
+        Organization
       </div>
       <Select value={activeOrgId || ''} onValueChange={handleSwitch}>
         <SelectTrigger className="w-full h-9 bg-muted/20 border-border hover:bg-muted/50 transition-colors focus:ring-1 focus:ring-primary/50 text-sm font-medium">
-          <SelectValue placeholder="Select Workspace" />
+          <SelectValue placeholder="Select Organization" />
         </SelectTrigger>
         <SelectContent className="bg-card border-border shadow-xl">
           {orgs?.map((org) => (

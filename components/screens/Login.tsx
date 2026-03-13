@@ -130,7 +130,7 @@ const Login = () => {
             </div>
             <h2 className="text-3xl font-display font-bold tracking-tight">Developer Portal</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              Authenticate to access your workspace.
+              Authenticate to access your organization.
             </p>
           </div>
 

@@ -163,9 +163,9 @@ const KanbanCard = ({
 };
 
 export default function KanbanPage() {
-  const { user } = useAuth();
+  const { orgRole } = useAuth();
   const router = useRouter();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = orgRole === 'admin' || orgRole === 'owner';
   const { data: ticketsResponse, isLoading } = useTickets();
   const { data: projectsResponse } = useProjects();
   const { mutateAsync: updateTicket } = useUpdateTicket();

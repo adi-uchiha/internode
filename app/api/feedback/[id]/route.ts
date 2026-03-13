@@ -5,16 +5,13 @@ import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
 
-import { getActiveOrgId } from '@/lib/api-utils';
-
 export const POST = withErrorHandler(
-  async (request, { params, session }) => {
+  async (request, { params, orgId }) => {
     const { id } = await params;
     const body = await request.json();
     const { type, comment } = body;
 
-    const orgId = await getActiveOrgId(session!.user.id);
-    if (!orgId) throw new Error('No organization found for user');
+    if (!orgId) throw new Error('No active organization');
 
     if (type === 'log') {
       await db

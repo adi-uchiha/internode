@@ -4,10 +4,8 @@ import { tickets, projects, timeLogs } from '@/db/schema';
 import { eq, sql, and, gte } from 'drizzle-orm';
 import { startOfWeek, subDays, format, startOfDay } from 'date-fns';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (req, { session }) => {
-  const orgId = await getActiveOrgId(session!.user.id);
+export const GET = withErrorHandler(async (req, { orgId }) => {
   if (!orgId) return NextResponse.json({});
   // 1. KPI Counts
   const totalTicketsRes = await db

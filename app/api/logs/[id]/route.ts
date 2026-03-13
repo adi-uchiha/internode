@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { timeLogs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { timeLogs, members } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { ForbiddenError, NotFoundError } from '@/lib/api-error';
 
@@ -9,17 +9,25 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
   const { id } = await params;
   const body = await request.json();
 
-  const isAdmin = session!.user.role === 'admin';
+  const orgId = session!.session.activeOrganizationId;
+  if (!orgId) throw new Error('No active organization');
+
+  // Find membership
+  const member = await db.query.members.findFirst({
+    where: and(eq(members.userId, session!.user.id), eq(members.organizationId, orgId)),
+  });
+
+  const isOrgManager = member?.role === 'admin' || member?.role === 'owner';
 
   const existingLog = await db.query.timeLogs.findFirst({
-    where: eq(timeLogs.id, id),
+    where: and(eq(timeLogs.id, id), eq(timeLogs.organizationId, orgId)),
   });
 
   if (!existingLog) {
     throw new NotFoundError('Log not found');
   }
 
-  if (!isAdmin && existingLog.userId !== session!.user.id) {
+  if (!isOrgManager && existingLog.userId !== session!.user.id) {
     throw new ForbiddenError();
   }
 
@@ -37,7 +45,7 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
   const [updatedLog] = await db
     .update(timeLogs)
     .set(updateData)
-    .where(eq(timeLogs.id, id))
+    .where(and(eq(timeLogs.id, id), eq(timeLogs.organizationId, orgId)))
     .returning();
 
   return NextResponse.json(updatedLog);

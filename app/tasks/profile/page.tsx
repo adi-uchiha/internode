@@ -12,7 +12,7 @@ import { format, subDays, startOfDay, isSameDay } from 'date-fns';
 import Image from 'next/image';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, orgRole, logout } = useAuth();
 
   const { data: tickets } = useTickets({ assigneeId: user?.id });
   const { data: logs } = useLogs(); // This gets daily logs, maybe filter by user if API supports it
@@ -135,16 +135,20 @@ export default function ProfilePage() {
             <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-6">
               <span
                 className={`font-mono text-[10px] uppercase px-3 py-1.5 rounded-sm border shadow-sm flex items-center gap-1.5 ${
-                  user?.role === 'admin'
+                  orgRole === 'admin' || orgRole === 'owner'
                     ? 'bg-primary/10 text-primary border-primary/20'
                     : 'bg-muted/50 border-border text-muted-foreground'
                 }`}
               >
                 <Icon
-                  icon={user?.role === 'admin' ? 'solar:shield-star-linear' : 'solar:user-linear'}
+                  icon={
+                    orgRole === 'admin' || orgRole === 'owner'
+                      ? 'solar:shield-star-linear'
+                      : 'solar:user-linear'
+                  }
                   className="w-3.5 h-3.5"
                 />
-                {user?.role || 'member'}
+                {orgRole}
               </span>
             </div>
           </div>

@@ -5,10 +5,8 @@ import { eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError, NotFoundError } from '@/lib/api-error';
 
-import { getActiveOrgId } from '@/lib/api-utils';
-
 // Toggle completion status or edit text of a goal item
-export const PATCH = withErrorHandler(async (request, { params, session }) => {
+export const PATCH = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
   const body = await request.json();
 
@@ -20,8 +18,7 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
     throw new BadRequestError('No data to update');
   }
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   // Verify ownership and organization
   const existingItem = await db.query.goalItems.findFirst({
@@ -48,11 +45,10 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
   return NextResponse.json(updatedItem);
 });
 
-export const DELETE = withErrorHandler(async (request, { params, session }) => {
+export const DELETE = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   // Verify ownership and organization
   const existingItem = await db.query.goalItems.findFirst({

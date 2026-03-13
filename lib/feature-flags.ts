@@ -1,27 +1,17 @@
 export type FeatureStatus = 'available' | 'coming-soon' | 'hidden';
 
 export const featureConfig: Record<string, Record<string, FeatureStatus>> = {
-  member: {
-    '/tasks/dashboard': 'available',
-    '/tasks/kanban': 'available',
-    '/tasks/my-tickets': 'available',
-    '/member': 'available',
-    '/tasks/time-logs': 'coming-soon',
-    '/member/activity': 'coming-soon',
-    '/member/goals': 'coming-soon',
-    '/member/skills': 'coming-soon',
-    '/member/monthly': 'coming-soon',
-    '/member/breakthroughs': 'coming-soon',
-    '/member/leave': 'coming-soon',
-  },
   admin: {
-    // Admins have everything available by default or we can explicitly list them
+    // Admins have everything available by default
+  },
+  owner: {
+    // Owners have everything available by default
   },
 };
 
 export const getFeatureStatus = (role: string, href: string): FeatureStatus => {
-  // Admin always has full access
-  if (role === 'admin') return 'available';
+  // Org Admin/Owner always has full access
+  if (role === 'admin' || role === 'owner') return 'available';
 
   const roleConfig = featureConfig[role as keyof typeof featureConfig];
   if (!roleConfig) return 'available';

@@ -66,7 +66,7 @@ async function main() {
         id: nanoid(),
         organizationId: finalHqId,
         userId: user.id,
-        role: user.role === 'admin' ? 'owner' : 'member',
+        role: (user as unknown as Record<string, unknown>).role === 'admin' ? 'owner' : 'member',
       });
     }
   }

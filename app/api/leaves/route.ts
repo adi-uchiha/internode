@@ -1,20 +1,21 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { leaveRequests } from '@/db/schema';
+import { leaveRequests, members } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-// Get leave requests. Admins get all, users get their own.
-export const GET = withErrorHandler(async (req, { session }) => {
-  const isGlobalAdmin = session!.user.role === 'admin';
-  const orgId = await getActiveOrgId(session!.user.id);
+// Get leave requests. Admins get all, members get their own.
+export const GET = withErrorHandler(async (req, { session, orgId }) => {
+  if (!orgId) throw new Error('No active organization');
 
-  if (!isGlobalAdmin && !orgId) return NextResponse.json([]);
+  // Find the user's role in this organization
+  const member = await db.query.members.findFirst({
+    where: and(eq(members.userId, session!.user.id), eq(members.organizationId, orgId)),
+  });
 
-  const isAdmin = isGlobalAdmin || session!.user.role === 'admin'; // In this context, both are the same, but let's be explicit
+  const isOrgManager = member?.role === 'admin' || member?.role === 'owner';
 
   const queryArgs = {
     with: {
@@ -22,8 +23,8 @@ export const GET = withErrorHandler(async (req, { session }) => {
     } as const,
     orderBy: [desc(leaveRequests.createdAt)],
     where: and(
-      isGlobalAdmin ? undefined : eq(leaveRequests.organizationId, orgId!),
-      isGlobalAdmin ? undefined : isAdmin ? undefined : eq(leaveRequests.userId, session!.user.id)
+      eq(leaveRequests.organizationId, orgId),
+      isOrgManager ? undefined : eq(leaveRequests.userId, session!.user.id)
     ),
   };
 
@@ -32,7 +33,7 @@ export const GET = withErrorHandler(async (req, { session }) => {
 });
 
 // Request new leave
-export const POST = withErrorHandler(async (request, { session }) => {
+export const POST = withErrorHandler(async (request, { session, orgId }) => {
   const body = await request.json();
   const { type, date, reason } = body;
 
@@ -40,8 +41,7 @@ export const POST = withErrorHandler(async (request, { session }) => {
     throw new BadRequestError('Type and Date are required');
   }
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   const [newLeave] = await db
     .insert(leaveRequests)

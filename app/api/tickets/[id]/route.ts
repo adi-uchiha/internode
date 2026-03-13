@@ -5,17 +5,14 @@ import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 
-import { getActiveOrgId } from '@/lib/api-utils';
-
-export const GET = withErrorHandler(async (request, { params, session }) => {
+export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
 
   // Check if ID is a PK or a ticketId (like INT-1234)
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   const ticket = await db.query.tickets.findFirst({
     where: and(ticketQuery, eq(tickets.organizationId, orgId)),
@@ -39,7 +36,7 @@ export const GET = withErrorHandler(async (request, { params, session }) => {
   return NextResponse.json(ticket);
 });
 
-export const PATCH = withErrorHandler(async (request, { params, session }) => {
+export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
   const body = await request.json();
 
@@ -47,8 +44,7 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   const existingTicket = await db.query.tickets.findFirst({
     where: and(ticketQuery, eq(tickets.organizationId, orgId)),

@@ -108,9 +108,9 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           mounted={mounted}
         />
         <DetailItem
-          label="Role"
-          value={user.role}
-          icon="solar:crown-linear"
+          label="Active Organization ID"
+          value={sessionInfo.activeOrganizationId}
+          icon="solar:buildings-linear"
           className="border-primary/30 bg-primary/5"
           mounted={mounted}
         />

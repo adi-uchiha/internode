@@ -17,43 +17,34 @@ bun run agent:commit "Refactor auth logic" "Extracted session handling to a sepa
 Whenever making changes to database schema you have to run the migration properly before concluding your changes.
 bun run db:generate
 
-## Authentication & Signup Flow Reference
+## Multi-Tenant SaaS Architecture Reference
 
 ### Overview
 
-The project uses `Better Auth` for session management with a custom Drizzle adapter for PostgreSQL (Neon).
+The project uses a strict multi-tenant architecture where all data is isolated by `organizationId`. We use `Better Auth` with a custom Drizzle adapter for organization and member management.
 
-### Dual Login Modes (Login.tsx)
+### Organization-Scoped Access Control
 
-The login screen features two modes: **Member** and **Admin**.
+The concept of a system-level "Admin" has been completely removed. Access control is now entirely based on the user's role within their active organization (`orgRole`).
 
-- **Member**: Accesses the "Developer Portal". Primarily uses GitHub Social Sign-in. Email/Password form visibility is controlled by `AUTH_FLAGS.ENABLE_EMAIL_SIGNUP`.
-- **Admin**: Accesses the "Admin Dashboard". **Only** supports Email/Password login. GitHub sign-in is hidden for security.
+- **Roles**: `owner`, `admin`, `member`.
+- **Identity-First Login**: There is a single, unified login flow. Users log in once and are then scoped to an active organization.
+- **Onboarding**: Users without an active organization are automatically redirected to the `/tasks/onboarding` flow to create or join an organization.
 
-### Role Enforcement (AuthContext.tsx)
+### Role Enforcement (AuthContext.tsx & lib/api-handler.ts)
 
-The `login` function in `AuthContext` is responsible for cross-checking roles:
+- **Client-Side**: The `AuthContext` provides `orgRole` and `activeOrganizationId`. UI elements must be guarded using these values.
+- **Server-Side**: The `withErrorHandler` wrapper in `lib/api-handler.ts` automatically extracts and validates `orgId` and the user's `role` from the session. Handlers receive `orgId` as part of the context.
 
-- It accepts a `requiredRole` argument.
-- After successful `signIn.email`, it fetches the session and checks if the user's role matches `requiredRole`.
-- If the role does not match, the user is automatically logged out and notified of invalid credentials.
+### Terminology
 
-ADMIN CAN ONLY BE CREATED FROM DATABASE BY CHANGING ROLE DIRECTLY FROM DATABASE. There is no option in project to create admin. This is a enforcement.
-
-### Signup Logic (Login.tsx & AuthContext.tsx)
-
-To ensure a seamless onboarding experience for members:
-
-- Explicit **Log In** and **Sign Up** buttons are provided for Members when `AUTH_FLAGS.ENABLE_EMAIL_SIGNUP` is enabled.
-- The **Sign Up** button triggers `signUp.email` using the email as a credential and the email prefix as a default `name`.
-- **Admins** only have a **Log In** button. Signup is never allowed for admins.
-- If the feature flag is OFF, the email/password form is hidden for members, leaving only GitHub login.
+ALWAYS use the term **Organization** instead of "Workspace" in UI, code, and communication.
 
 ### Environment & Config (lib/auth.ts)
 
-- `baseURL` must be explicitly configured in the server `auth` config to prevent `ERR_INVALID_URL` errors during social sign-ins.
+- `baseURL` must be explicitly configured in the server `auth` config.
 - `DATABASE_URL` in `.env` must not have trailing quotes.
-- `role` field in `users` table defaults to `member`.
+- Migration to the multi-tenant model involved removing the `role` field from the `users` table. All roles are now stored in the `members` table.
 
 IMPORANT DATABASE & MIGRATION CONTEXT
 My vercerl build process (only have prod deployments) has the bun run db:migrate

@@ -3,40 +3,37 @@ import { db } from '@/db';
 import { timeLogs, tickets, members } from '@/db/schema';
 import { sql, and, eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
+import { Session } from '@/lib/auth-types';
 
 export const GET = withErrorHandler(
-  async (req, { session }) => {
-    const isGlobalAdmin = session!.user.role === 'admin';
-    const orgId = await getActiveOrgId(session!.user.id);
+  async (req, { session: _session }) => {
+    const session = _session as Session;
+    const orgId = session!.session.activeOrganizationId;
+    if (!orgId) throw new Error('No active organization');
 
-    // If not global admin and no orgId, return empty
-    if (!isGlobalAdmin && !orgId) return NextResponse.json({});
-
-    // Filtering logic: Global Admin sees everything, Org Admin sees their org
-    const orgFilter = isGlobalAdmin ? undefined : eq(members.organizationId, orgId!);
-    const timeLogFilter = isGlobalAdmin ? undefined : eq(timeLogs.organizationId, orgId!);
-    const ticketFilter = isGlobalAdmin ? undefined : eq(tickets.organizationId, orgId!);
+    const orgFilter = eq(members.organizationId, orgId);
+    const timeLogFilter = eq(timeLogs.organizationId, orgId);
+    const ticketFilter = eq(tickets.organizationId, orgId);
 
     // 1. Total Active Interns
     const activeInternsRes = await db
       .select({ count: sql<number>`count(*)::integer` })
       .from(members)
-      .where(and(orgFilter ? orgFilter : sql`true`, eq(members.status, 'active')));
+      .where(and(orgFilter, eq(members.status, 'active')));
     const activeInternsCount = activeInternsRes[0]?.count || 0;
 
     // 2. Total Hours Logged
     const totalHoursRes = await db
       .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
       .from(timeLogs)
-      .where(timeLogFilter ? timeLogFilter : sql`true`);
+      .where(timeLogFilter);
     const totalHours = totalHoursRes[0]?.total || 0;
 
     // 3. Log Rate (Simple estimate for UI)
     const logsCountRes = await db
       .select({ count: sql<number>`count(*)::integer` })
       .from(timeLogs)
-      .where(timeLogFilter ? timeLogFilter : sql`true`);
+      .where(timeLogFilter);
     const logsCount = logsCountRes[0]?.count || 0;
 
     // Assuming 10 expected logs per intern over some period for a rough gauge
@@ -52,7 +49,7 @@ export const GET = withErrorHandler(
         updatedAt: tickets.updatedAt,
       })
       .from(tickets)
-      .where(and(ticketFilter ? ticketFilter : sql`true`, eq(tickets.status, 'done')));
+      .where(and(ticketFilter, eq(tickets.status, 'done')));
 
     let avgResolveTime = 'N/A';
     if (resolvedTickets.length > 0) {
@@ -66,7 +63,6 @@ export const GET = withErrorHandler(
     }
 
     return NextResponse.json({
-      isGlobal: isGlobalAdmin,
       logRate: `${logRate}%`,
       avgResolveTime,
       activeInterns: activeInternsCount.toString(),

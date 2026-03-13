@@ -29,8 +29,6 @@ interface RequireRoleProps {
  * RBAC wrapper that conditionally renders `children` based on the current
  * user's role in the **active organization**. Falls back to `null` (or
  * `props.fallback`) if the user's org-level role is insufficient.
- *
- * Global system admins (`user.role === 'admin'`) always bypass role checks.
  */
 export function RequireRole({ role, children, fallback = null }: RequireRoleProps) {
   const { data: activeOrg } = authClient.useActiveOrganization();
@@ -38,12 +36,6 @@ export function RequireRole({ role, children, fallback = null }: RequireRoleProp
 
   // While loading, render nothing to avoid flash of protected content
   if (!session) return null;
-
-  // Global system admins pass all org-level checks
-  const user = session.user as { role?: string } | null;
-  if (user?.role === 'admin') {
-    return <>{children}</>;
-  }
 
   // No active organization context – hide sensitive actions
   if (!activeOrg) return <>{fallback}</>;

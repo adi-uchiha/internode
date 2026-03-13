@@ -3,10 +3,8 @@ import { organizations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (req, { session }) => {
-  const orgId = await getActiveOrgId(session!.user.id);
+export const GET = withErrorHandler(async (req, { orgId }) => {
   if (!orgId) return NextResponse.json({ organizationName: '', organizationDomain: '' });
 
   const org = await db.query.organizations.findFirst({
@@ -20,12 +18,11 @@ export const GET = withErrorHandler(async (req, { session }) => {
 });
 
 export const PATCH = withErrorHandler(
-  async (req, { session }) => {
+  async (req, { orgId }) => {
     const body = await req.json();
     const { organizationName, organizationDomain } = body;
 
-    const orgId = await getActiveOrgId(session!.user.id);
-    if (!orgId) throw new Error('No organization found for user');
+    if (!orgId) throw new Error('No active organization');
 
     await db
       .update(organizations)
@@ -38,5 +35,5 @@ export const PATCH = withErrorHandler(
 
     return NextResponse.json({ success: true });
   },
-  { requiredRole: 'admin' }
+  { requiredRole: ['owner', 'admin'] }
 );

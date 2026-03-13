@@ -11,9 +11,6 @@ export const users = pgTable('users', {
   image: text('image'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  role: text('role', { enum: ['admin', 'member'] })
-    .notNull()
-    .default('member'),
   joinDate: timestamp('join_date').defaultNow(),
   notificationSettings: jsonb('notification_settings').$type<{
     email: Record<string, boolean>;

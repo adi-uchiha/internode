@@ -523,7 +523,7 @@ const MemberDashboardContent = () => {
     return (
       <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
         <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
-        LOADING_PERSONAL_WORKSPACE...
+        LOADING_PERSONAL_ORGANIZATION...
       </div>
     );
   }
@@ -895,8 +895,8 @@ const MemberDashboardContent = () => {
 };
 
 export default function TaskDashboardPage() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { orgRole } = useAuth();
+  const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   return (
     <div className="w-full">{isAdmin ? <AdminDashboardContent /> : <MemberDashboardContent />}</div>

@@ -7,8 +7,7 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
-import { AdminLayout } from '@/components/layouts/AdminLayout';
-import { MemberLayout } from '@/components/layouts/MemberLayout';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 
 interface TaskManagerLayoutProps {
   children: ReactNode;
@@ -26,11 +25,12 @@ export default function TaskManagerLayout({
   const logSearchMutation = useLogSearch();
   const pathname = usePathname();
   const router = useRouter();
-  const isAdmin = user?.role === 'admin';
+  const { data: activeMember } = authClient.useActiveMember();
+  const orgRole = activeMember?.role || 'member';
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
   // Trap authenticated users who have no org memberships (orphaned users) and
-  // force them through the workspace-creation onboarding flow.
+  // force them through the organization-creation onboarding flow.
   useEffect(() => {
     // Wait for both auth and org data to settle
     if (authLoading || orgsLoading) return;
@@ -78,7 +78,31 @@ export default function TaskManagerLayout({
     setShowSearch(false);
   }, [pathname]);
 
-  const LayoutComponent = isAdmin ? AdminLayout : MemberLayout;
+  const navItems = [
+    { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },
+    { label: 'Board', href: '/tasks/kanban', icon: 'ph:kanban-duotone' },
+    { label: 'My Tickets', href: '/tasks/my-tickets', icon: 'ph:ticket-duotone' },
+    { label: 'Quick Log', href: '/tasks/quick-log', icon: 'ph:plus-circle-duotone' },
+    { label: 'Time Logs', href: '/tasks/time-logs', icon: 'ph:clock-duotone' },
+    {
+      label: 'Members',
+      href: '/tasks/members',
+      icon: 'ph:users-three-duotone',
+      roles: ['owner', 'admin'],
+    },
+    {
+      label: 'Analytics',
+      href: '/tasks/analytics',
+      icon: 'ph:presentation-chart-duotone',
+      roles: ['owner', 'admin'],
+    },
+    {
+      label: 'Settings',
+      href: '/tasks/settings',
+      icon: 'ph:gear-duotone',
+      roles: ['owner', 'admin'],
+    },
+  ].filter((item) => !item.roles || item.roles.includes(orgRole));
 
   const content = (
     <>
@@ -149,11 +173,23 @@ export default function TaskManagerLayout({
                   QUICK ACTIONS
                 </div>
                 {[
-                  { icon: 'solar:add-circle-linear', title: 'Create new ticket', admin: true },
-                  { icon: 'solar:clock-circle-linear', title: 'Log time', admin: false },
-                  { icon: 'solar:graph-up-linear', title: 'View analytics', admin: true },
+                  {
+                    icon: 'solar:add-circle-linear',
+                    title: 'Create new ticket',
+                    roles: ['owner', 'admin'],
+                  },
+                  {
+                    icon: 'solar:clock-circle-linear',
+                    title: 'Log time',
+                    roles: ['owner', 'admin', 'member'],
+                  },
+                  {
+                    icon: 'solar:graph-up-linear',
+                    title: 'View analytics',
+                    roles: ['owner', 'admin'],
+                  },
                 ]
-                  .filter((a) => !a.admin || isAdmin)
+                  .filter((a) => !a.roles || a.roles.includes(orgRole))
                   .map((item, i) => (
                     <div
                       key={i}
@@ -172,5 +208,9 @@ export default function TaskManagerLayout({
     </>
   );
 
-  return <LayoutComponent title={title}>{content}</LayoutComponent>;
+  return (
+    <DashboardLayout navItems={navItems} title={title}>
+      {content}
+    </DashboardLayout>
+  );
 }

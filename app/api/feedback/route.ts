@@ -3,11 +3,9 @@ import { db } from '@/db';
 import { timeLogs, breakthroughs } from '@/db/schema';
 import { isNull, desc, eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
 
 export const GET = withErrorHandler(
-  async (req, { session }) => {
-    const orgId = await getActiveOrgId(session!.user.id);
+  async (req, { orgId }) => {
     if (!orgId) return NextResponse.json({ logs: [], breakthroughs: [] });
     const pendingLogs = await db.query.timeLogs.findMany({
       where: and(isNull(timeLogs.adminComment), eq(timeLogs.organizationId, orgId)),

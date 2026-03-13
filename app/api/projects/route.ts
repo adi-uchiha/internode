@@ -3,10 +3,8 @@ import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (request, { session }) => {
-  const orgId = await getActiveOrgId(session!.user.id);
+export const GET = withErrorHandler(async (request, { orgId }) => {
   if (!orgId) return NextResponse.json([]);
 
   const allProjects = await db.query.projects.findMany({
@@ -18,12 +16,11 @@ export const GET = withErrorHandler(async (request, { session }) => {
 });
 
 export const POST = withErrorHandler(
-  async (req, { session }) => {
+  async (req, { orgId }) => {
     const data = await req.json();
     const id = data.id || `proj_${Math.random().toString(36).slice(2, 9)}`;
 
-    const orgId = await getActiveOrgId(session!.user.id);
-    if (!orgId) throw new Error('No organization found for user');
+    if (!orgId) throw new Error('No active organization');
 
     const newProject = await db
       .insert(projects)

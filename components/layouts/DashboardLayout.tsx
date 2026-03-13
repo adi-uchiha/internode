@@ -10,6 +10,7 @@ import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotificat
 import Image from 'next/image';
 import { getFeatureStatus } from '@/lib/feature-flags';
 import { OrgSwitcher } from '@/components/auth/OrgSwitcher';
+import { authClient } from '@/lib/auth-client';
 
 interface NavSubItem {
   label: string;
@@ -36,6 +37,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const { user, logout } = useAuth();
+  const { data: activeMember } = authClient.useActiveMember();
+  const orgRole = activeMember?.role || 'member';
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -124,7 +127,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 );
               const isActive = pathname === item.href || isChildActive;
               const isExpanded = expandedItems.includes(item.label);
-              const featureStatus = getFeatureStatus(user?.role || 'member', item.href);
+              const featureStatus = getFeatureStatus(orgRole, item.href);
               const isComingSoon = featureStatus === 'coming-soon';
               const isHidden = featureStatus === 'hidden';
 
@@ -267,7 +270,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         {/* User section */}
         <div className="border-t border-border p-4">
           <Link
-            href={user?.role === 'admin' ? '/admin/profile' : '/member/profile'}
+            href="/tasks/profile"
             className="flex items-center gap-3 mb-4 hover:bg-muted/50 p-2 rounded-md transition-colors cursor-pointer w-full"
           >
             <div className="w-9 h-9 border border-border bg-muted flex items-center justify-center shrink-0 overflow-hidden rounded-full">
@@ -293,7 +296,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                 >
                   <div className="font-display font-semibold text-sm truncate">{user?.name}</div>
                   <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest opacity-60">
-                    [{user?.role}]
+                    [{orgRole}]
                   </div>
                 </motion.div>
               )}

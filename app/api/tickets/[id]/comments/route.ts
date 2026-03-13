@@ -6,12 +6,9 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
 
-import { getActiveOrgId } from '@/lib/api-utils';
-
-export const GET = withErrorHandler(async (request, { params, session }) => {
+export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id: ticketId } = await params;
 
-  const orgId = await getActiveOrgId(session!.user.id);
   if (!orgId) return NextResponse.json([]);
 
   const ticketComments = await db.query.comments.findMany({
@@ -25,7 +22,7 @@ export const GET = withErrorHandler(async (request, { params, session }) => {
   return NextResponse.json(ticketComments);
 });
 
-export const POST = withErrorHandler(async (request, { params, session }) => {
+export const POST = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id: ticketId } = await params;
   const { content } = await request.json();
 
@@ -33,8 +30,10 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
     throw new BadRequestError('Content is required');
   }
 
+  if (!orgId) throw new Error('No active organization');
+
   const ticket = await db.query.tickets.findFirst({
-    where: eq(tickets.id, ticketId),
+    where: and(eq(tickets.id, ticketId), eq(tickets.organizationId, orgId)),
   });
 
   if (!ticket) {
@@ -45,7 +44,7 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
     .insert(comments)
     .values({
       id: nanoid(),
-      organizationId: ticket.organizationId,
+      organizationId: orgId,
       ticketId,
       userId: session!.user.id,
       content,

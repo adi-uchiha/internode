@@ -9,6 +9,7 @@ export type User = InferSelectModel<typeof users> & {
   logStatus?: string | null;
   lastLogTime?: string | Date | null;
   skillTags?: string[] | null;
+  role: 'owner' | 'admin' | 'member';
 };
 
 export function useUsers() {

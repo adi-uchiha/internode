@@ -59,8 +59,8 @@ interface EditForm {
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: ticketUrlId } = use(params);
   const router = useRouter();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { orgRole } = useAuth();
+  const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   const { data: ticket, isLoading } = useTicket(ticketUrlId);
   const { mutateAsync: updateTicket } = useUpdateTicket();

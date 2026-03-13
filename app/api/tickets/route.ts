@@ -4,14 +4,12 @@ import { tickets } from '@/db/schema';
 import { desc, eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (request, { session }) => {
+export const GET = withErrorHandler(async (request, { orgId }) => {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
 
-  const orgId = await getActiveOrgId(session!.user.id);
   if (!orgId) return NextResponse.json([]);
 
   const queryConditions = [eq(tickets.organizationId, orgId)];
@@ -38,7 +36,7 @@ export const GET = withErrorHandler(async (request, { session }) => {
   return NextResponse.json(allTickets);
 });
 
-export const POST = withErrorHandler(async (request, { session }) => {
+export const POST = withErrorHandler(async (request, { session, orgId }) => {
   const body = await request.json();
   const {
     title,
@@ -52,8 +50,7 @@ export const POST = withErrorHandler(async (request, { session }) => {
     labels,
   } = body;
 
-  const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) throw new Error('No organization found for user');
+  if (!orgId) throw new Error('No active organization');
 
   const [newTicket] = await db
     .insert(tickets)

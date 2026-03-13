@@ -5,10 +5,8 @@ import { addDays } from 'date-fns';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
-import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (req, { session }) => {
-  const orgId = await getActiveOrgId(session!.user.id);
+export const GET = withErrorHandler(async (req, { orgId }) => {
   if (!orgId) return NextResponse.json([]);
 
   const allInvites = await db.query.invitations.findMany({
@@ -19,15 +17,14 @@ export const GET = withErrorHandler(async (req, { session }) => {
 });
 
 export const POST = withErrorHandler(
-  async (req, { session }) => {
+  async (req, { session, orgId }) => {
     const { email, role } = await req.json();
 
     if (!email) {
       throw new BadRequestError('Email is required');
     }
 
-    const orgId = await getActiveOrgId(session!.user.id);
-    if (!orgId) throw new Error('No organization found for user');
+    if (!orgId) throw new Error('No active organization');
 
     const newInvite = await db
       .insert(invitations)

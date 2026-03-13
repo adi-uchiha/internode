@@ -13,8 +13,8 @@ import { format, startOfWeek, subDays } from 'date-fns';
 import { toast } from 'sonner';
 
 export default function TimeLogsPage() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { user, orgRole } = useAuth();
+  const isAdmin = orgRole === 'admin' || orgRole === 'owner';
   const { data: allLogs, isLoading: logsLoading } = useLogs(isAdmin ? undefined : user?.id);
   const { data: users } = useUsers();
   const { data: tickets } = useTickets();

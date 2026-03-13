@@ -375,7 +375,7 @@ function AcceptInviteContent() {
                   {state === 'accepting' ? (
                     <>
                       <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                      <span className="ml-2">Joining workspace...</span>
+                      <span className="ml-2">Joining organization...</span>
                     </>
                   ) : (
                     <>
@@ -414,7 +414,7 @@ function AcceptInviteContent() {
                 </motion.div>
                 <div className="space-y-2">
                   <h2 className="font-display text-3xl font-bold tracking-tight text-primary">
-                    Workspace Joined!
+                    Organization Joined!
                   </h2>
                   <p className="text-muted-foreground font-mono text-sm">
                     You are now a member of{' '}
@@ -424,7 +424,7 @@ function AcceptInviteContent() {
                 </div>
                 <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
                   <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                  INITIALIZING_WORKSPACE...
+                  INITIALIZING_ORGANIZATION...
                 </div>
               </div>
             </motion.div>

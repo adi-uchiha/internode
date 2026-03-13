@@ -8,6 +8,7 @@ import type { User, Session } from '@/lib/auth-types';
 interface AuthContextType {
   session: Session | null;
   user: User | null;
+  orgRole: 'owner' | 'admin' | 'member';
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string) => Promise<boolean>;
@@ -36,11 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!sessionData && !isPublicPath) {
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
-        if (user?.role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/tasks/dashboard');
-        }
+        router.push('/tasks/dashboard');
       }
     }
 
@@ -50,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
       }
     }
-  }, [sessionData, isLoading, error, pathname, router, user?.role]);
+  }, [sessionData, isLoading, error, pathname, router]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const { data: signInData, error: signInError } = await authClient.signIn.email({
@@ -63,13 +60,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const { data: freshSession } = await authClient.getSession();
-    const loggedInUser = freshSession?.user as User | null;
+    void freshSession;
 
-    if (loggedInUser?.role === 'admin') {
-      router.push('/admin');
-    } else {
-      router.push('/tasks/dashboard');
-    }
+    router.push('/tasks/dashboard');
 
     router.refresh();
     return true;
@@ -98,11 +91,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.refresh();
   };
 
+  const { data: member } = authClient.useActiveMember();
+  const orgRole = (member?.role as 'owner' | 'admin' | 'member') || 'member';
+
   return (
     <AuthContext.Provider
       value={{
         session: sessionData as Session | null,
         user,
+        orgRole,
         isLoading,
         login,
         signup,
