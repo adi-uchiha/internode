@@ -15,6 +15,7 @@ type Column = {
   count: number;
   color: string;
   indicator: string;
+  bg?: string;
   tasks: Task[];
 };
 
@@ -25,6 +26,7 @@ export const TaskManagerFeature = () => {
       count: 3,
       color: 'border-muted-foreground/30',
       indicator: 'bg-muted-foreground',
+      bg: 'bg-muted-foreground/10',
       tasks: [
         { id: 'INT-042', title: 'Database Schema Migration', tags: ['DB', 'API'], points: 5 },
         { id: 'INT-043', title: 'Review Auth Flow', tags: ['SEC'], points: 3 },
@@ -35,6 +37,7 @@ export const TaskManagerFeature = () => {
       count: 2,
       color: 'border-blue-500/50',
       indicator: 'bg-blue-500',
+      bg: 'bg-blue-500/10',
       tasks: [
         {
           id: 'INT-038',
@@ -50,6 +53,7 @@ export const TaskManagerFeature = () => {
       count: 24,
       color: 'border-primary/50',
       indicator: 'bg-primary',
+      bg: 'bg-primary/10',
       tasks: [{ id: 'INT-035', title: 'Setup CI/CD Pipeline', tags: ['INFRA'], points: 5 }],
     },
   ];
@@ -90,7 +94,7 @@ export const TaskManagerFeature = () => {
             className="flex-1 flex flex-col"
           >
             <div
-              className={`border-t-2 ${col.color} bg-card/40 border-x border-b border-border p-3 flex-1 backdrop-blur-sm`}
+              className={`border-t-2 ${col.color} ${col.bg || 'bg-card/40'} border-x border-b border-border p-3 flex-1 backdrop-blur-sm`}
             >
               <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-2">
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-2">

@@ -101,6 +101,11 @@ We must categorize all database tables into two distinct buckets to understand w
    - `breakthroughs`: Needs `organizationId`.
    - `leaves`: Needs `organizationId`.
    - `labels`: Needs `organizationId`.
+   - `activities`: Needs `organizationId` (Prevent leak of actions across orgs if user is in multiple).
+   - `notifications`: Needs `organizationId` (To filter targeted notifications per active workspace).
+   - `timeLogs`: Needs `organizationId`.
+   - `comments`: Needs `organizationId`.
+   - `projectMembers`: Needs `organizationId` or strict validation logic against parent project.
 
 ### 4.2 New Tables (Provided by Better-Auth Org Plugin)
 
@@ -207,6 +212,47 @@ We must clean up the technical debt in `schema/users.ts` to fully rely on the `m
 // role: text('role', { enum: ['admin', 'member'] })
 // Note: This 'role' represents the GLOBAL System Admin, not the Org context role.
 ```
+
+### 4.5 Modifying `lib/auth.ts` Additional Fields
+
+We must also remove the removed user columns from the `betterAuth` configuration. If we do not remove them from `user.additionalFields`, the Better Auth adapter will throw TypeErrors complaining about missing database columns.
+
+```typescript
+// In lib/auth.ts, inside betterAuth({ user: { additionalFields: { ... } } })
+// DELETE THESE LINES:
+// organizationName: { type: 'string' },
+// organizationDomain: { type: 'string' },
+```
+
+### 4.6 Modifying Schema Index & Relations (`index.ts` & `relations.ts`)
+
+Adding new tables and modifying existing ones demands updating the Drizzle exports and relations mapping, otherwise `db.query` relational fetching will fail:
+
+1. **`schema/index.ts`:**
+   - Remove `export * from './invites';`
+   - Add exports for new tables: `export * from './organizations';`, `export * from './members';`, `export * from './invitations';`
+
+2. **`schema/relations.ts`:**
+   - Introduce `organizationsRelations`, mapping to `many(members)`, `many(projects)`, `many(tickets)`, etc.
+   - Introduce `membersRelations` mapping to `one(organizations)` and `one(users)`.
+   - Append the `organization` relationship to all tenant-level items (e.g., `ticketsRelations`, `activitiesRelations`, etc.).
+
+### 4.7 Migrating User-Specific Org State to `members`
+
+Currently, the `users` table holds fields like `department`, `status` (e.g., 'on-leave'), `skillTags`, `logStatus`, and `lastLogTime`. In a multi-tenant SaaS, a user might be a Developer ('active') in `Org A` but a Consultant ('inactive') in `Org B`. Thus, this state is inherently tenant-bound, not global.
+
+We must modify the new `members` mapping table to absorb these fields:
+
+```typescript
+// Add these to schema/members.ts:
+department: text('department'),
+status: text('status', { enum: ['active', 'inactive', 'on-leave'] }).notNull().default('active'),
+skillTags: jsonb('skill_tags').$type<string[]>(),
+logStatus: text('log_status', { enum: ['green', 'yellow', 'red'] }).default('red'),
+lastLogTime: timestamp('last_log_time'),
+```
+
+Simultaneously, we should delete these columns from `schema/users.ts` (and from `lib/auth.ts` additionalFields) to ensure a user's status is completely isolated per organization.
 
 ---
 
@@ -522,7 +568,7 @@ Internode is presumably operational with seeded demo data or active early users.
 ### Phase 1: Foundation (Database & Auth Config) - _Estimated 2-3 Days_
 
 - Add `organizations`, `members`, and `invitations` schemas strictly aligning with better-auth specifications.
-- Append `organizationId` columns to `tickets`, `projects`, `goals`, `breakthroughs`, `leaves`, and `labels`.
+- Append `organizationId` columns to `tickets`, `projects`, `goals`, `breakthroughs`, `leaves`, `labels`, `activities`, `notifications`, `timeLogs`, `comments`, and `projectMembers`.
 - Delete `organizationName` and `organizationDomain` from `users`.
 - Setup `@better-auth/organization` plugin inside `lib/auth.ts`.
 - Formulate and execute the 4-step Data Migration Strategy referenced above safely on staging/neon branch before production.
@@ -570,6 +616,11 @@ _Mitigation:_
 
 _Complication:_ A user is looking at `Project Alpha` in `Organization A` via multiple React tabs. In Tab 2, they use the Org Switcher to change to `Organization B` which mutates their active session cookie. Tab 1 is now in an orphaned visual state and any subsequent form submission might mistakenly attach `Project Alpha` data to `Organization B`.
 _Mitigation:_ Next.js Server Actions validate the incoming parent entity IDs aggressively. If Tab 1 submits a Ticket creation tied to `Project Alpha`, the backend will look up `Project Alpha` and discover its `organizationId` is `Org A`, but the user's active session is `Org B`. The server must instantly throw a `Tenant Mismatch Boundary Error: 403 Forbidden` and force a client-side reload.
+
+### 12.4 Project Membership Cross-Tenant Leaks
+
+_Complication:_ The `project_members` mapping table binds a `userId` to a `projectId`. If an admin calls an API to add a user to a project, a malicious or buggy client could provide a `userId` of someone who exists in the global `users` table but does not belong to the project's `organizationId`.
+_Mitigation:_ Before inserting a row into `project_members`, the backend MUST query the `members` table to verify that the target `userId` has an active membership record for the exact `organizationId` associated with the parent project.
 
 ---
 
