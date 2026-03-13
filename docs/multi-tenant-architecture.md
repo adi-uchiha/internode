@@ -578,7 +578,7 @@ Internode is presumably operational with seeded demo data or active early users.
 - Hunt down every single `db.select()`, `db.query`, `db.insert()`, and `db.update()` across the Next.js `app/api`, Server Actions, and React hooks.
 - Create helper functions: `requireActiveOrgSession()` inside API wrappers.
 - Refactor all queries to append the strict `.where(eq(table.organizationId, activeOrgId))`. This is laborious but non-negotiable for security.
-- Create automated integration tests firing requests as two different users belonging to different organizations, verifying they receive `HTTP 404` or `Empty Array` when trying to access each other's IDs.
+- Verify through manual verification that requests as two different users belonging to different organizations receive `HTTP 404` or `Empty Array` when trying to access each other's IDs.
 
 ### Phase 3: Organization Flows & Invitation System - _Estimated 2-3 Days_
 
@@ -694,23 +694,6 @@ export function OrganizationSwitcher() {
   );
 }
 ```
-
----
-
-## 15. Testing & Verification Plan
-
-Multi-tenant architectures are notoriously difficult to test due to data bleeding boundaries. The following testing protocols must be established.
-
-### 15.1 Automated Integration Tests (Backend)
-
-- **Data Isolation Test:** Spin up a volatile Postgres container. Seed `Org A` and `Org B`. Ensure `Org A` user fetching `/api/tickets` explicitly receives 0 tickets belonging to `Org B`.
-- **Role Elevation Test:** Attempt to access an `admin` only endpoint utilizing a standard `member` session cookie. Ensure an `HTTP 403 Forbidden` response is consistently thrown across all routes.
-- **Cross-Tenant Invite Hijacking:** Generate an invite link for `user1@test.com`. Attempt to accept the invite while logged in as `user2@test.com`. Ensure `better-auth` forcibly denies the token acceptance.
-
-### 15.2 End-to-End (E2E) Browser Tests (Playwright / Cypress)
-
-- **Onboarding Flow:** Automate a fresh signup. Verify the user is trapped in the `/onboarding` layout and successfully provisions their initial workspace.
-- **Tenant Switching:** Automate a user who exists in `Org A` and `Org B`. Load the dashboard, locate the `<OrgSwitcher />`, select `Org B`, and verify the DOM completely re-renders replacing `Org A` project titles with `Org B` project titles.
 
 ---
 

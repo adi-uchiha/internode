@@ -85,16 +85,15 @@ This document provides a surgical, step-by-step roadmap for implementing the mul
 
 ---
 
-## Phase 6: Testing & Audit
+## Phase 6: Final Verification & Audit
 
-**Goal:** Final verification of data isolation and performance.
+**Goal:** Final manual verification of data isolation and system health.
 
 - **Tasks:**
-  1. **Isolation Testing:** Create automated tests verifying that `Org A` cannot query `Org B` data. (Ref: [Section 15.1](./multi-tenant-architecture.md#151-automated-integration-tests-backend))
-  2. **E2E Onboarding Test:** Use Playwright to simulate a full signup -> workspace creation -> invite member flow. (Ref: [Section 15.2](./multi-tenant-architecture.md#152-end-to-end-e2e-browser-tests-playwright--cypress))
-  3. **Session Audit:** Audit production sessions to ensure all users are correctly assigned as members of at least one org. (Ref: [Section 16.1](./multi-tenant-architecture.md#16-post-deployment-audit-checklist))
-  4. **Global Admin Check:** Verify that users with the global `admin` role can still bypass organization boundaries for system-wide auditing. (Ref: [Section 6.1](./multi-tenant-architecture.md#61-global-roles-system-level))
+  1. **Manual Isolation Check:** Confirm that `Org A` cannot query `Org B` data by manually switching contexts and attempting to access restricted IDs.
+  2. **Session Audit:** Audit production sessions to ensure all users are correctly assigned as members of at least one org. (Ref: [Section 16.1](./multi-tenant-architecture.md#16-post-deployment-audit-checklist))
+  3. **Global Admin Check:** Verify that users with the global `admin` role can still bypass organization boundaries for system-wide auditing. (Ref: [Section 6.1](./multi-tenant-architecture.md#61-global-roles-system-level))
 
 - **Success Criteria:**
-  - Codebase passes all security audits for tenant isolation.
+  - Codebase passes all manual security checks for tenant isolation.
   - Application performs within expected latency limits on Neon.
