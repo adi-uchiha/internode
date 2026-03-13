@@ -10,7 +10,6 @@ import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { format, subDays, startOfDay, isSameDay } from 'date-fns';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -112,56 +111,24 @@ export default function ProfilePage() {
           <div className="text-center md:text-left flex-1">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <h2 className="font-display text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                <h2 className="font-display text-4xl font-bold tracking-tight text-foreground">
                   {user?.name || 'Anonymous User'}
-                  {user?.logStatus && (
-                    <div
-                      className={cn(
-                        'w-3 h-3 rounded-full animate-pulse mt-1',
-                        user.logStatus === 'green'
-                          ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
-                          : user.logStatus === 'yellow'
-                            ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                            : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'
-                      )}
-                      title={`Status: ${user.logStatus}`}
-                    />
-                  )}
                 </h2>
                 <p className="font-mono text-sm text-muted-foreground mt-1 opacity-70 flex items-center gap-2">
                   <Icon icon="solar:letter-linear" className="w-3.5 h-3.5" />
                   {user?.email}
                 </p>
-                {user?.organizationName && (
-                  <p className="font-mono text-[11px] text-primary mt-2 flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                    <Icon icon="solar:buildings-linear" className="w-3.5 h-3.5" />
-                    {user.organizationName}
-                    {user.organizationDomain && (
-                      <span className="opacity-50 text-[10px]">@{user.organizationDomain}</span>
-                    )}
-                  </p>
-                )}
               </div>
 
               <div className="flex flex-wrap justify-center md:justify-end gap-3 text-right">
                 <div className="space-y-1">
                   <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest opacity-50 font-bold">
-                    Department
+                    Joined
                   </div>
                   <div className="font-mono text-sm font-semibold">
-                    {user?.department || '[DEFAULT_CORE]'}
+                    {user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy') : '[UNKNOWN]'}
                   </div>
                 </div>
-                {user?.lastLogTime && (
-                  <div className="space-y-1 pl-4 border-l border-border/50">
-                    <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest opacity-50 font-bold">
-                      Last Log
-                    </div>
-                    <div className="font-mono text-sm font-semibold">
-                      {format(new Date(user.lastLogTime), 'MMM d, HH:mm')}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -179,22 +146,6 @@ export default function ProfilePage() {
                 />
                 {user?.role || 'member'}
               </span>
-              <span className="font-mono text-[10px] uppercase text-muted-foreground flex items-center gap-1.5 bg-muted/20 px-3 py-1.5 border border-border rounded-sm">
-                <Icon icon="solar:calendar-linear" className="w-3.5 h-3.5" />
-                Joined: {user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy') : 'N/A'}
-              </span>
-
-              {user?.skillTags &&
-                Array.isArray(user.skillTags) &&
-                user.skillTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="font-mono text-[10px] uppercase text-blue-500/80 flex items-center gap-1.5 bg-blue-500/5 px-3 py-1.5 border border-blue-500/20 rounded-sm"
-                  >
-                    <Icon icon="solar:tag-linear" className="w-3.5 h-3.5" />
-                    {tag}
-                  </span>
-                ))}
             </div>
           </div>
         </div>

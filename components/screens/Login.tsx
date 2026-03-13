@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +11,10 @@ import { AUTH_FLAGS } from '@/lib/feature-flags';
 import Link from 'next/link';
 import Image from 'next/image';
 
-type LoginMode = 'admin' | 'member';
+type FormMode = 'login' | 'signup';
 
 const Login = () => {
-  const [mode, setMode] = useState<LoginMode>('member');
+  const [formMode, setFormMode] = useState<FormMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,17 +22,16 @@ const Login = () => {
   const [isGithubLoading, setIsGithubLoading] = useState(false);
 
   const { login, signup } = useAuth();
-  useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const success = await login(email, password, mode);
+    const success = await login(email, password);
 
     if (!success) {
-      setError(mode === 'admin' ? 'Email or password Not correct' : 'Invalid credentials.');
+      setError('Invalid email or password. Please try again.');
       setIsLoading(false);
     }
   };
@@ -46,10 +44,12 @@ const Login = () => {
     const success = await signup(email, password);
 
     if (!success) {
-      setError('Signup failed. Please try again.');
+      setError('Signup failed. Please try again or use a different email.');
       setIsLoading(false);
     }
   };
+
+  const handleSubmit = formMode === 'login' ? handleLogin : handleSignup;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -58,7 +58,6 @@ const Login = () => {
         <div className="absolute inset-0 grid-pattern opacity-30" />
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent" />
 
-        {/* Floating elements */}
         <div className="relative z-10 flex flex-col justify-center px-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -124,165 +123,176 @@ const Login = () => {
             <span className="font-display font-bold text-xl">INTERNODE</span>
           </div>
 
-          {/* Mode Tabs */}
-          <div className="flex mb-8 border border-border">
-            <button
-              onClick={() => setMode('member')}
-              className={`flex-1 py-3 px-4 font-mono text-sm uppercase tracking-wider transition-all ${
-                mode === 'member'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon icon="solar:user-linear" className="inline-block mr-2 w-4 h-4" />
-              Member
-            </button>
-            <button
-              onClick={() => setMode('admin')}
-              className={`flex-1 py-3 px-4 font-mono text-sm uppercase tracking-wider transition-all border-l border-border ${
-                mode === 'admin'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon icon="solar:shield-user-linear" className="inline-block mr-2 w-4 h-4" />
-              Admin
-            </button>
+          {/* Header */}
+          <div className="mb-8">
+            <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
+              [SYSTEM ACCESS]
+            </div>
+            <h2 className="text-3xl font-display font-bold tracking-tight">Developer Portal</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Authenticate to access your workspace.
+            </p>
           </div>
 
-          <div className="border border-border bg-card p-8">
-            <div className="mb-6">
-              <div className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                [{mode === 'admin' ? 'ADMIN ACCESS' : 'MEMBER LOGIN'}]
-              </div>
-              <h2 className="text-2xl font-display font-semibold">
-                {mode === 'admin' ? 'Admin Dashboard' : 'Developer Portal'}
-              </h2>
-            </div>
+          <div className="border border-border bg-card p-8 space-y-6">
+            {/* GitHub OAuth - always primary for members */}
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full flex items-center justify-center gap-3 font-mono text-sm"
+              disabled={isGithubLoading}
+              onClick={async () => {
+                setIsGithubLoading(true);
+                try {
+                  await authClient.signIn.social({
+                    provider: 'github',
+                    callbackURL: '/tasks/dashboard',
+                  });
+                } catch (err) {
+                  console.error('GitHub sign-in error:', err);
+                  setIsGithubLoading(false);
+                }
+              }}
+            >
+              {isGithubLoading ? (
+                <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin" />
+              ) : (
+                <Image
+                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
+                  className="w-5 h-5 invert dark:invert-0"
+                  alt="GitHub"
+                  width={20}
+                  height={20}
+                  unoptimized
+                />
+              )}
+              {isGithubLoading ? 'Connecting...' : 'Continue with GitHub'}
+            </Button>
 
-            {(mode === 'admin' || AUTH_FLAGS.ENABLE_EMAIL_SIGNUP) && (
-              <div className="space-y-4">
-                <div>
-                  <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.dev"
-                    className="bg-background border-border font-mono"
-                    required
-                  />
+            {/* Email/Password — controlled by feature flag */}
+            {AUTH_FLAGS.ENABLE_EMAIL_SIGNUP && (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+                    or
+                  </span>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
 
-                <div>
-                  <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
-                    Password
-                  </label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="bg-background border-border font-mono"
-                    required
-                  />
-                </div>
-
-                {error && (
-                  <div className="p-3 border border-destructive/50 bg-destructive/10 text-destructive text-sm font-mono">
-                    <Icon
-                      icon="solar:danger-triangle-linear"
-                      className="inline-block mr-2 w-4 h-4"
-                    />
-                    {error}
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="hero"
-                    size="lg"
-                    className="flex-1"
-                    disabled={isLoading}
-                    onClick={handleLogin}
+                <AnimatePresence mode="wait">
+                  <motion.form
+                    key={formMode}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                    onSubmit={handleSubmit}
+                    className="space-y-4"
                   >
-                    {isLoading ? (
-                      <>
-                        <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                        Validating...
-                      </>
-                    ) : (
-                      <>
-                        Log In
-                        <Icon icon="solar:login-2-linear" className="w-4 h-4" />
-                      </>
-                    )}
-                  </Button>
+                    <div>
+                      <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                        Email Address
+                      </label>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@company.dev"
+                        className="bg-background border-border font-mono"
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
 
-                  {mode === 'member' && AUTH_FLAGS.ENABLE_EMAIL_SIGNUP && (
+                    <div>
+                      <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                        Password
+                      </label>
+                      <Input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="bg-background border-border font-mono"
+                        required
+                        autoComplete={formMode === 'login' ? 'current-password' : 'new-password'}
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="p-3 border border-destructive/50 bg-destructive/10 text-destructive text-sm font-mono">
+                        <Icon
+                          icon="solar:danger-triangle-linear"
+                          className="inline-block mr-2 w-4 h-4"
+                        />
+                        {error}
+                      </div>
+                    )}
+
                     <Button
-                      type="button"
-                      variant="hero-outline"
+                      type="submit"
+                      variant="hero"
                       size="lg"
-                      className="flex-1"
+                      className="w-full"
                       disabled={isLoading}
-                      onClick={handleSignup}
                     >
                       {isLoading ? (
                         <>
                           <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                          Creating...
+                          {formMode === 'login' ? 'Authenticating...' : 'Creating Account...'}
                         </>
                       ) : (
                         <>
-                          Sign Up
-                          <Icon icon="solar:user-plus-linear" className="w-4 h-4" />
+                          {formMode === 'login' ? 'Log In' : 'Create Account'}
+                          <Icon
+                            icon={
+                              formMode === 'login'
+                                ? 'solar:login-2-linear'
+                                : 'solar:user-plus-linear'
+                            }
+                            className="w-4 h-4"
+                          />
                         </>
                       )}
                     </Button>
-                  )}
-                </div>
-              </div>
-            )}
+                  </motion.form>
+                </AnimatePresence>
 
-            {mode === 'member' && (
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="w-full flex items-center justify-center gap-2"
-                  disabled={isGithubLoading}
-                  onClick={async () => {
-                    setIsGithubLoading(true);
-                    try {
-                      await authClient.signIn.social({
-                        provider: 'github',
-                        callbackURL: '/tasks/dashboard',
-                      });
-                    } catch (err) {
-                      console.error('GitHub sign-in error:', err);
-                      setIsGithubLoading(false);
-                    }
-                  }}
-                >
-                  {isGithubLoading ? (
-                    <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin" />
+                {/* Toggle between login and signup */}
+                <p className="text-center font-mono text-xs text-muted-foreground">
+                  {formMode === 'login' ? (
+                    <>
+                      No account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormMode('signup');
+                          setError('');
+                        }}
+                        className="text-primary hover:underline font-bold"
+                      >
+                        Sign up
+                      </button>
+                    </>
                   ) : (
-                    <Image
-                      src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
-                      className="w-5 h-5 invert dark:invert-0"
-                      alt="GitHub"
-                      width={20}
-                      height={20}
-                    />
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormMode('login');
+                          setError('');
+                        }}
+                        className="text-primary hover:underline font-bold"
+                      >
+                        Log in
+                      </button>
+                    </>
                   )}
-                  {isGithubLoading ? 'Connecting...' : 'Sign in with GitHub'}
-                </Button>
-              </div>
+                </p>
+              </>
             )}
           </div>
 

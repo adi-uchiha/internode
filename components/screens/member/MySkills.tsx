@@ -12,23 +12,16 @@ const MySkills = () => {
   // Fetch logs specifically for this member
   const { data: logs = [], isLoading } = useLogs(user?.id);
 
-  // Aggregate skill tags from logs
+  // skillTags moved to the `members` table in Phase 1 (org-specific context).
+  // In Phase 5+, this will fetch from the active org's member record.
+  // For now, show an empty skill data set to keep the UI shell intact.
   const skillData = useMemo(() => {
     const tagCount: Record<string, number> = {};
-
-    // Aggregation from logs is no longer possible as skillTags were moved to user profile or breakthroughs
-    // For now, we'll return an empty array or use user profile skillTags
-    if (user?.skillTags) {
-      user.skillTags.forEach((tag) => {
-        const normalizedTag = tag.toLowerCase();
-        tagCount[normalizedTag] = (tagCount[normalizedTag] || 0) + 1;
-      });
-    }
-
+    // Placeholder: skill data will be sourced from org member profile
     return Object.entries(tagCount)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [user]);
+  }, []);
 
   const maxCount = skillData[0]?.count || 1;
 

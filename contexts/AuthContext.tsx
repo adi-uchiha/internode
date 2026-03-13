@@ -5,13 +5,11 @@ import { authClient } from '@/lib/auth-client';
 import { useRouter, usePathname } from 'next/navigation';
 import type { User, Session } from '@/lib/auth-types';
 
-type UserRole = 'admin' | 'member';
-
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string, role?: UserRole) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -26,37 +24,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const user = sessionData?.user as User | null;
 
-  // Redirect if session is invalid on protected routes
   useEffect(() => {
-    const isPublicRoute = ['/', '/login', '/register'].includes(pathname);
     const isAuthRoute = ['/login', '/register'].includes(pathname);
+    const isPublicPath =
+      pathname === '/' ||
+      pathname === '/login' ||
+      pathname === '/register' ||
+      pathname.startsWith('/accept-invite');
 
     if (!isLoading) {
-      if (!sessionData && !isPublicRoute) {
+      if (!sessionData && !isPublicPath) {
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
         if (user?.role === 'admin') {
           router.push('/admin');
         } else {
-          router.push('/member');
+          router.push('/tasks/dashboard');
         }
       }
     }
 
     if (error) {
       console.error('Session error:', error);
-      // If there's a serious session error (like the 500s we saw), treat as logged out
-      if (!isPublicRoute) {
+      if (!isPublicPath) {
         router.push('/login');
       }
     }
   }, [sessionData, isLoading, error, pathname, router, user?.role]);
 
-  const login = async (
-    email: string,
-    password: string,
-    requiredRole?: UserRole
-  ): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     const { data: signInData, error: signInError } = await authClient.signIn.email({
       email,
       password,
@@ -66,19 +62,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    // Check role if required
-    if (requiredRole) {
-      const { data: sessionData } = await authClient.getSession();
-      const user = sessionData?.user as User | null;
+    const { data: freshSession } = await authClient.getSession();
+    const loggedInUser = freshSession?.user as User | null;
 
-      if (user?.role !== requiredRole) {
-        // If they logged in but have the wrong role, log them out immediately
-        await authClient.signOut();
-        return false;
-      }
+    if (loggedInUser?.role === 'admin') {
+      router.push('/admin');
+    } else {
+      router.push('/tasks/dashboard');
     }
 
-    router.refresh(); // Refresh Next.js cache to re-run layout/middleware conditionally
+    router.refresh();
     return true;
   };
 
@@ -86,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: signUpData, error: signUpError } = await authClient.signUp.email({
       email,
       password,
-      name: email.split('@')[0], // Default name from email prefix
+      name: email.split('@')[0],
     });
 
     if (signUpError || !signUpData) {
@@ -94,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
+    router.push('/tasks/dashboard');
     router.refresh();
     return true;
   };

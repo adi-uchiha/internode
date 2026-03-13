@@ -114,34 +114,10 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           className="border-primary/30 bg-primary/5"
           mounted={mounted}
         />
-        <DetailItem
-          label="Status"
-          value={user.status}
-          icon="solar:pulse-linear"
-          mounted={mounted}
-        />
       </Section>
 
-      {/* Career & Organization */}
-      <Section title="Career & Organization" icon="solar:case-linear">
-        <DetailItem
-          label="Organization"
-          value={user.organizationName}
-          icon="solar:buildings-linear"
-          mounted={mounted}
-        />
-        <DetailItem
-          label="Domain"
-          value={user.organizationDomain}
-          icon="solar:global-linear"
-          mounted={mounted}
-        />
-        <DetailItem
-          label="Department"
-          value={user.department}
-          icon="solar:hierarchy-linear"
-          mounted={mounted}
-        />
+      {/* Account Metadata */}
+      <Section title="Account Metadata" icon="solar:case-linear">
         <DetailItem
           label="Join Date"
           value={user.joinDate}
@@ -149,27 +125,21 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           mounted={mounted}
         />
         <DetailItem
-          label="Log Status"
-          value={user.logStatus}
-          icon="solar:chart-square-linear"
+          label="Created At"
+          value={user.createdAt}
+          icon="solar:calendar-add-linear"
           mounted={mounted}
         />
         <DetailItem
-          label="Last Log"
-          value={user.lastLogTime}
-          icon="solar:history-linear"
+          label="Updated At"
+          value={user.updatedAt}
+          icon="solar:refresh-linear"
           mounted={mounted}
         />
       </Section>
 
-      {/* Skills & Settings */}
-      <Section title="Skills & Preferences" icon="solar:settings-linear">
-        <DetailItem
-          label="Skill Tags"
-          value={user.skillTags?.join(', ')}
-          icon="solar:tag-linear"
-          mounted={mounted}
-        />
+      {/* Preferences */}
+      <Section title="Preferences" icon="solar:settings-linear">
         <DetailItem
           label="Notification Settings"
           value={user.notificationSettings}

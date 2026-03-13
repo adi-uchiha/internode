@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
+import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
 import { AdminLayout } from '@/components/layouts/AdminLayout';
 import { MemberLayout } from '@/components/layouts/MemberLayout';
@@ -19,12 +20,27 @@ export default function TaskManagerLayout({
   title: initialTitle,
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
   const { data: searchHistory = [] } = useSearchHistory();
   const logSearchMutation = useLogSearch();
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = user?.role === 'admin';
+
+  // ─── Onboarding Interceptor ─────────────────────────────────────────────────
+  // Trap authenticated users who have no org memberships (orphaned users) and
+  // force them through the workspace-creation onboarding flow.
+  useEffect(() => {
+    // Wait for both auth and org data to settle
+    if (authLoading || orgsLoading) return;
+    // Only apply to authenticated users on a non-onboarding path
+    if (!user || pathname === '/tasks/onboarding') return;
+
+    if (Array.isArray(orgs) && orgs.length === 0) {
+      router.replace('/tasks/onboarding');
+    }
+  }, [user, orgs, authLoading, orgsLoading, pathname, router]);
 
   // Determine current page title based on pathname if not provided
   const title = useMemo(() => {
@@ -75,14 +91,14 @@ export default function TaskManagerLayout({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-100"
               onClick={() => setShowSearch(false)}
             />
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[600px] max-w-[90vw] border border-border bg-card z-[101] shadow-2xl"
+              className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[600px] max-w-[90vw] border border-border bg-card z-101 shadow-2xl"
             >
               <div className="flex items-center gap-3 p-4 border-b border-border">
                 <Icon icon="solar:magnifer-linear" className="w-5 h-5 text-muted-foreground" />

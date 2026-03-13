@@ -60,7 +60,7 @@ const MemberProfile = () => {
 
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                 <span className="px-3 py-1 border border-primary bg-primary/10 font-mono text-xs text-primary uppercase">
-                  {user?.department || 'Engineering'}
+                  Engineering
                 </span>
                 <span className="px-3 py-1 border border-border font-mono text-xs text-muted-foreground">
                   Joined{' '}
