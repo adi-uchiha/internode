@@ -1,8 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins';
+import { render } from '@react-email/render';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
+import { getResend } from './resend';
+import { RESEND_FROM_EMAIL, NEXT_PUBLIC_APP_URL } from './env';
+import { InvitationEmail } from '@/emails/InvitationEmail';
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -18,7 +22,52 @@ export const auth = betterAuth({
       invitation: schema.invitations,
     },
   }),
-  plugins: [organization()],
+  plugins: [
+    organization({
+      /**
+       * Called by better-auth whenever a new invitation is created via
+       * `authClient.organization.inviteMember()`.
+       *
+       * `data` contains:
+       *   - id           : invitation ID (use as the token in the accept URL)
+       *   - email        : invitee email
+       *   - role         : invited role
+       *   - organization : { id, name, slug, ... }
+       *   - inviter      : { name, email }
+       */
+      sendInvitationEmail: async (data) => {
+        try {
+          const acceptUrl = `${NEXT_PUBLIC_APP_URL}/accept-invite?invitationId=${data.id}`;
+
+          const html = await render(
+            InvitationEmail({
+              inviterName: data.inviter.user.name || 'A team member',
+              inviterEmail: data.inviter.user.email,
+              organizationName: data.organization.name,
+              role: data.role,
+              acceptUrl,
+              expiresInDays: 7,
+            })
+          );
+
+          const resend = getResend();
+          const { error } = await resend.emails.send({
+            from: RESEND_FROM_EMAIL,
+            to: data.email,
+            subject: `You've been invited to join ${data.organization.name} on Internode`,
+            html,
+          });
+
+          if (error) {
+            console.error('[auth] Failed to send invitation email:', error);
+          }
+        } catch (err) {
+          // Never let email failures break the invitation creation flow
+          console.error('[auth] sendInvitationEmail threw:', err);
+        }
+      },
+    }),
+  ],
   user: {
     additionalFields: {
       username: { type: 'string', required: false },
