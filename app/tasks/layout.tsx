@@ -20,6 +20,7 @@ export default function TaskManagerLayout({
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
+  const { data: sessionData, isPending: sessionLoading } = authClient.useSession();
   const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
   const pathname = usePathname();
   const router = useRouter();
@@ -27,12 +28,16 @@ export default function TaskManagerLayout({
   const orgRole = activeMember?.role || 'member';
 
   // ─── Organization State ──────────────────────────────────────────────────────
-  // Detect whether the user has zero orgs. This flag is used to:
-  // 1. Disable data-fetching hooks that require an org (search history, etc.)
-  // 2. Skip rendering DashboardLayout (which mounts useNotifications, etc.)
-  // 3. Redirect non-onboarding paths to /tasks/onboarding
+  // Use BOTH the session's activeOrganizationId AND the org list to determine
+  // whether the user needs onboarding. This is critical because:
+  // - `activeOrganizationId` updates immediately when setActive() is called
+  // - `orgs.length` catches brand-new users who haven't created any org yet
+  // Both must indicate "no org" for the guard to activate, preventing false
+  // positives when the org list cache is stale but the session is already updated.
+  const isFullyLoaded = !authLoading && !orgsLoading && !sessionLoading;
+  const activeOrgId = sessionData?.session?.activeOrganizationId;
   const hasNoOrg =
-    !authLoading && !orgsLoading && !!user && Array.isArray(orgs) && orgs.length === 0;
+    isFullyLoaded && !!user && !activeOrgId && Array.isArray(orgs) && orgs.length === 0;
 
   const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';
 
@@ -41,16 +46,18 @@ export default function TaskManagerLayout({
   const logSearchMutation = useLogSearch();
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
-  // Trap authenticated users who have no org memberships (orphaned users) and
-  // force them through the organization-creation onboarding flow.
+  // Trap authenticated users who have no org memberships and force them through
+  // the organization-creation onboarding flow.
+  // This is the SINGLE SOURCE OF TRUTH for onboarding redirects — AuthContext
+  // intentionally does NOT redirect to onboarding to avoid competing loops.
   useEffect(() => {
-    if (authLoading || orgsLoading) return;
+    if (!isFullyLoaded) return;
     if (!user || pathname === '/tasks/onboarding') return;
 
-    if (Array.isArray(orgs) && orgs.length === 0) {
+    if (!activeOrgId && Array.isArray(orgs) && orgs.length === 0) {
       router.replace('/tasks/onboarding');
     }
-  }, [user, orgs, authLoading, orgsLoading, pathname, router]);
+  }, [user, orgs, activeOrgId, isFullyLoaded, pathname, router]);
 
   // Determine current page title based on pathname if not provided
   const title = useMemo(() => {
@@ -117,7 +124,7 @@ export default function TaskManagerLayout({
   // ─── Guard: Still Loading ───────────────────────────────────────────────────
   // Block ALL rendering while auth/org status is resolving to prevent any
   // child component from mounting hooks that fire org-dependent API calls.
-  if (authLoading || orgsLoading) {
+  if (!isFullyLoaded) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
         <Icon

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,7 @@ const STEP_PROGRESS: Record<OnboardingStep, number> = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const [step, setStep] = useState<OnboardingStep>('welcome');
@@ -114,6 +116,11 @@ export default function OnboardingPage() {
       }
       toast.success('Welcome! You have joined the organization.');
       setStep('success');
+
+      // Invalidate ALL React Query caches so useSession, useListOrganizations,
+      // and useActiveMember in the parent layout refetch fresh data.
+      await queryClient.invalidateQueries();
+
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);
     } catch (err) {
       console.error('Accept invite failed:', err);
@@ -158,6 +165,10 @@ export default function OnboardingPage() {
 
       // Explicitly set the new organization as active before redirecting
       await authClient.organization.setActive({ organizationId: data.id });
+
+      // Invalidate ALL React Query caches so useSession, useListOrganizations,
+      // and useActiveMember in the parent layout refetch fresh data.
+      await queryClient.invalidateQueries();
 
       setStep('success');
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);

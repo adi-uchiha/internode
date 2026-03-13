@@ -35,27 +35,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!isLoading) {
       if (!sessionData && !isPublicPath) {
-        // Not logged in and trying to access a protected route
+        // Not logged in → redirect to login
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
-        // Logged in but on the login/register page
+        // Already logged in but on an auth page → redirect to dashboard
         router.push('/tasks/dashboard');
-      } else if (
-        sessionData &&
-        !sessionData.session.activeOrganizationId &&
-        !isPublicPath &&
-        pathname !== '/tasks/onboarding'
-      ) {
-        // Logged in, not on a public path, not on onboarding, but has no active organization
-        router.push('/tasks/onboarding');
       } else if (
         sessionData &&
         sessionData.session.activeOrganizationId &&
         pathname === '/tasks/onboarding'
       ) {
-        // Logged in, has an active organization, but is on the onboarding page
+        // Has an active organization but still on the onboarding page → redirect to dashboard
         router.push('/tasks/dashboard');
       }
+      // NOTE: The "no active org → onboarding" redirect is handled exclusively
+      // by app/tasks/layout.tsx to avoid competing redirect loops with stale session data.
     }
 
     if (error) {

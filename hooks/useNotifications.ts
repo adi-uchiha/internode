@@ -4,7 +4,7 @@ import type { notifications } from '@/db/schema';
 
 export type Notification = InferSelectModel<typeof notifications>;
 
-export function useNotifications() {
+export function useNotifications(options?: { enabled?: boolean }) {
   return useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: async () => {
@@ -13,6 +13,7 @@ export function useNotifications() {
       return res.json();
     },
     refetchInterval: 30000, // Poll every 30 seconds
+    enabled: options?.enabled ?? true,
   });
 }
 

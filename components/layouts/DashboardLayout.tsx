@@ -47,7 +47,11 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const pathname = usePathname();
   const router = useRouter();
 
-  const { data: notifications = [] } = useNotifications();
+  // Guard: don't start polling notifications if there is no active org yet
+  const { data: sessionData } = authClient.useSession();
+  const hasActiveOrg = !!sessionData?.session?.activeOrganizationId;
+
+  const { data: notifications = [] } = useNotifications({ enabled: hasActiveOrg });
   const { mutateAsync: markAsRead } = useMarkNotificationsRead();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
