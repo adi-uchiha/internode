@@ -723,6 +723,55 @@ After successfully merging Phase 4 and migrating production:
 3. [] Review Vercel Edge Cache hit rates to ensure org-switcher cookies haven't bypassed necessary CDN caching on static assets.
 4. [] Validate that Global System Admins can still access their overarching dashboard without being locked to a specific tenant.
 
+## 17. Missing & Non-Functional UI Features
+
+Based on the current audit of the codebase, the following UI components and logic pieces are either missing, non-functional, or require significant refactoring to align with the multi-tenant architecture.
+
+### 17.1 Unified Identity-Based Login
+
+- **Status:** Incorrect Implementation (`Login.tsx`).
+- **Issue:** The current login screen uses a manual toggle between "Member" and "Admin".
+- **Requirement:** A single, unified login form. The system should authenticate the user's identity first, then determine if they are a Global Admin (redirect to System Dash) or an Organization Member (redirect to active workspace).
+
+### 17.2 Organization Switcher (`<OrgSwitcher />`)
+
+- **Status:** Missing.
+- **Issue:** There is no way for a user belonging to multiple organizations to switch their active context.
+- **Requirement:** Integrate a dropdown in the `DashboardLayout` sidebar (as outlined in Appendix 14) that calls `setActive()` and refreshes the RSC tree.
+
+### 17.3 Comprehensive Onboarding Flow
+
+- **Status:** Basic/Placeholder (`app/tasks/onboarding/page.tsx`).
+- **Issue:** The current onboarding only handles notification settings. It lacks the critical "Scenario B" (Create Organization) and "Scenario A" (Accept Pending Invite) logic.
+- **Requirement:** Refactor the onboarding flow to force users into a workspace creation or selection state before granting access to the main dashboard.
+
+### 17.4 Team Management & Invitations
+
+- **Status:** Non-Functional / Legacy Logic (`app/tasks/members/page.tsx`).
+- **Issue:** The "Invite Member" button is reported as non-functional. The logic relies on a custom `/api/invites` endpoint and the legacy `invites` table.
+- **Requirement:**
+  - Entirely replace the `/api/invites` logic with the `better-auth` organization plugin.
+  - Update the "Members" view to fetch from the new `members` mapping table.
+  - Ensure the "Pending Invites" list correctly reflects cryptographically signed tokens from `better-auth`.
+
+### 17.5 Workspace Settings Refactoring
+
+- **Status:** Legacy Implementation (`SettingsPage.tsx`).
+- **Issue:** Settings currently update `organizationName` and `organizationDomain` on the flat `users` table.
+- **Requirement:** Refactor the "Workspace Identity" tab to update the `organizations` table for the `activeOrganizationId`.
+
+### 17.7 Accept Invite Confirmation Screen
+
+- **Status:** Missing.
+- **Issue:** When a user clicks an invite link, they need a dedicated page to confirm they want to join the organization, especially if they are already logged into a different account.
+- **Requirement:** Build a `/accept-invite` landing page that validates the token and shows org metadata before joining.
+
+### 17.8 Role Management & Member Actions
+
+- **Status:** Missing.
+- **Issue:** There is no dedicated UI to promote a member to admin or demote them, nor a way to revoke a pending invitation.
+- **Requirement:** Add action menus (popups/modals) to the `MembersPage` for Organization Admins to manage their team effectively.
+
 ---
 
-_End of Multi-Tenant Architectural Guidance. Total Line Count: ~650 lines._
+_End of Multi-Tenant Architectural Guidance. Total Line Count: ~805 lines._
