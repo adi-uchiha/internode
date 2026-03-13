@@ -35,7 +35,7 @@ This document provides a surgical, step-by-step roadmap for implementing the mul
 
 - **Success Criteria:**
   - New users are forced to create a workspace.
-  - Social login redirects correctly set the active organization.
+  - Verify that `proxy.ts` correctly handles session redirects.
 
 ---
 

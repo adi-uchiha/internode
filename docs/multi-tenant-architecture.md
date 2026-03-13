@@ -497,7 +497,7 @@ The URL structure is a major determinant of how multi-tenant apps are built. We 
 
 - URLs reflect the structure directly: `/app/[orgSlug]/dashboard`, `/app/[orgSlug]/settings`.
 - _Pros:_ Highly shareable. Links inherently carry the organization context.
-- _Cons:_ Requires shifting the entire Next.js file tree down a `[orgSlug]` dynamic directory. This forces every `layout.tsx` and `page.tsx` to handle `params.orgSlug`. Middleware becomes incredibly complex to validate if a user belongs to `orgSlug` on every request.
+- _Cons:_ Requires shifting the entire Next.js file tree down a `[orgSlug]` dynamic directory. Implement base `proxy.ts` purely for authentication/session presence checks. This forces every `layout.tsx` and `page.tsx` to handle `params.orgSlug`. `proxy.ts` becomes incredibly complex to validate if a user belongs to `orgSlug` on every request.
 
 **Verdict:** We will pursue **State-Based Routing** leveraging the `better-auth` session. It provides rapid deployment speeds and maintains the current URL layout perfectly while retaining strict logic boundaries.
 

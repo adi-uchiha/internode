@@ -4,7 +4,7 @@ import { organization } from 'better-auth/plugins';
 import { render } from '@react-email/render';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { getResend } from './resend';
+import { client } from './email';
 import { RESEND_FROM_EMAIL, NEXT_PUBLIC_APP_URL } from './env';
 import { InvitationEmail } from '@/emails/InvitationEmail';
 
@@ -50,17 +50,14 @@ export const auth = betterAuth({
             })
           );
 
-          const resend = getResend();
-          const { error } = await resend.emails.send({
+          await client.sendAsync({
             from: RESEND_FROM_EMAIL,
             to: data.email,
             subject: `You've been invited to join ${data.organization.name} on Internode`,
-            html,
+            attachment: [{ data: html, alternative: true }],
           });
 
-          if (error) {
-            console.error('[auth] Failed to send invitation email:', error);
-          }
+          console.log(`[auth] Invitation email sent to ${data.email} via Gmail SMTP`);
         } catch (err) {
           // Never let email failures break the invitation creation flow
           console.error('[auth] sendInvitationEmail threw:', err);

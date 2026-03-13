@@ -27,6 +27,7 @@ export const DATABASE_URL = requireEnv('DATABASE_URL');
 export const GITHUB_CLIENT_ID = requireEnv('GITHUB_CLIENT_ID');
 export const GITHUB_CLIENT_SECRET = requireEnv('GITHUB_CLIENT_SECRET');
 
-// ─── Email / Resend ──────────────────────────────────────────────────────────
-export const RESEND_API_KEY = requireEnv('RESEND_API_KEY');
+// ─── Email / SMTP ────────────────────────────────────────────────────────────
+export const SMTP_USER = requireEnv('SMTP_USER');
+export const SMTP_PASSWORD = requireEnv('SMTP_PASSWORD');
 export const RESEND_FROM_EMAIL = requireEnv('RESEND_FROM_EMAIL');
