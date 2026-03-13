@@ -26,24 +26,25 @@ export default function TaskManagerLayout({
   const { data: activeMember } = authClient.useActiveMember();
   const orgRole = activeMember?.role || 'member';
 
-  const isRedirectingToOnboarding =
-    !authLoading &&
-    !orgsLoading &&
-    !!user &&
-    pathname !== '/tasks/onboarding' &&
-    Array.isArray(orgs) &&
-    orgs.length === 0;
+  // ─── Organization State ──────────────────────────────────────────────────────
+  // Detect whether the user has zero orgs. This flag is used to:
+  // 1. Disable data-fetching hooks that require an org (search history, etc.)
+  // 2. Skip rendering DashboardLayout (which mounts useNotifications, etc.)
+  // 3. Redirect non-onboarding paths to /tasks/onboarding
+  const hasNoOrg =
+    !authLoading && !orgsLoading && !!user && Array.isArray(orgs) && orgs.length === 0;
 
-  const { data: searchHistory = [] } = useSearchHistory({ enabled: !isRedirectingToOnboarding });
+  const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';
+
+  // Disable org-dependent hooks when user has no org
+  const { data: searchHistory = [] } = useSearchHistory({ enabled: !hasNoOrg });
   const logSearchMutation = useLogSearch();
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
   // Trap authenticated users who have no org memberships (orphaned users) and
   // force them through the organization-creation onboarding flow.
   useEffect(() => {
-    // Wait for both auth and org data to settle
     if (authLoading || orgsLoading) return;
-    // Only apply to authenticated users on a non-onboarding path
     if (!user || pathname === '/tasks/onboarding') return;
 
     if (Array.isArray(orgs) && orgs.length === 0) {
@@ -113,6 +114,9 @@ export default function TaskManagerLayout({
     },
   ].filter((item) => !item.roles || item.roles.includes(orgRole));
 
+  // ─── Guard: Still Loading ───────────────────────────────────────────────────
+  // Block ALL rendering while auth/org status is resolving to prevent any
+  // child component from mounting hooks that fire org-dependent API calls.
   if (authLoading || orgsLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
@@ -127,6 +131,7 @@ export default function TaskManagerLayout({
     );
   }
 
+  // ─── Guard: Redirecting to Onboarding ───────────────────────────────────────
   if (isRedirectingToOnboarding) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
@@ -146,6 +151,14 @@ export default function TaskManagerLayout({
         </div>
       </div>
     );
+  }
+
+  // ─── Guard: On Onboarding Page (no org yet) ─────────────────────────────────
+  // The onboarding page is under /tasks/, so it inherits this layout.
+  // When the user has no org, skip DashboardLayout entirely to prevent its
+  // internal hooks (useNotifications, etc.) from firing org-dependent API calls.
+  if (hasNoOrg) {
+    return <>{children}</>;
   }
 
   return (
