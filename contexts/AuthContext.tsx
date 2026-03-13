@@ -35,8 +35,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!isLoading) {
       if (!sessionData && !isPublicPath) {
+        // Not logged in and trying to access a protected route
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
+        // Logged in but on the login/register page
+        router.push('/tasks/dashboard');
+      } else if (
+        sessionData &&
+        !sessionData.session.activeOrganizationId &&
+        !isPublicPath &&
+        pathname !== '/tasks/onboarding'
+      ) {
+        // Logged in, not on a public path, not on onboarding, but has no active organization
+        router.push('/tasks/onboarding');
+      } else if (
+        sessionData &&
+        sessionData.session.activeOrganizationId &&
+        pathname === '/tasks/onboarding'
+      ) {
+        // Logged in, has an active organization, but is on the onboarding page
         router.push('/tasks/dashboard');
       }
     }

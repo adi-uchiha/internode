@@ -141,20 +141,23 @@ export default function OnboardingPage() {
 
     setIsCreating(true);
     try {
-      const { error } = await authClient.organization.create({
+      const { data, error } = await authClient.organization.create({
         name: orgName.trim(),
         slug: orgSlug.trim(),
       });
 
-      if (error) {
+      if (error || !data) {
         // Handle slug-taken conflict gracefully
-        if (error.message?.includes('slug') || error.message?.includes('unique')) {
+        if (error?.message?.includes('slug') || error?.message?.includes('unique')) {
           toast.error('That organization URL is already taken. Please choose a different slug.');
         } else {
-          toast.error(error.message ?? 'Failed to create organization.');
+          toast.error(error?.message ?? 'Failed to create organization.');
         }
         return;
       }
+
+      // Explicitly set the new organization as active before redirecting
+      await authClient.organization.setActive({ organizationId: data.id });
 
       setStep('success');
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);

@@ -159,6 +159,11 @@ function AcceptInviteContent() {
         return;
       }
 
+      // Explicitly set the newly joined organization as the active one
+      if (invitation?.organizationId) {
+        await authClient.organization.setActive({ organizationId: invitation.organizationId });
+      }
+
       toast.success(`Welcome to ${invitation?.organizationName}!`);
       setState('success');
       // Small delay so the success animation is visible
