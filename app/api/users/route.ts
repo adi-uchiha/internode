@@ -7,12 +7,14 @@ import { withErrorHandler } from '@/lib/api-handler';
 import { getActiveOrgId } from '@/lib/api-utils';
 
 export const GET = withErrorHandler(async (req, { session }) => {
+  const isGlobalAdmin = session!.user.role === 'admin';
   const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) return NextResponse.json([]);
 
-  // Fetch all users inside the active organization
+  if (!isGlobalAdmin && !orgId) return NextResponse.json([]);
+
+  // Fetch users: Global Admin gets all, Org Admin gets specific org members
   const orgMembers = await db.query.members.findMany({
-    where: eq(members.organizationId, orgId),
+    where: isGlobalAdmin ? undefined : eq(members.organizationId, orgId!),
     with: {
       user: true,
     },

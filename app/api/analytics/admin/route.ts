@@ -7,28 +7,36 @@ import { getActiveOrgId } from '@/lib/api-utils';
 
 export const GET = withErrorHandler(
   async (req, { session }) => {
+    const isGlobalAdmin = session!.user.role === 'admin';
     const orgId = await getActiveOrgId(session!.user.id);
-    if (!orgId) return NextResponse.json({});
 
-    // 1. Total Active Interns (from members of this org)
+    // If not global admin and no orgId, return empty
+    if (!isGlobalAdmin && !orgId) return NextResponse.json({});
+
+    // Filtering logic: Global Admin sees everything, Org Admin sees their org
+    const orgFilter = isGlobalAdmin ? undefined : eq(members.organizationId, orgId!);
+    const timeLogFilter = isGlobalAdmin ? undefined : eq(timeLogs.organizationId, orgId!);
+    const ticketFilter = isGlobalAdmin ? undefined : eq(tickets.organizationId, orgId!);
+
+    // 1. Total Active Interns
     const activeInternsRes = await db
       .select({ count: sql<number>`count(*)::integer` })
       .from(members)
-      .where(and(eq(members.organizationId, orgId), eq(members.status, 'active')));
+      .where(and(orgFilter ? orgFilter : sql`true`, eq(members.status, 'active')));
     const activeInternsCount = activeInternsRes[0]?.count || 0;
 
     // 2. Total Hours Logged
     const totalHoursRes = await db
       .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
       .from(timeLogs)
-      .where(eq(timeLogs.organizationId, orgId));
+      .where(timeLogFilter ? timeLogFilter : sql`true`);
     const totalHours = totalHoursRes[0]?.total || 0;
 
     // 3. Log Rate (Simple estimate for UI)
     const logsCountRes = await db
       .select({ count: sql<number>`count(*)::integer` })
       .from(timeLogs)
-      .where(eq(timeLogs.organizationId, orgId));
+      .where(timeLogFilter ? timeLogFilter : sql`true`);
     const logsCount = logsCountRes[0]?.count || 0;
 
     // Assuming 10 expected logs per intern over some period for a rough gauge
@@ -44,7 +52,7 @@ export const GET = withErrorHandler(
         updatedAt: tickets.updatedAt,
       })
       .from(tickets)
-      .where(and(eq(tickets.organizationId, orgId), eq(tickets.status, 'done')));
+      .where(and(ticketFilter ? ticketFilter : sql`true`, eq(tickets.status, 'done')));
 
     let avgResolveTime = 'N/A';
     if (resolvedTickets.length > 0) {
@@ -58,6 +66,7 @@ export const GET = withErrorHandler(
     }
 
     return NextResponse.json({
+      isGlobal: isGlobalAdmin,
       logRate: `${logRate}%`,
       avgResolveTime,
       activeInterns: activeInternsCount.toString(),

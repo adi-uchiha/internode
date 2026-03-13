@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 export interface AdminAnalyticsData {
+  isGlobal: boolean;
   logRate: string;
   avgResolveTime: string;
   activeInterns: string;

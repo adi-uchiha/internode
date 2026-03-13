@@ -9,18 +9,21 @@ import { getActiveOrgId } from '@/lib/api-utils';
 
 // Get leave requests. Admins get all, users get their own.
 export const GET = withErrorHandler(async (req, { session }) => {
+  const isGlobalAdmin = session!.user.role === 'admin';
   const orgId = await getActiveOrgId(session!.user.id);
-  if (!orgId) return NextResponse.json([]);
 
-  const isAdmin = session!.user.role === 'admin';
+  if (!isGlobalAdmin && !orgId) return NextResponse.json([]);
+
+  const isAdmin = isGlobalAdmin || session!.user.role === 'admin'; // In this context, both are the same, but let's be explicit
+
   const queryArgs = {
     with: {
       user: true,
     } as const,
     orderBy: [desc(leaveRequests.createdAt)],
     where: and(
-      eq(leaveRequests.organizationId, orgId),
-      isAdmin ? undefined : eq(leaveRequests.userId, session!.user.id)
+      isGlobalAdmin ? undefined : eq(leaveRequests.organizationId, orgId!),
+      isGlobalAdmin ? undefined : isAdmin ? undefined : eq(leaveRequests.userId, session!.user.id)
     ),
   };
 

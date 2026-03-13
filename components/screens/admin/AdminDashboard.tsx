@@ -6,9 +6,11 @@ import { AdminLayout } from '@/components/layouts/AdminLayout';
 import { useUsers } from '@/hooks/useUsers';
 import { useLeaves, useUpdateLeave } from '@/hooks/useLeaves';
 import { Icon } from '@iconify/react';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
   const { mutate: updateLeave } = useUpdateLeave();
@@ -22,6 +24,20 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout title="HUD Dashboard">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-2xl font-bold tracking-tight">System HUD</h2>
+          <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest mt-1">
+            Real-time status monitoring
+          </p>
+        </div>
+        <div
+          className={`px-3 py-1 border font-mono text-[10px] uppercase tracking-tighter ${user?.role === 'admin' ? 'bg-primary/10 border-primary text-primary' : 'bg-muted border-border text-muted-foreground'}`}
+        >
+          {user?.role === 'admin' ? '● Global System Visibility' : '○ Organization Specific'}
+        </div>
+      </div>
+
       <div className="space-y-8">
         {/* Status Overview */}
         <div className="grid grid-cols-3 gap-4">
