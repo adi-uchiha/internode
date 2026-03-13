@@ -12,6 +12,7 @@ export const sessions = pgTable('sessions', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
+  activeOrganizationId: text('active_organization_id'),
 });
 
 export const accounts = pgTable('accounts', {

@@ -165,6 +165,7 @@ export default function OnboardingPage() {
 
       // Explicitly set the new organization as active before redirecting
       await authClient.organization.setActive({ organizationId: data.id });
+      await authClient.getSession(); // Force update client session store
 
       // Invalidate ALL React Query caches so useSession, useListOrganizations,
       // and useActiveMember in the parent layout refetch fresh data.

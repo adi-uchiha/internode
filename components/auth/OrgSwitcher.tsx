@@ -2,6 +2,7 @@
 
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   const { data: orgs, isPending } = authClient.useListOrganizations();
   const { data: session } = authClient.useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   if (isPending) {
     return (
@@ -34,6 +36,8 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   const handleSwitch = async (orgId: string | null) => {
     if (!orgId || orgId === activeOrgId) return;
     await authClient.organization.setActive({ organizationId: orgId });
+    await authClient.getSession(); // Trigger client-side nanostore update
+    await queryClient.invalidateQueries(); // Invalidate cached queries
     router.refresh(); // Fully evict client router cache guaranteeing clean state for new Org
   };
 
