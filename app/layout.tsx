@@ -15,11 +15,12 @@ export const metadata: Metadata = {
   title: 'Internode | Engineering-Grade Project Management',
   description:
     'Internode is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability.',
-  metadataBase: new URL('https://internode.app'), // Replace with actual URL if known
+  metadataBase: process.env.VERCEL_URL
+    ? new URL(`https://${process.env.VERCEL_URL}`)
+    : new URL('http://localhost:3000'),
   openGraph: {
     title: 'Internode',
     description: 'Engineering-Grade Project Management Platform',
-    url: 'https://internode.app',
     siteName: 'Internode',
     images: [
       {
@@ -37,14 +38,6 @@ export const metadata: Metadata = {
     title: 'Internode',
     description: 'Engineering-Grade Project Management Platform',
     images: ['/og-image.png'],
-  },
-  icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [{ url: '/apple-touch-icon.png' }],
   },
 };
 
