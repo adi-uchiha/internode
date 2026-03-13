@@ -104,7 +104,32 @@ export default function TaskManagerLayout({
     },
   ].filter((item) => !item.roles || item.roles.includes(orgRole));
 
-  const content = (
+  const isRedirectingToOnboarding =
+    !authLoading &&
+    !orgsLoading &&
+    !!user &&
+    pathname !== '/tasks/onboarding' &&
+    Array.isArray(orgs) &&
+    orgs.length === 0;
+
+  const content = isRedirectingToOnboarding ? (
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <Icon
+        icon="solar:rocket-2-bold-duotone"
+        className="w-16 h-16 text-primary mb-6 animate-pulse"
+      />
+      <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
+        Preparing Organization
+      </h2>
+      <p className="text-muted-foreground font-mono text-sm mb-8">
+        Redirecting you to setup your workspace...
+      </p>
+      <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
+        <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+        REDIRECTING_TO_SETUP...
+      </div>
+    </div>
+  ) : (
     <>
       {children}
       {/* Command Palette / Search Overlay */}

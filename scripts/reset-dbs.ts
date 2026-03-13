@@ -34,6 +34,8 @@ async function main() {
 
   console.log('\n--- All databases have been wiped clean ---');
   console.log('You can now run migrations safely.');
+
+  // Running migration
 }
 
 main();
