@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
+import { getActiveOrgId } from '@/lib/api-utils';
 
 // Get or auto-create the current week's goal list for the session user
 export const GET = withErrorHandler(async (req, { session }) => {
@@ -15,8 +16,15 @@ export const GET = withErrorHandler(async (req, { session }) => {
   const weekStart = new Date(today.setDate(diff));
   weekStart.setHours(0, 0, 0, 0);
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json({});
+
   let goal = await db.query.weeklyGoals.findFirst({
-    where: and(eq(weeklyGoals.userId, session!.user.id), eq(weeklyGoals.weekStart, weekStart)),
+    where: and(
+      eq(weeklyGoals.userId, session!.user.id),
+      eq(weeklyGoals.weekStart, weekStart),
+      eq(weeklyGoals.organizationId, orgId)
+    ),
     with: {
       items: true,
     },
@@ -27,6 +35,7 @@ export const GET = withErrorHandler(async (req, { session }) => {
     const newGoalId = nanoid();
     await db.insert(weeklyGoals).values({
       id: newGoalId,
+      organizationId: orgId,
       userId: session!.user.id,
       weekStart,
     });

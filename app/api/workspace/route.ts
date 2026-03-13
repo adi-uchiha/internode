@@ -1,20 +1,22 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { organizations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { withErrorHandler } from '@/lib/api-handler';
+import { getActiveOrgId } from '@/lib/api-utils';
 
 export const GET = withErrorHandler(async (req, { session }) => {
-  // Fetch the organization details from the user's record (acting as the current workspace context)
-  const userData = await db.query.users.findFirst({
-    where: eq(users.id, session!.user.id),
-    columns: {
-      organizationName: true,
-      organizationDomain: true,
-    },
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json({ organizationName: '', organizationDomain: '' });
+
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, orgId),
   });
 
-  return NextResponse.json(userData);
+  return NextResponse.json({
+    organizationName: org?.name || '',
+    organizationDomain: org?.slug || '',
+  });
 });
 
 export const PATCH = withErrorHandler(
@@ -22,16 +24,17 @@ export const PATCH = withErrorHandler(
     const body = await req.json();
     const { organizationName, organizationDomain } = body;
 
-    // In this simplified architecture, updating the admin's workspace info
-    // effectively updates it for the whole organization in this prototype.
+    const orgId = await getActiveOrgId(session!.user.id);
+    if (!orgId) throw new Error('No organization found for user');
+
     await db
-      .update(users)
+      .update(organizations)
       .set({
-        organizationName,
-        organizationDomain,
+        name: organizationName,
+        slug: organizationDomain,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, session!.user.id));
+      .where(eq(organizations.id, orgId));
 
     return NextResponse.json({ success: true });
   },

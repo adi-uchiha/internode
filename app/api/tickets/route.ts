@@ -4,17 +4,21 @@ import { tickets } from '@/db/schema';
 import { desc, eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
+import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async (request) => {
+export const GET = withErrorHandler(async (request, { session }) => {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
 
-  const queryConditions = [];
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json([]);
+
+  const queryConditions = [eq(tickets.organizationId, orgId)];
   if (projectId) queryConditions.push(eq(tickets.projectId, projectId));
   if (assigneeId) queryConditions.push(eq(tickets.assigneeId, assigneeId));
 
-  const whereClause = queryConditions.length > 0 ? and(...queryConditions) : undefined;
+  const whereClause = and(...queryConditions);
 
   const allTickets = await db.query.tickets.findMany({
     where: whereClause,
@@ -48,10 +52,14 @@ export const POST = withErrorHandler(async (request, { session }) => {
     labels,
   } = body;
 
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) throw new Error('No organization found for user');
+
   const [newTicket] = await db
     .insert(tickets)
     .values({
       id: nanoid(),
+      organizationId: orgId,
       ticketId: `INT-${Math.floor(Math.random() * 9000) + 1000}`,
       title,
       description: description || '',

@@ -1,8 +1,12 @@
 import { pgTable, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
 import { users } from './users';
+import { organizations } from './organizations';
 
 export const projects = pgTable('projects', {
   id: text('id').primaryKey(), // Using nanoid/cuid
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   prefix: text('prefix').notNull(),
   description: text('description'),
@@ -18,6 +22,9 @@ export const projects = pgTable('projects', {
 });
 
 export const projectMembers = pgTable('project_members', {
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   projectId: text('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),

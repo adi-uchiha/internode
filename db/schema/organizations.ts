@@ -1,13 +1,11 @@
 import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
-import { organizations } from './organizations';
 
-export const labels = pgTable('labels', {
+export const organizations = pgTable('organizations', {
   id: text('id').primaryKey(),
-  organizationId: text('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  color: text('color').notNull(),
+  slug: text('slug').unique(),
+  logo: text('logo'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  metadata: text('metadata'), // JSON string for custom org settings
 });

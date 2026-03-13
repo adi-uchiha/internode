@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { organization } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 
@@ -12,21 +13,18 @@ export const auth = betterAuth({
       session: schema.sessions,
       account: schema.accounts,
       verification: schema.verifications,
+      organization: schema.organizations,
+      member: schema.members,
+      invitation: schema.invitations,
     },
   }),
+  plugins: [organization()],
   user: {
     additionalFields: {
       username: { type: 'string', required: false },
       role: { type: 'string', input: false },
-      status: { type: 'string' },
       joinDate: { type: 'date' },
-      department: { type: 'string' },
-      skillTags: { type: 'string[]', input: false },
-      logStatus: { type: 'string' },
-      lastLogTime: { type: 'date' },
       notificationSettings: { type: 'string' },
-      organizationName: { type: 'string' },
-      organizationDomain: { type: 'string' },
     },
   },
   emailAndPassword: {

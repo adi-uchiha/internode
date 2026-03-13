@@ -1,0 +1,2 @@
+ALTER TABLE "search_history" ADD COLUMN "organization_id" text;--> statement-breakpoint
+ALTER TABLE "search_history" ADD CONSTRAINT "search_history_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;

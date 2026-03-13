@@ -22,6 +22,27 @@
       "when": 1773317754311,
       "tag": "0002_fantastic_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773386709069,
+      "tag": "0003_ancient_marvel_zombies",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773388271540,
+      "tag": "0004_faithful_gauntlet",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773388321067,
+      "tag": "0005_whole_brother_voodoo",
+      "breakpoints": true
     }
   ]
 }

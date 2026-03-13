@@ -31,6 +31,7 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
     .insert(timeLogs)
     .values({
       id: nanoid(),
+      organizationId: existingTicket.organizationId,
       ticketId: existingTicket.id, // always safe PK
       userId: session!.user.id,
       hours,

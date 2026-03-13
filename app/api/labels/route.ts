@@ -5,26 +5,35 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
+import { getActiveOrgId } from '@/lib/api-utils';
 
-export const GET = withErrorHandler(async () => {
+export const GET = withErrorHandler(async (request, { session }) => {
+  const orgId = await getActiveOrgId(session!.user.id);
+  if (!orgId) return NextResponse.json([]);
+
   const allLabels = await db.query.labels.findMany({
+    where: eq(labels.organizationId, orgId),
     orderBy: (labels, { asc }) => [asc(labels.name)],
   });
   return NextResponse.json(allLabels);
 });
 
 export const POST = withErrorHandler(
-  async (req) => {
+  async (req, { session }) => {
     const { name, color } = await req.json();
 
     if (!name || !color) {
       throw new BadRequestError('Name and color are required');
     }
 
+    const orgId = await getActiveOrgId(session!.user.id);
+    if (!orgId) throw new Error('No organization found for user');
+
     const newLabel = await db
       .insert(labels)
       .values({
         id: uuidv4(),
+        organizationId: orgId,
         name,
         color,
       })

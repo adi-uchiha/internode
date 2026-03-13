@@ -1,9 +1,13 @@
 import { pgTable, text, timestamp, real, jsonb, boolean } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { projects } from './projects';
+import { organizations } from './organizations';
 
 export const tickets = pgTable('tickets', {
   id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   ticketId: text('ticket_id').notNull().unique(),
   title: text('title').notNull(),
   description: text('description'),
@@ -30,6 +34,9 @@ export const tickets = pgTable('tickets', {
 
 export const timeLogs = pgTable('time_logs', {
   id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   ticketId: text('ticket_id')
     .notNull()
     .references(() => tickets.id, { onDelete: 'cascade' }),
@@ -46,6 +53,9 @@ export const timeLogs = pgTable('time_logs', {
 
 export const comments = pgTable('comments', {
   id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   ticketId: text('ticket_id')
     .notNull()
     .references(() => tickets.id, { onDelete: 'cascade' }),

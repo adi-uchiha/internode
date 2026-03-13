@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { comments } from '@/db/schema';
+import { comments, tickets } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
@@ -28,10 +28,19 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
     throw new BadRequestError('Content is required');
   }
 
+  const ticket = await db.query.tickets.findFirst({
+    where: eq(tickets.id, ticketId),
+  });
+
+  if (!ticket) {
+    throw new BadRequestError('Ticket not found');
+  }
+
   const [newComment] = await db
     .insert(comments)
     .values({
       id: nanoid(),
+      organizationId: ticket.organizationId,
       ticketId,
       userId: session!.user.id,
       content,

@@ -3,7 +3,13 @@ import { type InferSelectModel } from 'drizzle-orm';
 import type { users } from '@/db/schema';
 
 // Selecting the schema structure natively from DB mappings
-export type User = InferSelectModel<typeof users>;
+export type User = InferSelectModel<typeof users> & {
+  department?: string | null;
+  status?: string | null;
+  logStatus?: string | null;
+  lastLogTime?: string | Date | null;
+  skillTags?: string[] | null;
+};
 
 export function useUsers() {
   return useQuery<User[]>({

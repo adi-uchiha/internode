@@ -36,6 +36,9 @@ export const POST = withErrorHandler(async (req, { session }) => {
     .insert(searchHistory)
     .values({
       userId: session!.user.id,
+      organizationId:
+        (await db.query.members.findFirst({ where: (m, { eq }) => eq(m.userId, session!.user.id) }))
+          ?.organizationId || '',
       entityType,
       entityId,
       title,

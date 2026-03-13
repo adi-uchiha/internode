@@ -14,18 +14,9 @@ export const users = pgTable('users', {
   role: text('role', { enum: ['admin', 'member'] })
     .notNull()
     .default('member'),
-  status: text('status', { enum: ['active', 'inactive', 'on-leave'] })
-    .notNull()
-    .default('active'),
   joinDate: timestamp('join_date').defaultNow(),
-  department: text('department'),
-  organizationName: text('organization_name').default('InternHub Central'),
-  organizationDomain: text('organization_domain').default('internhub-hq'),
   notificationSettings: jsonb('notification_settings').$type<{
     email: Record<string, boolean>;
     inApp: Record<string, boolean>;
   }>(),
-  skillTags: jsonb('skill_tags').$type<string[]>(),
-  logStatus: text('log_status', { enum: ['green', 'yellow', 'red'] }).default('red'),
-  lastLogTime: timestamp('last_log_time'),
 });

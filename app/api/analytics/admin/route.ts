@@ -1,26 +1,34 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users, timeLogs, tickets } from '@/db/schema';
+import { timeLogs, tickets, members } from '@/db/schema';
 import { sql, and, eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
+import { getActiveOrgId } from '@/lib/api-utils';
 
 export const GET = withErrorHandler(
-  async () => {
-    // 1. Total Active Interns
+  async (req, { session }) => {
+    const orgId = await getActiveOrgId(session!.user.id);
+    if (!orgId) return NextResponse.json({});
+
+    // 1. Total Active Interns (from members of this org)
     const activeInternsRes = await db
       .select({ count: sql<number>`count(*)::integer` })
-      .from(users)
-      .where(and(eq(users.role, 'member'), eq(users.status, 'active')));
+      .from(members)
+      .where(and(eq(members.organizationId, orgId), eq(members.status, 'active')));
     const activeInternsCount = activeInternsRes[0]?.count || 0;
 
     // 2. Total Hours Logged
     const totalHoursRes = await db
       .select({ total: sql<number>`sum(${timeLogs.hours})::float` })
-      .from(timeLogs);
+      .from(timeLogs)
+      .where(eq(timeLogs.organizationId, orgId));
     const totalHours = totalHoursRes[0]?.total || 0;
 
     // 3. Log Rate (Simple estimate for UI)
-    const logsCountRes = await db.select({ count: sql<number>`count(*)::integer` }).from(timeLogs);
+    const logsCountRes = await db
+      .select({ count: sql<number>`count(*)::integer` })
+      .from(timeLogs)
+      .where(eq(timeLogs.organizationId, orgId));
     const logsCount = logsCountRes[0]?.count || 0;
 
     // Assuming 10 expected logs per intern over some period for a rough gauge
@@ -36,7 +44,7 @@ export const GET = withErrorHandler(
         updatedAt: tickets.updatedAt,
       })
       .from(tickets)
-      .where(eq(tickets.status, 'done'));
+      .where(and(eq(tickets.organizationId, orgId), eq(tickets.status, 'done')));
 
     let avgResolveTime = 'N/A';
     if (resolvedTickets.length > 0) {

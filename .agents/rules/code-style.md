@@ -54,3 +54,8 @@ To ensure a seamless onboarding experience for members:
 - `baseURL` must be explicitly configured in the server `auth` config to prevent `ERR_INVALID_URL` errors during social sign-ins.
 - `DATABASE_URL` in `.env` must not have trailing quotes.
 - `role` field in `users` table defaults to `member`.
+
+IMPORANT DATABASE & MIGRATION CONTEXT
+My vercerl build process (only have prod deployments) has the bun run db:migrate
+But if we are making some breaking changes that reqires manual data migration. Please do the data migration on the prod db also. prod db url is there in the `scripts/reset-dbs.ts` So make sure you are migrating the prod data also.
+And also the build process bun run db:migration (which runs only when I make a deployment) should also should not break. Which means do not run any db:push or db:migrate on the prod, which might break the build prcess command (bun run db:migrate).

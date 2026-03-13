@@ -1,9 +1,13 @@
 import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { tickets } from './tickets';
+import { organizations } from './organizations';
 
 export const activities = pgTable('activities', {
   id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
@@ -16,6 +20,9 @@ export const activities = pgTable('activities', {
 
 export const notifications = pgTable('notifications', {
   id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
