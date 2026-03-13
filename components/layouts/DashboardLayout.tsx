@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import Image from 'next/image';
 import { getFeatureStatus } from '@/lib/feature-flags';
+import { OrgSwitcher } from '@/components/auth/OrgSwitcher';
 
 interface NavSubItem {
   label: string;
@@ -87,7 +88,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
         onMouseLeave={() => setCollapsed(true)}
       >
         {/* Logo */}
-        <div className="h-16 border-b border-border flex items-center px-4 justify-between">
+        <div className="h-16 border-b border-border flex items-center px-4 shrink-0">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 border-2 border-primary flex items-center justify-center shrink-0">
               <div className="w-3 h-3 bg-primary" />
@@ -105,6 +106,10 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
               )}
             </AnimatePresence>
           </Link>
+        </div>
+
+        <div className="border-b border-border shrink-0">
+          <OrgSwitcher collapsed={collapsed} />
         </div>
 
         {/* Nav Items */}

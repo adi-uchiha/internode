@@ -8,6 +8,7 @@ import { useWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspace';
 import { useUpdateProfile } from '@/hooks/useUsers';
 import { useLabels, useCreateLabel, useDeleteLabel } from '@/hooks/useLabels';
 import { useAuth } from '@/contexts/AuthContext';
+import { RequireRole } from '@/components/auth/RequireRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -42,7 +43,6 @@ const defaultColumns = [
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('workspace');
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: workspaceData, isLoading: workspaceLoading } = useWorkspace();
   const { mutateAsync: updateWorkspace } = useUpdateWorkspace();
@@ -98,12 +98,10 @@ export default function SettingsPage() {
 
   const handleSync = async () => {
     try {
-      if (isAdmin) {
-        await updateWorkspace({
-          organizationName: orgName || workspaceData?.organizationName,
-          organizationDomain: orgDomain || workspaceData?.organizationDomain,
-        });
-      }
+      await updateWorkspace({
+        organizationName: orgName || workspaceData?.organizationName,
+        organizationDomain: orgDomain || workspaceData?.organizationDomain,
+      });
 
       await updateProfile({
         notificationSettings: (notifPolicy ||
@@ -224,7 +222,6 @@ export default function SettingsPage() {
                         }
                         placeholder={workspaceLoading ? 'Loading...' : 'InternHub Central'}
                         className="max-w-md bg-muted/30 border-border h-11 font-mono text-sm focus-visible:ring-primary/20"
-                        disabled={!isAdmin}
                       />
                     </div>
 
@@ -240,7 +237,6 @@ export default function SettingsPage() {
                           }
                           placeholder={workspaceLoading ? 'Loading...' : 'internhub-hq'}
                           className="bg-muted/30 border-border border-r-0 rounded-r-none h-11 font-mono text-sm focus-visible:ring-primary/20"
-                          disabled={!isAdmin}
                         />
                         <div className="h-11 px-4 flex items-center bg-muted border border-border border-l-0 rounded-r-md text-xs font-mono text-muted-foreground">
                           .internode.app
@@ -268,13 +264,26 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="pt-6 border-t border-border flex justify-end">
-                    <Button
-                      variant="hero"
-                      className="px-8 shadow-lg shadow-primary/20"
-                      onClick={handleSync}
+                    <RequireRole
+                      role="admin"
+                      fallback={
+                        <Button
+                          variant="hero"
+                          className="px-8 shadow-lg shadow-primary/20"
+                          onClick={handleSync}
+                        >
+                          Save Notification Settings
+                        </Button>
+                      }
                     >
-                      Synchronize Settings
-                    </Button>
+                      <Button
+                        variant="hero"
+                        className="px-8 shadow-lg shadow-primary/20"
+                        onClick={handleSync}
+                      >
+                        Synchronize Settings
+                      </Button>
+                    </RequireRole>
                   </div>
                 </div>
               )}
@@ -290,15 +299,16 @@ export default function SettingsPage() {
                         Active Projects
                       </h3>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 font-mono text-[10px] uppercase"
-                      onClick={handleCreateProject}
-                      disabled={!isAdmin}
-                    >
-                      + New System
-                    </Button>
+                    <RequireRole role="admin">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 font-mono text-[10px] uppercase"
+                        onClick={handleCreateProject}
+                      >
+                        + New System
+                      </Button>
+                    </RequireRole>
                   </div>
 
                   <div className="grid gap-3">
@@ -330,14 +340,14 @@ export default function SettingsPage() {
                               </div>
                               <div className="text-xs font-bold capitalize">{p.status}</div>
                             </div>
-                            {isAdmin && (
+                            <RequireRole role="admin">
                               <button
                                 onClick={() => handleDeleteProject(p.id, p.name)}
                                 className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 p-2 transition-all rounded-full"
                               >
                                 <Icon icon="solar:trash-bin-trash-linear" className="w-4 h-4" />
                               </button>
-                            )}
+                            </RequireRole>
                           </div>
                         </div>
                       ))
@@ -482,15 +492,16 @@ export default function SettingsPage() {
                         Classification Library
                       </h3>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 font-mono text-[10px] uppercase"
-                      onClick={handleCreateLabel}
-                      disabled={!isAdmin}
-                    >
-                      + Create Label
-                    </Button>
+                    <RequireRole role="admin">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 font-mono text-[10px] uppercase"
+                        onClick={handleCreateLabel}
+                      >
+                        + Create Label
+                      </Button>
+                    </RequireRole>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -517,14 +528,14 @@ export default function SettingsPage() {
                             readOnly
                             className="w-6 h-6 bg-transparent border-0 cursor-default rounded-sm overflow-hidden"
                           />
-                          {isAdmin && (
+                          <RequireRole role="admin">
                             <button
                               onClick={() => handleDeleteLabel(label.id, label.name)}
                               className="text-muted-foreground hover:text-destructive transition-colors px-1"
                             >
                               <Icon icon="solar:trash-bin-2-linear" className="w-4 h-4" />
                             </button>
-                          )}
+                          </RequireRole>
                         </div>
                       ))
                     )}
