@@ -9,7 +9,7 @@ export interface RecentSearch {
   lastAccessedAt: string;
 }
 
-export function useSearchHistory() {
+export function useSearchHistory(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['search-history'],
     queryFn: async () => {
@@ -17,6 +17,7 @@ export function useSearchHistory() {
       if (!res.ok) throw new Error('Failed to fetch search history');
       return res.json() as Promise<RecentSearch[]>;
     },
+    enabled: options?.enabled !== false,
   });
 }
 

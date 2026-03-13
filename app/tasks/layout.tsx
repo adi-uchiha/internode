@@ -21,12 +21,21 @@ export default function TaskManagerLayout({
   const [showSearch, setShowSearch] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
-  const { data: searchHistory = [] } = useSearchHistory();
-  const logSearchMutation = useLogSearch();
   const pathname = usePathname();
   const router = useRouter();
   const { data: activeMember } = authClient.useActiveMember();
   const orgRole = activeMember?.role || 'member';
+
+  const isRedirectingToOnboarding =
+    !authLoading &&
+    !orgsLoading &&
+    !!user &&
+    pathname !== '/tasks/onboarding' &&
+    Array.isArray(orgs) &&
+    orgs.length === 0;
+
+  const { data: searchHistory = [] } = useSearchHistory({ enabled: !isRedirectingToOnboarding });
+  const logSearchMutation = useLogSearch();
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
   // Trap authenticated users who have no org memberships (orphaned users) and
@@ -104,33 +113,29 @@ export default function TaskManagerLayout({
     },
   ].filter((item) => !item.roles || item.roles.includes(orgRole));
 
-  const isRedirectingToOnboarding =
-    !authLoading &&
-    !orgsLoading &&
-    !!user &&
-    pathname !== '/tasks/onboarding' &&
-    Array.isArray(orgs) &&
-    orgs.length === 0;
-
-  const content = isRedirectingToOnboarding ? (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <Icon
-        icon="solar:rocket-2-bold-duotone"
-        className="w-16 h-16 text-primary mb-6 animate-pulse"
-      />
-      <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
-        Preparing Organization
-      </h2>
-      <p className="text-muted-foreground font-mono text-sm mb-8">
-        Redirecting you to setup your workspace...
-      </p>
-      <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
-        <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-        REDIRECTING_TO_SETUP...
+  if (isRedirectingToOnboarding) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
+        <Icon
+          icon="solar:rocket-2-bold-duotone"
+          className="w-16 h-16 text-primary mb-6 animate-pulse"
+        />
+        <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
+          Preparing Organization
+        </h2>
+        <p className="text-muted-foreground font-mono text-sm mb-8">
+          Redirecting you to setup your workspace...
+        </p>
+        <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
+          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+          REDIRECTING_TO_SETUP...
+        </div>
       </div>
-    </div>
-  ) : (
-    <>
+    );
+  }
+
+  return (
+    <DashboardLayout navItems={navItems} title={title}>
       {children}
       {/* Command Palette / Search Overlay */}
       <AnimatePresence>
@@ -230,12 +235,6 @@ export default function TaskManagerLayout({
           </>
         )}
       </AnimatePresence>
-    </>
-  );
-
-  return (
-    <DashboardLayout navItems={navItems} title={title}>
-      {content}
     </DashboardLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { execSync } from 'child_process';
 
 const PROD_URL =
   'postgresql://neondb_owner:npg_2vaX5cGHDKxB@ep-small-shape-a16f58i5-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
@@ -36,6 +37,7 @@ async function main() {
   console.log('You can now run migrations safely.');
 
   // Running migration
+  execSync('bun run db:migrate', { stdio: 'inherit' });
 }
 
 main();
