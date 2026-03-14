@@ -167,14 +167,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                     )}
                   </AnimatePresence>
 
-                  {!hasSub && item.badge && item.badge > 0 && !isComingSoon && (
+                  {!hasSub && item.badge !== undefined && item.badge > 0 && !isComingSoon && (
                     <span
                       className={cn(
-                        'absolute right-2 bg-primary text-primary-foreground font-mono text-xs px-1.5 py-0.5',
-                        collapsed && 'right-1 top-1'
+                        'absolute top-1/2 -translate-y-1/2 right-3 bg-primary text-primary-foreground font-mono text-[9px] px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center font-bold',
+                        collapsed &&
+                          'right-5 top-3 translate-x-0 translate-y-0 w-2 h-2 p-0 text-[0px] ring-2 ring-card'
                       )}
                     >
-                      {item.badge}
+                      {!collapsed && item.badge}
                     </span>
                   )}
 

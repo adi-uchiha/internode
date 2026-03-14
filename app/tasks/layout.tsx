@@ -95,6 +95,28 @@ export default function TaskManagerLayout({
     setShowSearch(false);
   }, [pathname]);
 
+  const [pendingInvCount, setPendingInvCount] = useState(0);
+
+  useEffect(() => {
+    const fetchInvites = async () => {
+      try {
+        const result = await authClient.organization.listUserInvitations();
+        const invites = (result.data ?? []) as Array<{
+          status: string;
+          expiresAt: string | Date;
+        }>;
+        const valid = invites.filter(
+          (inv) => inv.status === 'pending' && new Date(inv.expiresAt) > new Date()
+        );
+
+        setPendingInvCount(valid.length);
+      } catch (err) {
+        console.error('Failed to fetch user invites in layout:', err);
+      }
+    };
+    fetchInvites();
+  }, [pathname]); // Refetch on navigation
+
   const navItems = [
     { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },
     { label: 'Board', href: '/tasks/kanban', icon: 'ph:kanban-duotone' },
@@ -106,6 +128,12 @@ export default function TaskManagerLayout({
       href: '/tasks/members',
       icon: 'ph:users-three-duotone',
       roles: ['owner', 'admin'],
+    },
+    {
+      label: 'Invites',
+      href: '/tasks/invites',
+      icon: 'ph:envelope-simple-duotone',
+      badge: pendingInvCount,
     },
     {
       label: 'Analytics',

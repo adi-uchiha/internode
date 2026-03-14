@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects';
@@ -84,15 +84,21 @@ export default function SettingsPage() {
     inApp?: Record<string, boolean>;
   } | null>(null);
 
-  useState(() => {
+  useEffect(() => {
     if (organizationData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrgName(organizationData.organizationName);
+
       setOrgDomain(organizationData.organizationDomain);
     }
+  }, [organizationData]);
+
+  useEffect(() => {
     if (user?.notificationSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotifPolicy(user.notificationSettings);
     }
-  });
+  }, [user]);
 
   const handleSync = async () => {
     try {
