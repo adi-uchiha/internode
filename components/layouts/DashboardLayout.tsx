@@ -37,6 +37,9 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
   const { user, logout } = useAuth();
+  const { data: sessionData } = authClient.useSession();
+  const hasActiveOrg = !!sessionData?.session?.activeOrganizationId;
+
   const { data: activeMember } = authClient.useActiveMember();
   const orgRole = activeMember?.role || 'member';
 
@@ -46,10 +49,6 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   }, []);
   const pathname = usePathname();
   const router = useRouter();
-
-  // Guard: don't start polling notifications if there is no active org yet
-  const { data: sessionData } = authClient.useSession();
-  const hasActiveOrg = !!sessionData?.session?.activeOrganizationId;
 
   const { data: notifications = [] } = useNotifications({ enabled: hasActiveOrg });
   const { mutateAsync: markAsRead } = useMarkNotificationsRead();

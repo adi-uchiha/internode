@@ -66,6 +66,7 @@ export const GET = withErrorHandler(async (req, { orgId }) => {
       estimated: sql<number>`sum(${tickets.estimatedHours})::float`,
     })
     .from(tickets)
+    .leftJoin(projects, eq(tickets.projectId, projects.id))
     .where(eq(tickets.organizationId, orgId))
     .groupBy(projects.name);
 

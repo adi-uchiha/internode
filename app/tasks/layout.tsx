@@ -21,11 +21,11 @@ export default function TaskManagerLayout({
   const [showSearch, setShowSearch] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const { data: sessionData, isPending: sessionLoading } = authClient.useSession();
+  const { data: activeMember } = authClient.useActiveMember();
+  const orgRole = activeMember?.role || 'member';
   const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
   const pathname = usePathname();
   const router = useRouter();
-  const { data: activeMember } = authClient.useActiveMember();
-  const orgRole = activeMember?.role || 'member';
 
   // ─── Organization State ──────────────────────────────────────────────────────
   // Use BOTH the session's activeOrganizationId AND the org list to determine
@@ -42,7 +42,7 @@ export default function TaskManagerLayout({
   const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';
 
   // Disable org-dependent hooks when user has no org
-  const { data: searchHistory = [] } = useSearchHistory({ enabled: !hasNoOrg });
+  const { data: searchHistory = [] } = useSearchHistory({ enabled: !!activeOrgId });
   const logSearchMutation = useLogSearch();
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
