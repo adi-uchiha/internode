@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
     setMounted(true);
   }, []);
   const pathname = usePathname();
-  const router = useRouter();
 
   const { data: notifications = [] } = useNotifications({ enabled: hasActiveOrg });
   const { mutateAsync: markAsRead } = useMarkNotificationsRead();
@@ -55,9 +54,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
 import { useRouter, usePathname } from 'next/navigation';
 import type { User, Session } from '@/lib/auth-types';
@@ -96,14 +97,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  const queryClient = useQueryClient();
   const logout = async () => {
     await authClient.signOut();
+    queryClient.clear(); // Clear all TanStack search/org/user caches
     router.push('/login');
     router.refresh();
   };
 
-  const { data: member } = authClient.useActiveMember();
+  const { data: member, isPending: isMemberLoading } = authClient.useActiveMember();
   const orgRole = (member?.role as 'owner' | 'admin' | 'member') || 'member';
+
+  // Combined loading state: we are "loading" if the session itself is pending,
+  // OR if we have an active organization but are still fetching the user's role/membership details.
+  const isCombinedLoading =
+    isLoading || (!!sessionData?.session.activeOrganizationId && isMemberLoading);
 
   return (
     <AuthContext.Provider
@@ -111,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session: sessionData as Session | null,
         user,
         orgRole,
-        isLoading,
+        isLoading: isCombinedLoading,
         login,
         signup,
         logout,

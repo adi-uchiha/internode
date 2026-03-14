@@ -27,12 +27,30 @@ export default function TaskManagerLayout({
   // ─── Organization State ──────────────────────────────────────────────────────
   const isFullyLoaded = !authLoading && !orgsLoading;
   const activeOrgId = session?.session.activeOrganizationId;
-  const hasNoOrg =
-    isFullyLoaded && !!user && !activeOrgId && Array.isArray(orgs) && orgs.length === 0;
+
+  // A user truly has "no org" only if they have 0 organizations in the list.
+  const hasNoOrg = isFullyLoaded && !!user && Array.isArray(orgs) && orgs.length === 0;
 
   const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';
 
-  // Disable org-dependent hooks when user has no org
+  // ─── Auto-select Active Organization ───────────────────────────────────────
+  // If the user is logged in, has organizations, but NO organization is currently
+  // marked as "active" in the session, we automatically select the first one.
+  useEffect(() => {
+    if (!isFullyLoaded || !user) return;
+
+    // If we have orgs but none is active, set the first one as active
+    if (!activeOrgId && Array.isArray(orgs) && orgs.length > 0) {
+      const firstOrgId = orgs[0].id;
+      console.log(`[layout] Auto-setting active organization: ${firstOrgId}`);
+      void authClient.organization.setActive({ organizationId: firstOrgId }).then(() => {
+        // Refresh ensures the session update is reflected everywhere
+        router.refresh();
+      });
+    }
+  }, [isFullyLoaded, user, activeOrgId, orgs, router]);
+
+  // Disable org-dependent hooks when user has no org (or no active org yet)
   const { data: searchHistory = [] } = useSearchHistory({ enabled: !!activeOrgId });
   const logSearchMutation = useLogSearch();
 
@@ -41,10 +59,11 @@ export default function TaskManagerLayout({
     if (!isFullyLoaded) return;
     if (!user || pathname === '/tasks/onboarding') return;
 
-    if (!activeOrgId && Array.isArray(orgs) && orgs.length === 0) {
+    // Only redirect if they actually have ZERO organizations
+    if (hasNoOrg) {
       router.replace('/tasks/onboarding');
     }
-  }, [user, orgs, activeOrgId, isFullyLoaded, pathname, router]);
+  }, [user, hasNoOrg, isFullyLoaded, pathname, router]);
 
   // Determine current page title based on pathname if not provided
   const title = useMemo(() => {
