@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { MarkdownRenderer } from '@/components/shared/MarkdownRenderer';
+import { CollapsibleDescription } from '@/components/shared/CollapsibleDescription';
 import { MarkdownEditor } from '@/components/shared/MarkdownEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -406,7 +407,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             ) : (
               <div className="border border-border/50 bg-card p-8 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                <MarkdownRenderer content={ticket.description || ''} />
+                <CollapsibleDescription content={ticket.description || ''} />
               </div>
             )}
           </div>
