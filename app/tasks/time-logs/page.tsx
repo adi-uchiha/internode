@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { useLogs } from '@/hooks/useLogs';
 import { useUsers } from '@/hooks/useUsers';
 import { useTickets } from '@/hooks/useTickets';
 import { Icon } from '@iconify/react';
@@ -15,23 +14,25 @@ import { toast } from 'sonner';
 export default function TimeLogsPage() {
   const { user, orgRole } = useAuth();
   const isAdmin = orgRole === 'admin' || orgRole === 'owner';
-  const { data: allLogs, isLoading: logsLoading } = useLogs(isAdmin ? undefined : user?.id);
   const { data: users } = useUsers();
-  const { data: tickets } = useTickets();
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
 
   const logs = useMemo(() => {
-    if (!allLogs || !tickets) return [];
-    return allLogs
-      .map((log) => {
-        const ticket = tickets.find((t) => t.id === log.ticketId);
-        return {
-          ...log,
-          ticketTitle: ticket?.title || 'Unknown Ticket',
-          ticketDbId: ticket?.ticketId || '?',
-        };
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [allLogs, tickets]);
+    if (!tickets) return [];
+    const flattenedLogs = tickets.flatMap((t) =>
+      (t.timeLogs || []).map((l) => ({
+        ...l,
+        ticketTitle: t.title,
+        ticketDbId: t.ticketId,
+      }))
+    );
+
+    const filteredLogs = isAdmin
+      ? flattenedLogs
+      : flattenedLogs.filter((l) => l.userId === user?.id);
+
+    return filteredLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [tickets, isAdmin, user?.id]);
 
   const stats = useMemo(() => {
     if (!logs) return { week: 0, month: 0, avg: 0 };
@@ -104,7 +105,7 @@ export default function TimeLogsPage() {
     return result;
   }, [heatmapData]);
 
-  if (logsLoading) {
+  if (ticketsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
         <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />

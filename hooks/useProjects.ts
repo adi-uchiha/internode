@@ -49,7 +49,7 @@ export function useCreateProject() {
       queryClient.setQueryData(['projects'], context?.previousProjects);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'], refetchType: 'none' });
     },
   });
 }
@@ -77,8 +77,8 @@ export function useDeleteProject() {
       queryClient.setQueryData(['projects'], context?.previousProjects);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
     },
   });
 }

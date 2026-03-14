@@ -61,7 +61,7 @@ export function useAddGoalItem() {
       queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', 'current'], refetchType: 'none' });
     },
   });
 }
@@ -107,7 +107,7 @@ export function useUpdateGoalItem() {
       queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', 'current'], refetchType: 'none' });
     },
   });
 }
@@ -141,7 +141,7 @@ export function useDeleteGoalItem() {
       queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', 'current'], refetchType: 'none' });
     },
   });
 }

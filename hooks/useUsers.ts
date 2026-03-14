@@ -55,8 +55,8 @@ export function useUpdateProfile() {
       queryClient.setQueryData(['users'], context?.previousUsers);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets'] }); // User profiles appear in tickets
+      queryClient.invalidateQueries({ queryKey: ['users'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' }); // User profiles appear in tickets
     },
   });
 }

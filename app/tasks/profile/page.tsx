@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTickets } from '@/hooks/useTickets';
-import { useLogs } from '@/hooks/useLogs';
 import { useActivities } from '@/hooks/useActivities';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -15,13 +14,12 @@ export default function ProfilePage() {
   const { user, orgRole, logout } = useAuth();
 
   const { data: tickets } = useTickets({ assigneeId: user?.id });
-  const { data: logs } = useLogs(); // This gets daily logs, maybe filter by user if API supports it
   const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
 
   const userLogs = useMemo(() => {
-    if (!logs || !user) return [];
-    return logs.filter((l) => l.userId === user.id);
-  }, [logs, user]);
+    if (!tickets || !user) return [];
+    return tickets.flatMap((t) => t.timeLogs || []).filter((l) => l.userId === user.id);
+  }, [tickets, user]);
 
   const stats = useMemo(() => {
     if (!tickets || !user)

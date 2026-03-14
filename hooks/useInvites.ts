@@ -81,7 +81,7 @@ export function useUpdateMemberRole() {
       queryClient.setQueryData(['org-members'], context?.previousMembers);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-members'] });
+      queryClient.invalidateQueries({ queryKey: ['org-members'], refetchType: 'none' });
     },
   });
 }
@@ -111,7 +111,7 @@ export function useRemoveMember() {
       queryClient.setQueryData(['org-members'], context?.previousMembers);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-members'] });
+      queryClient.invalidateQueries({ queryKey: ['org-members'], refetchType: 'none' });
     },
   });
 }
@@ -159,7 +159,7 @@ export function useInviteMember() {
       queryClient.setQueryData(['org-invitations'], context?.previousInvites);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['org-invitations'], refetchType: 'none' });
     },
   });
 }
@@ -186,7 +186,7 @@ export function useCancelInvitation() {
       queryClient.setQueryData(['org-invitations'], context?.previousInvites);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['org-invitations'], refetchType: 'none' });
     },
   });
 }

@@ -47,7 +47,7 @@ export function useUpdateOrganization() {
       queryClient.setQueryData(['organization'], context?.previousOrg);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization'] });
+      queryClient.invalidateQueries({ queryKey: ['organization'], refetchType: 'none' });
     },
   });
 }

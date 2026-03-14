@@ -15,7 +15,6 @@ import {
   type OrgRole,
 } from '@/hooks/useInvites';
 import { useTickets } from '@/hooks/useTickets';
-import { useLogs } from '@/hooks/useLogs';
 import { startOfWeek } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -404,7 +403,6 @@ export default function MembersPage() {
 
   const { data: orgMembers, isLoading: membersLoading } = useOrgMembers();
   const { data: tickets } = useTickets();
-  const { data: logs } = useLogs();
 
   const canInvite = hasOrgRole(currentOrgRole, 'admin');
 
@@ -417,15 +415,18 @@ export default function MembersPage() {
     return orgMembers.map((member) => {
       const activeTickets =
         tickets?.filter((t) => t.assigneeId === member.userId && t.status !== 'done').length ?? 0;
+
       const hoursThisWeek =
-        logs
-          ?.filter((l) => l.userId === member.userId && new Date(l.date) >= startWeek)
+        tickets
+          ?.flatMap((t) => t.timeLogs || [])
+          .filter((l) => l.userId === member.userId && new Date(l.date) >= startWeek)
           .reduce((sum, l) => sum + (l.hours || 0), 0) ?? 0;
+
       const efficiency = Math.min(100, Math.round((hoursThisWeek / 40) * 100));
 
       return { ...member, activeTickets, hoursThisWeek, efficiency };
     });
-  }, [orgMembers, tickets, logs]);
+  }, [orgMembers, tickets]);
 
   if (membersLoading) {
     return (

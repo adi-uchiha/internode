@@ -53,7 +53,7 @@ export function useCreateLabel() {
       queryClient.setQueryData(['labels'], context?.previousLabels);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['labels'] });
+      queryClient.invalidateQueries({ queryKey: ['labels'], refetchType: 'none' });
     },
   });
 }
@@ -80,8 +80,8 @@ export function useDeleteLabel() {
       queryClient.setQueryData(['labels'], context?.previousLabels);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['labels'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets'] }); // Labels appear in tickets
+      queryClient.invalidateQueries({ queryKey: ['labels'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' }); // Labels appear in tickets
     },
   });
 }

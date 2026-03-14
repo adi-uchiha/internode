@@ -22,7 +22,6 @@ import { useTickets } from '@/hooks/useTickets';
 import { useUsers } from '@/hooks/useUsers';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useActivities } from '@/hooks/useActivities';
-import { useLogs } from '@/hooks/useLogs';
 import { useLogTime } from '@/hooks/useTickets';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
@@ -447,7 +446,6 @@ const MemberDashboardContent = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { data: tickets, isLoading: ticketsLoading } = useTickets();
-  const { data: logs } = useLogs();
   const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
   const { data: users } = useUsers();
 
@@ -455,9 +453,15 @@ const MemberDashboardContent = () => {
   const upcomingTickets =
     tickets?.filter((t) => t.status === 'todo' && t.assigneeId === user?.id) || [];
 
-  // Weekly stats calculation from real logs
+  // Weekly stats calculation from real logs (derived from tickets)
   const startOfCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weeklyLogs = logs?.filter((l) => new Date(l.date) >= startOfCurrentWeek) || [];
+  const weeklyLogs = useMemo(() => {
+    if (!tickets) return [];
+    return tickets
+      .flatMap((t) => t.timeLogs || [])
+      .filter((l) => l.userId === user?.id && new Date(l.date) >= startOfCurrentWeek);
+  }, [tickets, user?.id, startOfCurrentWeek]);
+
   const weeklyHours = weeklyLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
 
   const dailyHours = [0, 0, 0, 0, 0].map((_, i) => {

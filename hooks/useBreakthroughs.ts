@@ -64,7 +64,7 @@ export function useCreateBreakthrough() {
       queryClient.setQueryData(['breakthroughs'], context?.previousBreakthroughs);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['breakthroughs'] });
+      queryClient.invalidateQueries({ queryKey: ['breakthroughs'], refetchType: 'none' });
     },
   });
 }

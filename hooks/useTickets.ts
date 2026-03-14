@@ -81,7 +81,7 @@ export function useCreateTicket() {
       CacheManager.tickets.sync(queryClient, data);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      // analytics invalidated because it depends on ticket count/status
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
@@ -122,8 +122,12 @@ export function useUpdateTicket() {
       CacheManager.tickets.sync(queryClient, data);
     },
     onSettled: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', data?.id] });
+      // We rely on CacheManager.sync for the ticket update.
+      // Invalidation is still called to mark it as stale, but we don't trigger refetch.
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
+      if (data?.id) {
+        queryClient.invalidateQueries({ queryKey: ['tickets', data.id], refetchType: 'none' });
+      }
     },
   });
 }
@@ -174,8 +178,10 @@ export function useLogTime() {
       // The ticket hours update is handled by optimistic update + settled refetch
     },
     onSettled: (data, error, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
+      // Logs are refreshed manually if needed, but the ticket hours
+      // are updated via optimistic update and confirmed by sync logic.
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
@@ -227,7 +233,11 @@ export function useCreateComment() {
       queryClient.setQueryData(['comments', newComment.ticketId], context?.previousComments);
     },
     onSettled: (_, __, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['comments', variables.ticketId] });
+      // Use refetchType: 'none' to avoid follow-up fetch after comment creation
+      queryClient.invalidateQueries({
+        queryKey: ['comments', variables.ticketId],
+        refetchType: 'none',
+      });
     },
   });
 }

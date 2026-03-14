@@ -12,7 +12,8 @@ export function useNotifications(options?: { enabled?: boolean }) {
       if (!res.ok) throw new Error('Failed to fetch notifications');
       return res.json();
     },
-    refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 60 * 1000, // Stay fresh for 1 minute
+    refetchInterval: 60000, // Poll every 60 seconds
     enabled: options?.enabled ?? true,
   });
 }

@@ -57,7 +57,7 @@ export function useCreateLeave() {
       queryClient.setQueryData(['leaves'], context?.previousLeaves);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['leaves'] });
+      queryClient.invalidateQueries({ queryKey: ['leaves'], refetchType: 'none' });
     },
   });
 }
@@ -96,7 +96,7 @@ export function useUpdateLeave() {
       queryClient.setQueryData(['leaves'], context?.previousLeaves);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['leaves'] });
+      queryClient.invalidateQueries({ queryKey: ['leaves'], refetchType: 'none' });
     },
   });
 }
@@ -124,7 +124,7 @@ export function useDeleteLeave() {
       queryClient.setQueryData(['leaves'], context?.previousLeaves);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['leaves'] });
+      queryClient.invalidateQueries({ queryKey: ['leaves'], refetchType: 'none' });
     },
   });
 }
