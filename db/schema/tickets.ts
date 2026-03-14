@@ -1,6 +1,5 @@
 import { pgTable, text, timestamp, real, jsonb, boolean } from 'drizzle-orm/pg-core';
 import { users } from './users';
-import { projects } from './projects';
 import { organizations } from './organizations';
 
 export const tickets = pgTable('tickets', {
@@ -17,9 +16,7 @@ export const tickets = pgTable('tickets', {
   priority: text('priority', { enum: ['critical', 'high', 'medium', 'low'] })
     .notNull()
     .default('medium'),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => projects.id, { onDelete: 'cascade' }),
+  projectIds: jsonb('project_ids').$type<string[]>().notNull().default([]),
   assigneeId: text('assignee_id').references(() => users.id, { onDelete: 'set null' }),
   createdById: text('created_by_id')
     .notNull()

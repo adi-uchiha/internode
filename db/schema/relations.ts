@@ -74,7 +74,6 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [organizations.id],
   }),
   members: many(projectMembers),
-  tickets: many(tickets),
   breakthroughs: many(breakthroughs),
 }));
 
@@ -98,10 +97,6 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [tickets.organizationId],
     references: [organizations.id],
-  }),
-  project: one(projects, {
-    fields: [tickets.projectId],
-    references: [projects.id],
   }),
   assignee: one(users, {
     fields: [tickets.assigneeId],

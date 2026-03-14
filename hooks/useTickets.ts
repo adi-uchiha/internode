@@ -18,7 +18,7 @@ export type TimeLogWithUser = InferSelectModel<typeof timeLogs> & {
 export type TicketWithRelations = InferSelectModel<typeof tickets> & {
   assignee?: User | null;
   createdBy?: User;
-  project?: { id: string; name: string } | null;
+  projects?: { id: string; name: string }[];
   timeLogs?: TimeLogWithUser[];
 };
 

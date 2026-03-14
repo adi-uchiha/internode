@@ -89,9 +89,22 @@ const KanbanCard = ({
         <span className="font-mono text-[9px] text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 uppercase tracking-wider">
           {ticket.ticketId}
         </span>
-        <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
-          {ticket.project?.name || 'GENERIC'}
-        </span>
+        {(ticket.projects || []).length > 0 ? (
+          <>
+            <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
+              {ticket.projects![0].name}
+            </span>
+            {ticket.projects!.length > 1 && (
+              <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1 py-0.5">
+                +{ticket.projects!.length - 1}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
+            GENERIC
+          </span>
+        )}
       </div>
       <h4 className="font-display text-sm font-medium mb-3 line-clamp-2 leading-tight">
         <span className="text-muted-foreground mr-1.5">{ticket.ticketId}</span>
@@ -189,7 +202,8 @@ export default function KanbanPage() {
 
   const filteredTickets = tickets.filter((t) => {
     if (filter.priority !== 'all' && t.priority !== filter.priority) return false;
-    if (filter.project !== 'all' && t.project?.name !== filter.project) return false;
+    if (filter.project !== 'all' && !(t.projects || []).some((p) => p.name === filter.project))
+      return false;
     if (filter.search && !t.title.toLowerCase().includes(filter.search.toLowerCase())) return false;
     return true;
   });

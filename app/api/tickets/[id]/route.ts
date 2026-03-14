@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { tickets, projects } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 
@@ -19,7 +19,6 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
     with: {
       assignee: true,
       createdBy: true,
-      project: true,
       timeLogs: {
         with: {
           user: true,
@@ -33,7 +32,20 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
     throw new NotFoundError('Ticket not found');
   }
 
-  return NextResponse.json(ticket);
+  // Resolve project names from projectIds
+  const ticketProjectIds = ticket.projectIds || [];
+  let resolvedProjects: { id: string; name: string }[] = [];
+  if (ticketProjectIds.length > 0) {
+    const projectRows = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(inArray(projects.id, ticketProjectIds));
+    resolvedProjects = ticketProjectIds
+      .map((pid) => projectRows.find((p) => p.id === pid))
+      .filter((p): p is { id: string; name: string } => !!p);
+  }
+
+  return NextResponse.json({ ...ticket, projects: resolvedProjects });
 });
 
 export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
@@ -63,7 +75,7 @@ export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
   if (body.estimatedHours !== undefined) updateData.estimatedHours = body.estimatedHours;
   if (body.loggedHours !== undefined) updateData.loggedHours = body.loggedHours;
   if (body.labels !== undefined) updateData.labels = body.labels;
-  if (body.projectId !== undefined) updateData.projectId = body.projectId;
+  if (body.projectIds !== undefined) updateData.projectIds = body.projectIds;
   if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
   // Add logged hours if incrementing

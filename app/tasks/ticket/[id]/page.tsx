@@ -49,7 +49,7 @@ interface EditForm {
   description?: string;
   status?: TicketStatus;
   priority?: TicketPriority;
-  projectId?: string;
+  projectIds?: string[];
   assigneeId?: string | null;
   estimatedHours?: number;
   dueDate?: Date | null;
@@ -128,7 +128,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       description: ticket.description ?? undefined,
       status: ticket.status,
       priority: ticket.priority,
-      projectId: ticket.projectId ?? undefined,
+      projectIds: ticket.projectIds ?? [],
       assigneeId: ticket.assigneeId ?? undefined,
       estimatedHours: ticket.estimatedHours ?? undefined,
       dueDate: ticket.dueDate,
@@ -356,11 +356,22 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                  Project
+                  Projects
                 </span>
-                <span className="text-xs font-bold text-primary">
-                  {ticket.project?.name || 'Generic'}
-                </span>
+                <div className="flex flex-wrap gap-1">
+                  {(ticket.projects || []).length > 0 ? (
+                    ticket.projects!.map((p) => (
+                      <span
+                        key={p.id}
+                        className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5"
+                      >
+                        {p.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs font-bold text-primary">Generic</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -691,29 +702,51 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 {/* Project */}
                 <div className="space-y-2">
                   <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block">
-                    System / Project
+                    System / Projects
                   </span>
                   {isEditing ? (
-                    <Select
-                      value={editForm.projectId || ''}
-                      onValueChange={(val) => setEditForm({ ...editForm, projectId: val || '' })}
-                    >
-                      <SelectTrigger className="bg-muted/50 border-border h-9">
-                        <SelectValue>
-                          {(projects || []).find((p) => p.id === editForm.projectId)?.name}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(projects || []).map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(projects || []).map((p) => {
+                        const isSelected = (editForm.projectIds || []).includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() =>
+                              setEditForm({
+                                ...editForm,
+                                projectIds: isSelected
+                                  ? (editForm.projectIds || []).filter((id) => id !== p.id)
+                                  : [...(editForm.projectIds || []), p.id],
+                              })
+                            }
+                            className={`font-mono text-[10px] px-2 py-1 border transition-colors ${
+                              isSelected
+                                ? 'border-primary text-primary bg-primary/10'
+                                : 'border-border text-muted-foreground hover:border-primary/30'
+                            }`}
+                          >
                             {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </button>
+                        );
+                      })}
+                    </div>
                   ) : (
-                    <div className="text-sm font-mono bg-primary/5 text-primary border border-primary/20 p-2 text-center">
-                      {ticket.project?.name || 'GENERIC'}
+                    <div className="flex flex-wrap gap-1.5">
+                      {(ticket.projects || []).length > 0 ? (
+                        ticket.projects!.map((p) => (
+                          <div
+                            key={p.id}
+                            className="text-xs font-mono bg-primary/5 text-primary border border-primary/20 px-2 py-1 text-center"
+                          >
+                            {p.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm font-mono bg-primary/5 text-primary border border-primary/20 p-2 text-center">
+                          GENERIC
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

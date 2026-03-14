@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets, organizations } from '@/db/schema';
-import { desc, eq, and, sql } from 'drizzle-orm';
+import { tickets, organizations, projects } from '@/db/schema';
+import { desc, eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 
@@ -13,7 +13,8 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
   if (!orgId) return NextResponse.json([]);
 
   const queryConditions = [eq(tickets.organizationId, orgId)];
-  if (projectId) queryConditions.push(eq(tickets.projectId, projectId));
+  if (projectId)
+    queryConditions.push(sql`${tickets.projectIds} @> ${JSON.stringify([projectId])}::jsonb`);
   if (assigneeId) queryConditions.push(eq(tickets.assigneeId, assigneeId));
 
   const whereClause = and(...queryConditions);
@@ -23,7 +24,6 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
     with: {
       assignee: true,
       createdBy: true,
-      project: true,
       timeLogs: {
         with: {
           user: true,
@@ -33,7 +33,25 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
     orderBy: [desc(tickets.createdAt)],
   });
 
-  return NextResponse.json(allTickets);
+  // Resolve project names from projectIds
+  const allProjectIds = [...new Set(allTickets.flatMap((t) => t.projectIds || []))];
+  let projectMap: Record<string, { id: string; name: string }> = {};
+  if (allProjectIds.length > 0) {
+    const projectRows = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(inArray(projects.id, allProjectIds));
+    projectMap = Object.fromEntries(projectRows.map((p) => [p.id, p]));
+  }
+
+  const ticketsWithProjects = allTickets.map((t) => ({
+    ...t,
+    projects: (t.projectIds || [])
+      .map((pid) => projectMap[pid])
+      .filter((p): p is { id: string; name: string } => !!p),
+  }));
+
+  return NextResponse.json(ticketsWithProjects);
 });
 
 export const POST = withErrorHandler(async (request, { session, orgId }) => {
@@ -43,7 +61,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     description,
     status,
     priority,
-    projectId,
+    projectIds: bodyProjectIds,
     assigneeId,
     estimatedHours,
     dueDate,
@@ -77,7 +95,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
       description: description || '',
       status: status || 'todo',
       priority: priority || 'medium',
-      projectId,
+      projectIds: bodyProjectIds || [],
       assigneeId: assigneeId || null,
       createdById: session!.user.id,
       estimatedHours: estimatedHours || 0,

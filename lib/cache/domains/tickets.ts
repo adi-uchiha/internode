@@ -23,7 +23,7 @@ export const TicketDomain = {
       ...rawTicket,
       createdBy: currentUser,
       assignee: CacheAugmenter.user(queryClient, rawTicket.assigneeId ?? null),
-      project: CacheAugmenter.project(queryClient, rawTicket.projectId ?? null),
+      projects: CacheAugmenter.projects(queryClient, rawTicket.projectIds ?? []),
       timeLogs: [],
     } as TicketWithRelations;
 
@@ -129,7 +129,7 @@ export const TicketDomain = {
       ...rawResponse,
       createdBy: CacheAugmenter.user(queryClient, rawResponse.createdById),
       assignee: CacheAugmenter.user(queryClient, rawResponse.assigneeId),
-      project: CacheAugmenter.project(queryClient, rawResponse.projectId),
+      projects: CacheAugmenter.projects(queryClient, rawResponse.projectIds ?? []),
     };
 
     CacheCore.updateInLists(queryClient, ['tickets'], augmented);

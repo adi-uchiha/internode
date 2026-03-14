@@ -17,16 +17,18 @@ export const CacheAugmenter = {
   },
 
   /**
-   * Hydrates a Project reference from the ['projects'] cache.
+   * Hydrates multiple Project references from the ['projects'] cache.
    */
-  project: (
-    queryClient: QueryClient,
-    projectId: string | null
-  ): { id: string; name: string } | undefined => {
-    if (!projectId) return undefined;
-    const projects = queryClient.getQueryData<Project[]>(['projects']);
-    const project = projects?.find((p) => p.id === projectId);
-    return project ? { id: project.id, name: project.name } : undefined;
+  projects: (queryClient: QueryClient, projectIds: string[]): { id: string; name: string }[] => {
+    if (!projectIds || projectIds.length === 0) return [];
+    const allProjects = queryClient.getQueryData<Project[]>(['projects']);
+    if (!allProjects) return [];
+    return projectIds
+      .map((pid) => {
+        const project = allProjects.find((p) => p.id === pid);
+        return project ? { id: project.id, name: project.name } : null;
+      })
+      .filter((p): p is { id: string; name: string } => p !== null);
   },
 
   /**

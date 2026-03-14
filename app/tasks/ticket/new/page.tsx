@@ -27,7 +27,7 @@ export default function NewTicketPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [projectIds, setProjectIds] = useState<string[]>([]);
   const [assigneeId, setAssigneeId] = useState('');
   const [estimate, setEstimate] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -53,8 +53,8 @@ export default function NewTicketPage() {
       toast.error('Title is required');
       return;
     }
-    if (!projectId) {
-      toast.error('Project is required');
+    if (projectIds.length === 0) {
+      toast.error('At least one project is required');
       return;
     }
 
@@ -62,7 +62,7 @@ export default function NewTicketPage() {
       await createTicket({
         title,
         description,
-        projectId,
+        projectIds,
         assigneeId: assigneeId || null,
         priority: priority as 'critical' | 'high' | 'medium' | 'low',
         estimatedHours: parseFloat(estimate) || 0,
@@ -71,7 +71,7 @@ export default function NewTicketPage() {
           .split(',')
           .map((l) => l.trim())
           .filter(Boolean),
-      });
+      } as Record<string, unknown>);
       toast.success(`Ticket "${title}" initialized successfully`);
       router.push('/tasks/kanban');
     } catch (err) {
@@ -119,20 +119,34 @@ export default function NewTicketPage() {
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                   System / Project
                 </label>
-                <Select value={projectId} onValueChange={(val) => setProjectId(val || '')}>
-                  <SelectTrigger className="bg-muted/30 border-border h-10">
-                    <SelectValue placeholder="Select project">
-                      {projects?.find((p) => p.id === projectId)?.name}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
+                <div className="flex flex-wrap gap-2">
+                  {projects?.map((p) => {
+                    const isSelected = projectIds.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() =>
+                          setProjectIds((prev) =>
+                            isSelected ? prev.filter((id) => id !== p.id) : [...prev, p.id]
+                          )
+                        }
+                        className={`font-mono text-xs px-3 py-1.5 border transition-colors ${
+                          isSelected
+                            ? 'border-primary text-primary bg-primary/10'
+                            : 'border-border text-muted-foreground hover:border-primary/30'
+                        }`}
+                      >
                         {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </button>
+                    );
+                  })}
+                  {(!projects || projects.length === 0) && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      No projects available
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
@@ -253,7 +267,7 @@ export default function NewTicketPage() {
               size="lg"
               className="px-8 shadow-lg shadow-primary/20"
               onClick={handleCreate}
-              disabled={!title.trim() || !projectId || isCreating}
+              disabled={!title.trim() || projectIds.length === 0 || isCreating}
             >
               <Icon icon="solar:check-circle-linear" className="w-5 h-5 mr-2" />
               Initialize Ticket

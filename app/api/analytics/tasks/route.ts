@@ -58,17 +58,39 @@ export const GET = withErrorHandler(async (req, { orgId }) => {
     });
   }
 
-  // 4. Project Hours
-  const projectHoursRes = await db
+  // 4. Project Hours (aggregated from JSONB projectIds array)
+  const allOrgTickets = await db
     .select({
-      name: projects.name,
-      actual: sql<number>`sum(${tickets.loggedHours})::float`,
-      estimated: sql<number>`sum(${tickets.estimatedHours})::float`,
+      projectIds: tickets.projectIds,
+      loggedHours: tickets.loggedHours,
+      estimatedHours: tickets.estimatedHours,
     })
     .from(tickets)
-    .leftJoin(projects, eq(tickets.projectId, projects.id))
-    .where(eq(tickets.organizationId, orgId))
-    .groupBy(projects.name);
+    .where(eq(tickets.organizationId, orgId));
+
+  const allOrgProjects = await db
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(eq(projects.organizationId, orgId));
+
+  const projectNameMap = Object.fromEntries(allOrgProjects.map((p) => [p.id, p.name]));
+
+  // Aggregate hours per project — a ticket in N projects counts for each
+  const projectHoursMap: Record<string, { actual: number; estimated: number }> = {};
+  for (const t of allOrgTickets) {
+    const pIds = (t.projectIds as string[]) || [];
+    for (const pid of pIds) {
+      if (!projectHoursMap[pid]) projectHoursMap[pid] = { actual: 0, estimated: 0 };
+      projectHoursMap[pid].actual += t.loggedHours || 0;
+      projectHoursMap[pid].estimated += t.estimatedHours || 0;
+    }
+  }
+
+  const projectHoursRes = Object.entries(projectHoursMap).map(([pid, hours]) => ({
+    name: projectNameMap[pid] || 'Unknown',
+    actual: hours.actual,
+    estimated: hours.estimated,
+  }));
 
   // 5. Status Flow Data (Last 4 Weeks)
   const statusFlowData = [];
