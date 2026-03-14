@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { useCreateLog } from '@/hooks/useLogs';
+import { useLogTime } from '@/hooks/useTickets';
 import { useTickets } from '@/hooks/useTickets';
 
 export default function QuickLogPage() {
@@ -17,18 +17,18 @@ export default function QuickLogPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const { data: tickets } = useTickets();
-  const { mutateAsync: createLog, isPending: isSubmitting } = useCreateLog();
+  const { mutateAsync: logTime, isPending: isSubmitting } = useLogTime();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await createLog({
-        date: new Date(),
-        note,
+      await logTime({
+        id: selectedTicket,
         hours: hours ? parseFloat(hours) : 0,
-        ticketId: selectedTicket,
+        note,
         isBreakthrough,
+        date: new Date().toISOString(),
       });
 
       setSubmitted(true);

@@ -16,25 +16,6 @@ export function useLogs(userId?: string) {
   });
 }
 
-export function useCreateLog() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: Partial<TimerLog>) => {
-      const res = await fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to create log');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logs'] });
-    },
-  });
-}
-
 export function useUpdateLog() {
   const queryClient = useQueryClient();
 
@@ -50,6 +31,7 @@ export function useUpdateLog() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
     },
   });
 }

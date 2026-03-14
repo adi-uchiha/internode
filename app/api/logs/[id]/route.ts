@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { timeLogs, members } from '@/db/schema';
+import { timeLogs, members, tickets } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { ForbiddenError, NotFoundError } from '@/lib/api-error';
@@ -47,6 +47,26 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
     .set(updateData)
     .where(and(eq(timeLogs.id, id), eq(timeLogs.organizationId, orgId)))
     .returning();
+
+  // Sync ticket logged hours if hours were changed
+  if (body.hours !== undefined && existingLog.ticketId) {
+    const diff = body.hours - existingLog.hours;
+    if (diff !== 0) {
+      const ticket = await db.query.tickets.findFirst({
+        where: and(eq(tickets.id, existingLog.ticketId), eq(tickets.organizationId, orgId)),
+      });
+
+      if (ticket) {
+        await db
+          .update(tickets)
+          .set({
+            loggedHours: (ticket.loggedHours || 0) + diff,
+            updatedAt: new Date(),
+          })
+          .where(eq(tickets.id, existingLog.ticketId));
+      }
+    }
+  }
 
   return NextResponse.json(updatedLog);
 });

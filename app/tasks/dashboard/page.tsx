@@ -22,7 +22,8 @@ import { useTickets } from '@/hooks/useTickets';
 import { useUsers } from '@/hooks/useUsers';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useActivities } from '@/hooks/useActivities';
-import { useLogs, useCreateLog } from '@/hooks/useLogs';
+import { useLogs } from '@/hooks/useLogs';
+import { useLogTime } from '@/hooks/useTickets';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -499,16 +500,16 @@ const MemberDashboardContent = () => {
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogHours, setQuickLogHours] = useState('');
   const [quickLogNote, setQuickLogNote] = useState('');
-  const { mutateAsync: createLog, isPending: isLogging } = useCreateLog();
+  const { mutateAsync: logTime, isPending: isLogging } = useLogTime();
 
   const handleQuickLog = async () => {
     if (!quickLogHours || parseFloat(quickLogHours) <= 0 || !focusTicket) return;
     try {
-      await createLog({
-        ticketId: focusTicket.id,
+      await logTime({
+        id: focusTicket.id,
         hours: parseFloat(quickLogHours),
         note: quickLogNote,
-        date: new Date(),
+        date: new Date().toISOString(),
       });
       toast.success(`Logged ${quickLogHours}h on "${focusTicket.title}"`);
       setShowQuickLog(false);

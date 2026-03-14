@@ -113,6 +113,7 @@ export function useLogTime() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
     },
   });
 }

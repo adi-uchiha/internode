@@ -82,7 +82,7 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
                   codeTagProps={{
                     style: {
                       fontFamily: 'var(--font-mono)',
-                      lineHeight: '1.4',
+                      lineHeight: '1',
                     },
                   }}
                 >
