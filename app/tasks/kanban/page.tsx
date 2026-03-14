@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
@@ -85,11 +86,15 @@ const KanbanCard = ({
             getPriorityColor((ticket.priority as TicketPriority) || 'medium')
           )}
         />
+        <span className="font-mono text-[9px] text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 uppercase tracking-wider">
+          {ticket.ticketId}
+        </span>
         <span className="font-mono text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 uppercase tracking-wider">
           {ticket.project?.name || 'GENERIC'}
         </span>
       </div>
       <h4 className="font-display text-sm font-medium mb-3 line-clamp-2 leading-tight">
+        <span className="text-muted-foreground mr-1.5">{ticket.ticketId}</span>
         {ticket.title}
       </h4>
       {(ticket.labels || []).length > 0 && (
@@ -173,6 +178,7 @@ export default function KanbanPage() {
   const [filter, setFilter] = useState({ priority: 'all', project: 'all', search: '' });
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const scrollRef = useHorizontalScroll<HTMLDivElement>();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -273,7 +279,7 @@ export default function KanbanPage() {
       </div>
 
       {/* Board Scroll Area */}
-      <div className="overflow-x-auto pb-6 -mx-2 px-2">
+      <div ref={scrollRef} className="overflow-x-auto pb-6 -mx-2 px-2">
         {isLoading ? (
           <div className="flex items-center justify-center p-20 text-muted-foreground gap-3">
             <Icon icon="solar:refresh-linear" className="w-6 h-6 animate-spin" />
@@ -287,7 +293,7 @@ export default function KanbanPage() {
                 <div
                   key={col.status}
                   className={cn(
-                    'w-[300px] flex flex-col transition-all duration-200',
+                    'w-[380px] flex flex-col transition-all duration-200',
                     dragOverColumn === col.status &&
                       'bg-primary/5 ring-1 ring-primary/20 ring-inset'
                   )}

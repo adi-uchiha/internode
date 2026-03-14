@@ -57,6 +57,20 @@
       "when": 1773421931482,
       "tag": "0007_nice_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773488429448,
+      "tag": "0008_fancy_tomorrow_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773488675668,
+      "tag": "0009_busy_malice",
+      "breakpoints": true
     }
   ]
 }

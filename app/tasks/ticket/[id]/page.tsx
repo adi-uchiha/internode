@@ -207,7 +207,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="w-full">
       {/* Top Navigation Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-card/30 p-4 border border-border shadow-sm">
         <div className="flex items-center gap-3">
@@ -216,8 +216,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             Back
           </Button>
           <div className="h-4 w-px bg-border mx-1 hidden md:block" />
-          <span className="font-mono text-[11px] text-muted-foreground tracking-tight">
-            {ticket.id}
+          <span className="font-mono text-[11px] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 tracking-widest font-bold uppercase">
+            {ticket.ticketId}
           </span>
           <span
             className={cn(
@@ -296,19 +296,27 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Main Content Area */}
-        <div className="lg:col-span-3 space-y-8">
+        <div className="lg:col-span-4 space-y-8">
           {/* Header Card */}
           <div className="space-y-4">
             {isEditing ? (
-              <Input
-                value={editForm.title || ''}
-                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="font-display text-3xl font-bold bg-muted/30 border-border h-auto py-3 px-4 focus-visible:ring-primary/30"
-              />
+              <div className="space-y-2">
+                <div className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
+                  {ticket.ticketId}
+                </div>
+                <Input
+                  value={editForm.title || ''}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="font-display text-3xl font-bold bg-muted/30 border-border h-auto py-3 px-4 focus-visible:ring-primary/30"
+                />
+              </div>
             ) : (
               <h1 className="font-display text-4xl font-bold tracking-tight text-foreground">
+                <span className="text-primary mr-3 font-mono text-2xl font-extrabold tracking-widest">
+                  {ticket.ticketId}
+                </span>
                 {ticket.title}
               </h1>
             )}

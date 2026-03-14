@@ -423,9 +423,7 @@ const AdminDashboardContent = () => {
                   <span className="text-sm">
                     <span className="font-medium">{a.user?.name}</span> {a.action}{' '}
                     {a.ticketId && (
-                      <span className="text-primary font-mono text-[10px]">
-                        [{a.ticketId.slice(0, 8)}]
-                      </span>
+                      <span className="text-primary font-mono text-[10px]">[{a.ticketId}]</span>
                     )}
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground ml-auto shrink-0">
@@ -821,9 +819,7 @@ const MemberDashboardContent = () => {
               <span className="text-sm flex-1">
                 {a.action}{' '}
                 {a.ticketId && (
-                  <span className="text-primary font-mono text-[10px]">
-                    [{a.ticketId.slice(0, 8)}]
-                  </span>
+                  <span className="text-primary font-mono text-[10px]">[{a.ticketId}]</span>
                 )}
               </span>
               <span className="font-mono text-[10px] text-muted-foreground">

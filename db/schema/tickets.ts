@@ -8,7 +8,7 @@ export const tickets = pgTable('tickets', {
   organizationId: text('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
-  ticketId: text('ticket_id').notNull().unique(),
+  ticketId: text('ticket_id').notNull(),
   title: text('title').notNull(),
   description: text('description'),
   status: text('status', { enum: ['todo', 'in-progress', 'in-review', 'done', 'unplanned'] })

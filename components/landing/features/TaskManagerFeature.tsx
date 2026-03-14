@@ -28,8 +28,8 @@ export const TaskManagerFeature = () => {
       indicator: 'bg-muted-foreground',
       bg: 'bg-muted-foreground/10',
       tasks: [
-        { id: 'INT-042', title: 'Database Schema Migration', tags: ['DB', 'API'], points: 5 },
-        { id: 'INT-043', title: 'Review Auth Flow', tags: ['SEC'], points: 3 },
+        { id: 'TASK12', title: 'Database Schema Migration', tags: ['DB', 'API'], points: 5 },
+        { id: 'TASK13', title: 'Review Auth Flow', tags: ['SEC'], points: 3 },
       ],
     },
     {
@@ -40,7 +40,7 @@ export const TaskManagerFeature = () => {
       bg: 'bg-blue-500/10',
       tasks: [
         {
-          id: 'INT-038',
+          id: 'TASK8',
           title: 'WebSocket Integration',
           tags: ['WS', 'CORE'],
           points: 8,
@@ -54,7 +54,7 @@ export const TaskManagerFeature = () => {
       color: 'border-primary/50',
       indicator: 'bg-primary',
       bg: 'bg-primary/10',
-      tasks: [{ id: 'INT-035', title: 'Setup CI/CD Pipeline', tags: ['INFRA'], points: 5 }],
+      tasks: [{ id: 'TASK5', title: 'Setup CI/CD Pipeline', tags: ['INFRA'], points: 5 }],
     },
   ];
 

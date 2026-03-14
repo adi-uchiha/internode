@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer } from 'drizzle-orm/pg-core';
 
 export const organizations = pgTable('organizations', {
   id: text('id').primaryKey(),
@@ -8,4 +8,5 @@ export const organizations = pgTable('organizations', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   metadata: text('metadata'), // JSON string for custom org settings
+  ticketCounter: integer('ticket_counter').notNull().default(0),
 });

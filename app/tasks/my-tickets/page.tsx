@@ -154,6 +154,9 @@ export default function MyTicketsPage() {
                     className={`w-2.5 h-2.5 rounded-full ${getPriorityColor(ticket.priority)}`}
                   />
                   <h3 className="font-display text-[15px] font-medium group-hover:text-primary transition-colors">
+                    <span className="font-mono text-xs text-muted-foreground mr-2">
+                      {ticket.ticketId}
+                    </span>
                     {ticket.title}
                   </h3>
                 </div>

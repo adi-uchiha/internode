@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets } from '@/db/schema';
-import { desc, eq, and } from 'drizzle-orm';
+import { tickets, organizations } from '@/db/schema';
+import { desc, eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 
@@ -52,12 +52,27 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
 
   if (!orgId) throw new Error('No active organization');
 
+  // Atomically increment the org's ticket counter and get the new value.
+  // Using SQL UPDATE...RETURNING so concurrent requests never produce
+  // duplicate numbers.
+  const [updatedOrg] = await db
+    .update(organizations)
+    .set({
+      ticketCounter: sql`${organizations.ticketCounter} + 1`,
+    })
+    .where(eq(organizations.id, orgId))
+    .returning({ ticketCounter: organizations.ticketCounter });
+
+  if (!updatedOrg) throw new Error('Organization not found');
+
+  const sequentialTicketId = `TASK${updatedOrg.ticketCounter}`;
+
   const [newTicket] = await db
     .insert(tickets)
     .values({
       id: nanoid(),
       organizationId: orgId,
-      ticketId: `INT-${Math.floor(Math.random() * 9000) + 1000}`,
+      ticketId: sequentialTicketId,
       title,
       description: description || '',
       status: status || 'todo',

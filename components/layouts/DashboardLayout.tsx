@@ -316,7 +316,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
 
       {/* Main Content */}
       <main
-        className="flex-1 transition-all duration-300"
+        className="flex-1 min-w-0 overflow-x-hidden transition-all duration-300"
         style={{ marginLeft: collapsed ? 72 : 260 }}
       >
         {/* Top Bar */}

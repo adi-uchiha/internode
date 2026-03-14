@@ -8,7 +8,7 @@ import { NotFoundError } from '@/lib/api-error';
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
 
-  // Check if ID is a PK or a ticketId (like INT-1234)
+  // Check if ID is a PK (nanoid, >15 chars) or a ticketId (like TASK1, TASK42)
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
@@ -40,7 +40,7 @@ export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
   const body = await request.json();
 
-  // Check if ID is a PK or a ticketId
+  // Check if ID is a PK (nanoid) or a ticketId (TASK{N})
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 

@@ -1,0 +1,1 @@
+ALTER TABLE "tickets" DROP CONSTRAINT "tickets_ticket_id_unique";
