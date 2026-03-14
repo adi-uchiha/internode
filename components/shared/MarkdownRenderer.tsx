@@ -1,5 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -47,8 +49,10 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
             </ol>
           ),
           li: ({ children }) => <li className="text-sm text-muted-foreground">{children}</li>,
-          code: ({ className: codeClassName, children, ...props }) => {
-            const isInline = !codeClassName;
+          code: ({ className, children }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const isInline = !className;
+
             if (isInline) {
               return (
                 <code className="font-mono text-xs text-primary bg-primary/10 px-1.5 py-0.5 border border-primary/20">
@@ -56,21 +60,38 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
                 </code>
               );
             }
+
             return (
-              <code
-                className={cn(
-                  'block font-mono text-xs text-foreground bg-muted border border-border p-4 mb-3 overflow-x-auto',
-                  codeClassName
+              <div className="my-4 rounded-none overflow-hidden border border-border shadow-2xl relative group">
+                {match && (
+                  <div className="absolute right-3 top-2 font-mono text-[9px] text-muted-foreground uppercase opacity-40 group-hover:opacity-100 transition-opacity z-10 bg-background/50 backdrop-blur-md px-2 py-0.5 border border-border/30">
+                    {match[1]}
+                  </div>
                 )}
-                {...props}
-              >
-                {children}
-              </code>
+                <SyntaxHighlighter
+                  style={vscDarkPlus}
+                  language={match?.[1] || 'text'}
+                  PreTag="div"
+                  customStyle={{
+                    margin: 0,
+                    padding: '1.5rem',
+                    fontSize: '0.75rem',
+                    background: 'hsl(var(--muted) / 0.5)',
+                    borderRadius: 0,
+                  }}
+                  codeTagProps={{
+                    style: {
+                      fontFamily: 'var(--font-mono)',
+                      lineHeight: '1.4',
+                    },
+                  }}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              </div>
             );
           },
-          pre: ({ children }) => (
-            <pre className="bg-muted border border-border p-4 mb-3 overflow-x-auto">{children}</pre>
-          ),
+          pre: ({ children }) => <>{children}</>,
           blockquote: ({ children }) => (
             <blockquote className="border-l-[3px] border-primary pl-4 my-3 italic text-muted-foreground">
               {children}
