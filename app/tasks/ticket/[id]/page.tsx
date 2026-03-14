@@ -359,9 +359,24 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
           {/* Description Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Icon icon="solar:align-left-linear" className="w-5 h-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold tracking-tight">Description</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon icon="solar:align-left-linear" className="w-5 h-5 text-primary" />
+                <h2 className="font-display text-lg font-semibold tracking-tight">Description</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => {
+                  const content = isEditing ? editForm.description || '' : ticket.description || '';
+                  navigator.clipboard.writeText(content);
+                  toast.success('Markdown copied to clipboard');
+                }}
+              >
+                <Icon icon="solar:copy-linear" className="w-3.5 h-3.5 mr-1.5" />
+                Copy Markdown
+              </Button>
             </div>
             {isEditing ? (
               <MarkdownEditor
@@ -602,7 +617,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                       }
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
-                        <SelectValue />
+                        <SelectValue>
+                          {editForm.status && getStatusLabel(editForm.status)}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unplanned">Unplanned</SelectItem>
@@ -639,7 +656,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                       }
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
-                        <SelectValue />
+                        <SelectValue>
+                          {editForm.priority === 'critical' && '🔴 Critical'}
+                          {editForm.priority === 'high' && '🟡 High'}
+                          {editForm.priority === 'medium' && '🔵 Medium'}
+                          {editForm.priority === 'low' && '⚪ Low'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="critical">🔴 Critical</SelectItem>
@@ -669,7 +691,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                       onValueChange={(val) => setEditForm({ ...editForm, projectId: val || '' })}
                     >
                       <SelectTrigger className="bg-muted/50 border-border h-9">
-                        <SelectValue />
+                        <SelectValue>
+                          {(projects || []).find((p) => p.id === editForm.projectId)?.name}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {(projects || []).map((p) => (

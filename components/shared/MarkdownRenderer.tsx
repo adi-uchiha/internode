@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -10,6 +11,7 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
   return (
     <div className={cn('prose prose-invert prose-sm max-w-none', className)}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
             <h1 className="font-display text-2xl font-bold text-foreground mb-4 mt-6 first:mt-0 border-b border-border pb-2">
@@ -91,7 +93,9 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
           hr: () => <hr className="border-border my-4" />,
           table: ({ children }) => (
             <div className="overflow-x-auto mb-3">
-              <table className="w-full text-sm border border-border">{children}</table>
+              <table className="w-full text-sm border-collapse border border-border">
+                {children}
+              </table>
             </div>
           ),
           th: ({ children }) => (

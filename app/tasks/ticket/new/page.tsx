@@ -121,7 +121,9 @@ export default function NewTicketPage() {
                 </label>
                 <Select value={projectId} onValueChange={(val) => setProjectId(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder="Select project">
+                      {projects?.find((p) => p.id === projectId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {projects?.map((p) => (
@@ -138,7 +140,10 @@ export default function NewTicketPage() {
                 </label>
                 <Select value={assigneeId} onValueChange={(val) => setAssigneeId(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
-                    <SelectValue placeholder="Select member" />
+                    <SelectValue placeholder="Select member">
+                      {users?.find((m) => m.id === assigneeId)?.name ||
+                        users?.find((m) => m.id === assigneeId)?.email}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {users?.map((m) => (
@@ -158,7 +163,12 @@ export default function NewTicketPage() {
                 </label>
                 <Select value={priority} onValueChange={(val) => setPriority(val || '')}>
                   <SelectTrigger className="bg-muted/30 border-border h-10">
-                    <SelectValue />
+                    <SelectValue>
+                      {priority === 'critical' && '🔴 Critical'}
+                      {priority === 'high' && '🟡 High'}
+                      {priority === 'medium' && '🔵 Medium'}
+                      {priority === 'low' && '⚪ Low'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="critical">🔴 Critical</SelectItem>
@@ -213,9 +223,23 @@ export default function NewTicketPage() {
             </div>
 
             <div className="pt-4 border-t border-border/50">
-              <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
-                Technical Description
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block font-bold">
+                  Technical Description
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 font-mono text-[9px] text-muted-foreground hover:text-primary transition-colors px-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(description);
+                    toast.success('Markdown copied to clipboard');
+                  }}
+                >
+                  <Icon icon="solar:copy-linear" className="w-3 h-3 mr-1.5" />
+                  Copy Markdown
+                </Button>
+              </div>
               <MarkdownEditor value={description} onChange={setDescription} minHeight="350px" />
             </div>
           </div>

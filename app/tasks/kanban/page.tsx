@@ -224,7 +224,13 @@ export default function KanbanPage() {
           onValueChange={(val) => setFilter({ ...filter, priority: val || '' })}
         >
           <SelectTrigger className="w-[140px] bg-card/50 border-border h-10 font-display text-sm">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder="Priority">
+              {filter.priority === 'all' && 'All Priorities'}
+              {filter.priority === 'critical' && 'Critical'}
+              {filter.priority === 'high' && 'High'}
+              {filter.priority === 'medium' && 'Medium'}
+              {filter.priority === 'low' && 'Low'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className="font-display">
             <SelectItem value="all">All Priorities</SelectItem>
@@ -240,7 +246,9 @@ export default function KanbanPage() {
           onValueChange={(val) => setFilter({ ...filter, project: val || '' })}
         >
           <SelectTrigger className="w-[150px] bg-card/50 border-border h-10 font-display text-sm">
-            <SelectValue placeholder="Project" />
+            <SelectValue placeholder="Project">
+              {filter.project === 'all' ? 'All Projects' : filter.project}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className="font-display">
             <SelectItem value="all">All Projects</SelectItem>
