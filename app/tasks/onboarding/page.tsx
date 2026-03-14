@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
@@ -9,21 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface PendingInvitation {
-  id: string;
-  organizationId: string;
-  organizationName?: string;
-  email: string;
-  role: string;
-  status: string;
-  expiresAt: Date;
-}
 
 // ─── Step identifiers ─────────────────────────────────────────────────────────
 
@@ -62,58 +51,30 @@ export default function OnboardingPage() {
   const { user } = useAuth();
 
   const [step, setStep] = useState<OnboardingStep>('welcome');
-  const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
-  const [invitesLoading, setInvitesLoading] = useState(true);
+  const { data: pendingInvites = [], isLoading: invitesLoading } = useUserInvitations();
+  const { mutateAsync: acceptInvitation } = useAcceptInvitation();
 
   // org creation form
   const [orgName, setOrgName] = useState('');
-  const [orgSlug, setOrgSlug] = useState('');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [manualSlug, setManualSlug] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Computed slug
+  const orgSlug = useMemo(() => {
+    if (slugManuallyEdited) return manualSlug;
+    return generateSlug(orgName);
+  }, [orgName, manualSlug, slugManuallyEdited]);
 
   // invite acceptance
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
-
-  // ── Fetch pending invitations for this user ────────────────────────────────
-  const fetchInvites = useCallback(async () => {
-    try {
-      setInvitesLoading(true);
-      const result = await authClient.organization.listUserInvitations();
-      const invites = (result.data ?? []) as unknown as PendingInvitation[];
-      // Only show pending, non-expired invitations
-      const valid = invites.filter(
-        (inv) => inv.status === 'pending' && new Date(inv.expiresAt) > new Date()
-      );
-      setPendingInvites(valid);
-    } catch (err) {
-      console.error('Failed to fetch user invitations:', err);
-      setPendingInvites([]);
-    } finally {
-      setInvitesLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInvites();
-  }, [fetchInvites]);
-
-  // ── Auto-generate slug from org name ──────────────────────────────────────
-  useEffect(() => {
-    if (!slugManuallyEdited) {
-      setOrgSlug(generateSlug(orgName));
-    }
-  }, [orgName, slugManuallyEdited]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
   const handleAcceptInvite = async (invitationId: string) => {
     setAcceptingId(invitationId);
     try {
-      const { error } = await authClient.organization.acceptInvitation({ invitationId });
-      if (error) {
-        toast.error(error.message ?? 'Failed to accept invitation');
-        return;
-      }
+      await acceptInvitation(invitationId);
       toast.success('Welcome! You have joined the organization.');
       setStep('success');
 
@@ -122,9 +83,11 @@ export default function OnboardingPage() {
       queryClient.clear();
 
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Accept invite failed:', err);
-      toast.error('Failed to accept invitation. Please try again.');
+      const message =
+        err instanceof Error ? err.message : 'Failed to accept invitation. Please try again.';
+      toast.error(message);
     } finally {
       setAcceptingId(null);
     }
@@ -420,7 +383,7 @@ export default function OnboardingPage() {
                       <input
                         value={orgSlug}
                         onChange={(e) => {
-                          setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                          setManualSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
                           setSlugManuallyEdited(true);
                         }}
                         placeholder="acme-corporation"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects';
@@ -74,42 +74,29 @@ export default function SettingsPage() {
     }
   };
 
-  // Organization Identity State
-  const [orgName, setOrgName] = useState('');
-  const [orgDomain, setOrgDomain] = useState('');
+  // Organization Identity State (Local overrides for unsaved changes)
+  const [localOrgName, setLocalOrgName] = useState<string | null>(null);
+  const [localOrgDomain, setLocalOrgDomain] = useState<string | null>(null);
 
-  // Notifications State
-  const [notifPolicy, setNotifPolicy] = useState<{
+  // Notifications State (Local overrides for unsaved changes)
+  const [localNotifPolicy, setLocalNotifPolicy] = useState<{
     email?: Record<string, boolean>;
     inApp?: Record<string, boolean>;
   } | null>(null);
 
-  useEffect(() => {
-    if (organizationData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setOrgName(organizationData.organizationName);
-
-      setOrgDomain(organizationData.organizationDomain);
-    }
-  }, [organizationData]);
-
-  useEffect(() => {
-    if (user?.notificationSettings) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setNotifPolicy(user.notificationSettings);
-    }
-  }, [user]);
+  const orgName = localOrgName ?? organizationData?.organizationName ?? '';
+  const orgDomain = localOrgDomain ?? organizationData?.organizationDomain ?? '';
+  const notifPolicy = localNotifPolicy ?? user?.notificationSettings ?? { email: {}, inApp: {} };
 
   const handleSync = async () => {
     try {
       await updateOrganization({
-        organizationName: orgName || organizationData?.organizationName,
-        organizationDomain: orgDomain || organizationData?.organizationDomain,
+        name: orgName,
+        // slug: orgDomain, // Domain update might not be supported directly by update name/slug in authClient.organization.update the same way.
       });
 
       await updateProfile({
-        notificationSettings: (notifPolicy ||
-          user?.notificationSettings || { email: {}, inApp: {} }) as {
+        notificationSettings: notifPolicy as {
           email: Record<string, boolean>;
           inApp: Record<string, boolean>;
         },
@@ -222,7 +209,7 @@ export default function SettingsPage() {
                       <Input
                         value={orgName}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setOrgName(e.target.value)
+                          setLocalOrgName(e.target.value)
                         }
                         placeholder={organizationLoading ? 'Loading...' : 'InternHub Central'}
                         className="max-w-md bg-muted/30 border-border h-11 font-mono text-sm focus-visible:ring-primary/20"
@@ -237,7 +224,7 @@ export default function SettingsPage() {
                         <Input
                           value={orgDomain}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setOrgDomain(e.target.value)
+                            setLocalOrgDomain(e.target.value)
                           }
                           placeholder={organizationLoading ? 'Loading...' : 'internhub-hq'}
                           className="bg-muted/30 border-border border-r-0 rounded-r-none h-11 font-mono text-sm focus-visible:ring-primary/20"
@@ -447,8 +434,8 @@ export default function SettingsPage() {
                                   type="checkbox"
                                   checked={notifPolicy?.email?.[row.id] || false}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    setNotifPolicy((prev) => {
-                                      const current = prev || { email: {}, inApp: {} };
+                                    setLocalNotifPolicy((prev) => {
+                                      const current = prev || notifPolicy;
                                       return {
                                         ...current,
                                         email: { ...current.email, [row.id]: e.target.checked },
@@ -465,8 +452,8 @@ export default function SettingsPage() {
                                   type="checkbox"
                                   checked={notifPolicy?.inApp?.[row.id] || false}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    setNotifPolicy((prev) => {
-                                      const current = prev || { email: {}, inApp: {} };
+                                    setLocalNotifPolicy((prev) => {
+                                      const current = prev || notifPolicy;
                                       return {
                                         ...current,
                                         inApp: { ...current.inApp, [row.id]: e.target.checked },

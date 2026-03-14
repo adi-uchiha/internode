@@ -1,66 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { authClient } from '@/lib/auth-client';
+import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-interface PendingInvitation {
-  id: string;
-  organizationId: string;
-  organizationName?: string;
-  email: string;
-  role: string;
-  status: string;
-  expiresAt: Date;
-}
-
 export default function InvitesPage() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [invites, setInvites] = useState<PendingInvitation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: invites = [], isLoading } = useUserInvitations();
+  const { mutateAsync: acceptInvite } = useAcceptInvitation();
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
-
-  const fetchInvites = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const result = await authClient.organization.listUserInvitations();
-      const invitesData = (result.data ?? []) as unknown as PendingInvitation[];
-      const valid = invitesData.filter(
-        (inv) => inv.status === 'pending' && new Date(inv.expiresAt) > new Date()
-      );
-      setInvites(valid);
-    } catch {
-      console.error('Failed to fetch user invitations');
-      toast.error('Failed to load invitations');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInvites();
-  }, [fetchInvites]);
 
   const handleAcceptInvite = async (invitationId: string) => {
     setAcceptingId(invitationId);
     try {
-      const { error } = await authClient.organization.acceptInvitation({ invitationId });
-      if (error) {
-        toast.error(error.message ?? 'Failed to accept invitation');
-        return;
-      }
+      await acceptInvite(invitationId);
       toast.success('Welcome! You have joined the organization.');
-      await queryClient.invalidateQueries();
-      fetchInvites();
-      router.refresh();
-    } catch {
-      toast.error('Failed to accept invitation');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to accept invitation';
+      toast.error(message);
     } finally {
       setAcceptingId(null);
     }

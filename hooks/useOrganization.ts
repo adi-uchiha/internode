@@ -1,53 +1,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { authClient } from '@/lib/auth-client';
 
-export interface Organization {
+export interface OrganizationDetails {
+  id: string;
   organizationName: string;
+  organizationSlug: string;
   organizationDomain: string;
 }
 
+/**
+ * Hook to fetch current organization details.
+ * Wraps better-auth client state with query caching.
+ */
 export function useOrganization() {
   return useQuery({
-    queryKey: ['organization'],
+    queryKey: ['active-organization-details'],
     queryFn: async () => {
-      const res = await fetch('/api/organization');
-      if (!res.ok) throw new Error('Failed to fetch organization');
-      return res.json() as Promise<Organization>;
+      const { data, error } = await authClient.organization.getFullOrganization();
+      if (error) throw new Error(error.message ?? 'Failed to fetch organization');
+
+      return {
+        id: data.id,
+        organizationName: data.name,
+        organizationSlug: data.slug || '',
+        organizationDomain: (data.metadata as Record<string, string> | undefined)?.domain || '',
+      } as OrganizationDetails;
     },
-    staleTime: 24 * 60 * 60 * 1000, // Org info is very static
+    staleTime: 10 * 60 * 1000,
   });
 }
 
+/**
+ * Hook to update organization details.
+ */
 export function useUpdateOrganization() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (organization: Partial<Organization>) => {
-      const res = await fetch('/api/organization', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(organization),
+    mutationFn: async (updates: Partial<{ name: string; slug: string }>) => {
+      const { error } = await authClient.organization.update({
+        data: updates,
       });
-      if (!res.ok) throw new Error('Failed to update organization');
-      return res.json();
-    },
-    onMutate: async (updatedOrg) => {
-      await queryClient.cancelQueries({ queryKey: ['organization'] });
-      const previousOrg = queryClient.getQueryData(['organization']);
-
-      queryClient.setQueryData(['organization'], (old: Organization | undefined) => {
-        if (!old) return old;
-        return { ...old, ...updatedOrg };
-      });
-
-      return { previousOrg };
-    },
-    onError: (err, variables, context) => {
-      queryClient.setQueryData(['organization'], context?.previousOrg);
+      if (error) throw new Error(error.message ?? 'Failed to update organization');
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['active-organization-details'] });
+      queryClient.invalidateQueries({ queryKey: ['list-organizations'] });
     },
   });
 }

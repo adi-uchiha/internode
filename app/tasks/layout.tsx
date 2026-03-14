@@ -7,6 +7,7 @@ import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
+import { useUserInvitations } from '@/hooks/useInvites';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 
 interface TaskManagerLayoutProps {
@@ -101,31 +102,8 @@ export default function TaskManagerLayout({
     setShowSearch(false);
   }, [pathname]);
 
-  const [pendingInvCount, setPendingInvCount] = useState(0);
-
-  // FETCH INVITES: Optimized to NOT refetch on every pathname change.
-  // We only fetch on mount or when the user session becomes available.
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchInvites = async () => {
-      try {
-        const result = await authClient.organization.listUserInvitations();
-        const invites = (result.data ?? []) as Array<{
-          status: string;
-          expiresAt: string | Date;
-        }>;
-        const valid = invites.filter(
-          (inv) => inv.status === 'pending' && new Date(inv.expiresAt) > new Date()
-        );
-
-        setPendingInvCount(valid.length);
-      } catch (err) {
-        console.error('Failed to fetch user invites in layout:', err);
-      }
-    };
-    fetchInvites();
-  }, [user?.id, user]); // Only refetch if the user changes
+  const { data: userInvites = [] } = useUserInvitations();
+  const pendingInvCount = userInvites.length;
 
   const navItems = [
     { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },

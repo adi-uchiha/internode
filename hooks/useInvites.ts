@@ -118,6 +118,28 @@ export function useRemoveMember() {
 
 // ─── Invitations ─────────────────────────────────────────────────────────────
 
+// ─── Invitations ─────────────────────────────────────────────────────────────
+
+import { InviteDomain, type PendingInvitation } from '@/lib/cache/domains/invites';
+
+/** List all pending invitations for the current user (across all orgs) */
+export function useUserInvitations() {
+  return useQuery({
+    queryKey: ['user-invitations'],
+    queryFn: async () => {
+      const { data, error } = await authClient.organization.listUserInvitations();
+      if (error) throw new Error(error.message ?? 'Failed to fetch user invitations');
+
+      // Filter for valid pending invitations
+      const invites = (data ?? []) as unknown as PendingInvitation[];
+      return invites.filter(
+        (inv) => inv.status === 'pending' && new Date(inv.expiresAt) > new Date()
+      );
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** List all pending invitations for the current organization (admin view) */
 export function useOrgInvitations() {
   return useQuery({
@@ -125,7 +147,8 @@ export function useOrgInvitations() {
     queryFn: async () => {
       const res = await fetch('/api/invites');
       if (!res.ok) throw new Error('Failed to fetch invitations');
-      return res.json() as Promise<OrgInvitation[]>;
+      const data = (await res.json()) as OrgInvitation[];
+      return data.filter((inv) => inv.status === 'pending');
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -187,6 +210,31 @@ export function useCancelInvitation() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['org-invitations'], refetchType: 'none' });
+    },
+  });
+}
+
+/** Accept an invitation (User Action) */
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (invitationId: string) => {
+      const { error } = await authClient.organization.acceptInvitation({ invitationId });
+      if (error) throw new Error(error.message ?? 'Failed to accept invitation');
+    },
+    onMutate: async (invitationId) => {
+      await queryClient.cancelQueries({ queryKey: ['user-invitations'] });
+      const previousInvites = queryClient.getQueryData(['user-invitations']);
+
+      InviteDomain.optimisticAccept(queryClient, invitationId);
+
+      return { previousInvites };
+    },
+    onError: (err, invitationId, context) => {
+      queryClient.setQueryData(['user-invitations'], context?.previousInvites);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
     },
   });
 }
