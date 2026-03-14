@@ -117,9 +117,9 @@ export default function OnboardingPage() {
       toast.success('Welcome! You have joined the organization.');
       setStep('success');
 
-      // Invalidate ALL React Query caches so useSession, useListOrganizations,
-      // and useActiveMember in the parent layout refetch fresh data.
-      await queryClient.invalidateQueries();
+      // Total cache wipe so useSession, useListOrganizations,
+      // and useActiveMember in the parent layout refetch fresh data for the NEW context.
+      queryClient.clear();
 
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);
     } catch (err) {
@@ -167,9 +167,9 @@ export default function OnboardingPage() {
       await authClient.organization.setActive({ organizationId: data.id });
       await authClient.getSession(); // Force update client session store
 
-      // Invalidate ALL React Query caches so useSession, useListOrganizations,
+      // Total cache wipe so useSession, useListOrganizations,
       // and useActiveMember in the parent layout refetch fresh data.
-      await queryClient.invalidateQueries();
+      queryClient.clear();
 
       setStep('success');
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);

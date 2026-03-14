@@ -46,7 +46,7 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
     if (!orgId || orgId === activeOrgId) return;
     await authClient.organization.setActive({ organizationId: orgId });
     await authClient.getSession(); // Trigger client-side nanostore update
-    await queryClient.invalidateQueries(); // Invalidate cached queries
+    queryClient.clear(); // Total cache wipe to ensure NO data leaks between organizations
     router.refresh(); // Fully evict client router cache guaranteeing clean state for new Org
   };
 
