@@ -47,6 +47,7 @@ export const auth = betterAuth({
               role: data.role,
               acceptUrl,
               expiresInDays: 7,
+              baseUrl: NEXT_PUBLIC_APP_URL,
             })
           );
 

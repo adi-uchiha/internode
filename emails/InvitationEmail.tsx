@@ -6,9 +6,11 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Preview,
   Section,
   Text,
+  Font,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -19,6 +21,7 @@ interface InvitationEmailProps {
   role: string;
   acceptUrl: string;
   expiresInDays?: number;
+  baseUrl: string;
 }
 
 export function InvitationEmail({
@@ -28,43 +31,72 @@ export function InvitationEmail({
   role,
   acceptUrl,
   expiresInDays = 7,
+  baseUrl,
 }: InvitationEmailProps) {
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
+  const logoUrl = `${baseUrl}/icon-green.svg`;
 
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <Font
+          fontFamily="Space Grotesk"
+          fallbackFontFamily="Arial"
+          webFont={{
+            url: 'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2',
+            format: 'woff2',
+          }}
+          fontWeight={400}
+          fontStyle="normal"
+        />
+        <Font
+          fontFamily="Space Grotesk"
+          fallbackFontFamily="Arial"
+          webFont={{
+            url: 'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2',
+            format: 'woff2',
+          }}
+          fontWeight={700}
+          fontStyle="normal"
+        />
+      </Head>
       <Preview>
         {inviterName} invited you to join {organizationName} on Internode
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Header */}
+          {/* ── Header ─────────────────────────────────────── */}
           <Section style={header}>
-            <div style={logoBox}>
-              <div style={logoDot} />
-            </div>
-            <Text style={logoText}>INTERNODE</Text>
+            <table cellPadding="0" cellSpacing="0" role="presentation">
+              <tr>
+                <td style={{ verticalAlign: 'middle', paddingRight: '10px' }}>
+                  <Img src={logoUrl} width="28" height="28" alt="Internode" style={logoImg} />
+                </td>
+                <td style={{ verticalAlign: 'middle' }}>
+                  <Text style={logoText}>INTERNODE</Text>
+                </td>
+              </tr>
+            </table>
           </Section>
 
-          {/* Body */}
+          {/* ── Main Content ───────────────────────────────── */}
           <Section style={bodySection}>
             <Heading style={heading}>You have been invited</Heading>
 
             <Text style={paragraph}>
-              <strong>{inviterName}</strong> ({inviterEmail}) has invited you to join{' '}
-              <strong>{organizationName}</strong> on Internode as a{' '}
-              <strong>{capitalizedRole}</strong>.
+              <strong style={strong}>{inviterName}</strong> ({inviterEmail}) has invited you to join{' '}
+              <strong style={strong}>{organizationName}</strong> on Internode as a{' '}
+              <strong style={strong}>{capitalizedRole}</strong>.
             </Text>
 
             <Text style={paragraph}>
               Click the button below to accept the invitation and get started. This invitation
-              expires in <strong>{expiresInDays} days</strong>.
+              expires in <strong style={strong}>{expiresInDays} days</strong>.
             </Text>
 
             <Section style={buttonContainer}>
               <Button style={button} href={acceptUrl}>
-                Accept Invitation
+                ACCEPT INVITATION
               </Button>
             </Section>
 
@@ -78,9 +110,12 @@ export function InvitationEmail({
               invitation was sent by <strong>{inviterName}</strong> ({inviterEmail}) for{' '}
               <strong>{organizationName}</strong>.
             </Text>
+          </Section>
 
+          {/* ── Footer ─────────────────────────────────────── */}
+          <Section style={footerSection}>
             <Text style={footerSmall}>
-              © {new Date().getFullYear()} Internode · Developer Operations Platform
+              © {new Date().getFullYear()} Internode · Engineering-Grade Project Management
             </Text>
           </Section>
         </Container>
@@ -91,57 +126,47 @@ export function InvitationEmail({
 
 export default InvitationEmail;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const fontFamily =
+  '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 const main: React.CSSProperties = {
-  backgroundColor: '#0a0a0a',
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  backgroundColor: '#080808',
+  fontFamily,
+  padding: '40px 0',
 };
 
 const container: React.CSSProperties = {
   margin: '0 auto',
-  padding: '20px 0 48px',
   maxWidth: '560px',
 };
 
 const header: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
   padding: '24px 32px',
-  borderBottom: '1px solid #1f1f1f',
+  backgroundColor: '#0d0d0d',
+  borderBottom: '1px solid rgba(0, 255, 85, 0.12)',
 };
 
-const logoBox: React.CSSProperties = {
-  width: '28px',
-  height: '28px',
-  border: '2px solid #00ff88',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const logoDot: React.CSSProperties = {
-  width: '10px',
-  height: '10px',
-  backgroundColor: '#00ff88',
+const logoImg: React.CSSProperties = {
+  display: 'block',
 };
 
 const logoText: React.CSSProperties = {
   color: '#ffffff',
-  fontSize: '14px',
+  fontSize: '13px',
   fontWeight: 700,
-  letterSpacing: '0.15em',
-  margin: '0 0 0 8px',
+  letterSpacing: '0.18em',
+  margin: '0',
+  fontFamily,
   lineHeight: '28px',
 };
 
 const bodySection: React.CSSProperties = {
-  padding: '40px 32px',
+  padding: '40px 32px 32px',
   backgroundColor: '#111111',
-  border: '1px solid #1f1f1f',
-  margin: '0 0 0 0',
+  borderLeft: '1px solid #1a1a1a',
+  borderRight: '1px solid #1a1a1a',
 };
 
 const heading: React.CSSProperties = {
@@ -150,46 +175,57 @@ const heading: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: '-0.02em',
   lineHeight: '1.3',
-  margin: '0 0 24px',
+  margin: '0 0 28px',
+  fontFamily,
 };
 
 const paragraph: React.CSSProperties = {
-  color: '#a1a1a1',
+  color: '#a0a0a0',
   fontSize: '15px',
-  lineHeight: '1.6',
+  lineHeight: '1.7',
   margin: '0 0 16px',
+  fontFamily,
+};
+
+const strong: React.CSSProperties = {
+  color: '#e0e0e0',
+  fontWeight: 600,
 };
 
 const buttonContainer: React.CSSProperties = {
-  textAlign: 'center',
+  textAlign: 'center' as const,
   margin: '32px 0',
 };
 
 const button: React.CSSProperties = {
-  backgroundColor: '#00ff88',
-  color: '#0a0a0a',
+  backgroundColor: '#00ff55',
+  color: '#080808',
   fontSize: '13px',
   fontWeight: 700,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase' as const,
   textDecoration: 'none',
-  padding: '14px 32px',
+  padding: '14px 36px',
+  borderRadius: '6px',
   display: 'inline-block',
+  fontFamily,
 };
 
 const orText: React.CSSProperties = {
-  color: '#555555',
+  color: '#4a4a4a',
   fontSize: '12px',
-  textAlign: 'center',
+  textAlign: 'center' as const,
   margin: '0 0 8px',
+  fontFamily,
 };
 
 const linkText: React.CSSProperties = {
-  color: '#00ff88',
+  color: '#00ff55',
   fontSize: '12px',
-  textAlign: 'center',
-  wordBreak: 'break-all',
+  textAlign: 'center' as const,
+  wordBreak: 'break-all' as const,
   margin: '0 0 32px',
+  fontFamily,
 };
 
 const divider: React.CSSProperties = {
@@ -198,15 +234,23 @@ const divider: React.CSSProperties = {
 };
 
 const footer: React.CSSProperties = {
-  color: '#555555',
+  color: '#4a4a4a',
   fontSize: '12px',
   lineHeight: '1.6',
-  margin: '0 0 16px',
+  margin: '0',
+  fontFamily,
+};
+
+const footerSection: React.CSSProperties = {
+  padding: '20px 32px',
+  backgroundColor: '#0d0d0d',
+  borderTop: '1px solid rgba(0, 255, 85, 0.12)',
+  textAlign: 'center' as const,
 };
 
 const footerSmall: React.CSSProperties = {
   color: '#333333',
   fontSize: '11px',
-  textAlign: 'center',
   margin: '0',
+  fontFamily,
 };
