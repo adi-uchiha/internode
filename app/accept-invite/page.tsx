@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { authClient } from '@/lib/auth-client';
@@ -37,6 +38,7 @@ function AcceptInviteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invitationId = searchParams.get('invitationId');
+  const queryClient = useQueryClient();
 
   const [state, setState] = useState<PageState>('loading');
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
@@ -108,7 +110,9 @@ function AcceptInviteContent() {
           return;
         }
 
-        // Map better-auth data to our local type
+        // Map better-auth data to our local type.
+        // Note: getInvitation returns org info as flat top-level fields
+        // (organizationName, organizationSlug, inviterEmail), NOT nested objects.
         const invData = data as {
           id: string;
           email: string;
@@ -116,8 +120,9 @@ function AcceptInviteContent() {
           status: string;
           expiresAt: Date | string;
           organizationId: string;
-          organization?: { name: string; slug?: string };
-          inviter?: { user?: { name?: string; email?: string } };
+          organizationName?: string;
+          organizationSlug?: string;
+          inviterEmail?: string;
         };
 
         setInvitation({
@@ -127,9 +132,9 @@ function AcceptInviteContent() {
           status: invData.status,
           expiresAt: invData.expiresAt as string,
           organizationId: invData.organizationId,
-          organizationName: invData.organization?.name ?? 'Unknown Organization',
-          organizationSlug: invData.organization?.slug,
-          inviterName: invData.inviter?.user?.name,
+          organizationName: invData.organizationName ?? 'Unknown Organization',
+          organizationSlug: invData.organizationSlug,
+          inviterName: undefined, // getInvitation only returns inviterEmail, not name
         });
         setState('ready');
       } catch (err) {
@@ -163,6 +168,10 @@ function AcceptInviteContent() {
       if (invitation?.organizationId) {
         await authClient.organization.setActive({ organizationId: invitation.organizationId });
       }
+
+      // Clear all query caches so the TaskManagerLayout doesn't see stale
+      // org data (empty list → onboarding flash) when we navigate.
+      queryClient.clear();
 
       toast.success(`Welcome to ${invitation?.organizationName}!`);
       setState('success');
