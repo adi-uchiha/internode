@@ -6,10 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { SmoothScroll } from '@/components/smooth-scroll';
-import { Geist } from 'next/font/google';
 import { cn } from '@/lib/utils';
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'Internode | Engineering-Grade Project Management',
@@ -47,10 +44,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn('font-sans', geist.variable)}>
-      <body
-        className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} font-sans antialiased bg-background text-foreground`}
-      >
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn('antialiased', spaceGrotesk.variable, jetBrainsMono.variable)}
+    >
+      <body className="bg-background text-foreground font-sans min-h-screen">
         <QueryProvider>
           <AuthProvider>
             <TooltipProvider>

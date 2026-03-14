@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@iconify/react';
 import { CreateOrgModal } from './CreateOrgModal';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OrgSwitcherProps {
   collapsed?: boolean;
@@ -22,7 +23,7 @@ interface OrgSwitcherProps {
 
 export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   const { data: orgs, isPending } = authClient.useListOrganizations();
-  const { data: session } = authClient.useSession();
+  const { session } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();

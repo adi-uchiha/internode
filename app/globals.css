@@ -8,8 +8,9 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-mono: var(--font-mono), 'Fira Code', monospace;
 
   --color-border: hsl(var(--border));
   --color-border-subtle: hsl(var(--border-subtle));
@@ -345,6 +346,26 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.5);
+  }
+
+  /* Premium Component Polish */
+  [data-slot='dropdown-menu-content'],
+  [data-slot='select-content'],
+  [data-slot='popover-content'] {
+    @apply rounded-none border-border-subtle bg-card/95 backdrop-blur-md shadow-2xl ring-1 ring-primary/10;
+  }
+
+  [data-slot='dropdown-menu-item'],
+  [data-slot='select-item'] {
+    @apply rounded-none font-sans font-medium transition-all duration-200 focus:bg-primary/10 focus:text-primary focus:pl-3;
+  }
+
+  [data-slot='radio-group-item'] {
+    @apply rounded-none border-border-subtle hover:border-primary/50 transition-all;
+  }
+
+  [data-slot='radio-group-indicator'] {
+    @apply bg-primary rounded-none shadow-[0_0_10px_hsl(var(--primary)/0.5)];
   }
 }
 

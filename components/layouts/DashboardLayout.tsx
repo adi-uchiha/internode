@@ -10,7 +10,6 @@ import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotificat
 import Image from 'next/image';
 import { getFeatureStatus } from '@/lib/feature-flags';
 import { OrgSwitcher } from '@/components/auth/OrgSwitcher';
-import { authClient } from '@/lib/auth-client';
 
 interface NavSubItem {
   label: string;
@@ -36,12 +35,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const [showNotifications, setShowNotifications] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
-  const { user, logout } = useAuth();
-  const { data: sessionData } = authClient.useSession();
-  const hasActiveOrg = !!sessionData?.session?.activeOrganizationId;
-
-  const { data: activeMember } = authClient.useActiveMember();
-  const orgRole = activeMember?.role || 'member';
+  const { user, session, orgRole, logout } = useAuth();
+  const hasActiveOrg = !!session?.session.activeOrganizationId;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

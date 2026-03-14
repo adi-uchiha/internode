@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { authClient } from '@/lib/auth-client';
 import {
   useOrgMembers,
   useOrgInvitations,
@@ -398,23 +397,14 @@ function InviteModal({ onClose }: InviteModalProps) {
 
 export default function MembersPage() {
   const [showInvite, setShowInvite] = useState(false);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, session, orgRole: currentOrgRole } = useAuth();
 
   // Current user's org-level role from the active org
-  const { data: orgsSession } = authClient.useSession();
-  const activeOrgId = (orgsSession?.session as { activeOrganizationId?: string })
-    ?.activeOrganizationId;
+  const activeOrgId = session?.session.activeOrganizationId;
 
   const { data: orgMembers, isLoading: membersLoading } = useOrgMembers();
   const { data: tickets } = useTickets();
   const { data: logs } = useLogs();
-
-  // Derive current user's org role
-  const currentOrgRole = useMemo<OrgRole | null>(() => {
-    if (!orgMembers || !currentUser) return null;
-    const me = orgMembers.find((m) => m.userId === currentUser.id);
-    return (me?.role as OrgRole) ?? null;
-  }, [orgMembers, currentUser]);
 
   const canInvite = hasOrgRole(currentOrgRole, 'admin');
 

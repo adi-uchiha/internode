@@ -19,23 +19,14 @@ export default function TaskManagerLayout({
   title: initialTitle,
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
-  const { user, isLoading: authLoading } = useAuth();
-  const { data: sessionData, isPending: sessionLoading } = authClient.useSession();
-  const { data: activeMember } = authClient.useActiveMember();
-  const orgRole = activeMember?.role || 'member';
+  const { user, session, orgRole, isLoading: authLoading } = useAuth();
   const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
   const pathname = usePathname();
   const router = useRouter();
 
   // ─── Organization State ──────────────────────────────────────────────────────
-  // Use BOTH the session's activeOrganizationId AND the org list to determine
-  // whether the user needs onboarding. This is critical because:
-  // - `activeOrganizationId` updates immediately when setActive() is called
-  // - `orgs.length` catches brand-new users who haven't created any org yet
-  // Both must indicate "no org" for the guard to activate, preventing false
-  // positives when the org list cache is stale but the session is already updated.
-  const isFullyLoaded = !authLoading && !orgsLoading && !sessionLoading;
-  const activeOrgId = sessionData?.session?.activeOrganizationId;
+  const isFullyLoaded = !authLoading && !orgsLoading;
+  const activeOrgId = session?.session.activeOrganizationId;
   const hasNoOrg =
     isFullyLoaded && !!user && !activeOrgId && Array.isArray(orgs) && orgs.length === 0;
 
@@ -46,10 +37,6 @@ export default function TaskManagerLayout({
   const logSearchMutation = useLogSearch();
 
   // ─── Onboarding Interceptor ─────────────────────────────────────────────────
-  // Trap authenticated users who have no org memberships and force them through
-  // the organization-creation onboarding flow.
-  // This is the SINGLE SOURCE OF TRUTH for onboarding redirects — AuthContext
-  // intentionally does NOT redirect to onboarding to avoid competing loops.
   useEffect(() => {
     if (!isFullyLoaded) return;
     if (!user || pathname === '/tasks/onboarding') return;
@@ -97,7 +84,11 @@ export default function TaskManagerLayout({
 
   const [pendingInvCount, setPendingInvCount] = useState(0);
 
+  // FETCH INVITES: Optimized to NOT refetch on every pathname change.
+  // We only fetch on mount or when the user session becomes available.
   useEffect(() => {
+    if (!user) return;
+
     const fetchInvites = async () => {
       try {
         const result = await authClient.organization.listUserInvitations();
@@ -115,7 +106,7 @@ export default function TaskManagerLayout({
       }
     };
     fetchInvites();
-  }, [pathname]); // Refetch on navigation
+  }, [user?.id, user]); // Only refetch if the user changes
 
   const navItems = [
     { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },
