@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,12 +44,21 @@ function AcceptInviteContent() {
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Guard: once we've fetched or processed the invitation, don't re-fetch
+  // even if session data changes (e.g. after queryClient.clear()).
+  const hasFetchedRef = useRef(false);
+
   const { data: sessionData, isPending: sessionLoading } = authClient.useSession();
   const user = sessionData?.user;
 
   // ── Fetch invitation details ───────────────────────────────────────────────
   useEffect(() => {
     if (sessionLoading) return; // Wait for session to resolve
+
+    // Once we've successfully loaded the invitation (or moved to a terminal
+    // state like accepting/success), don't re-fetch. This prevents
+    // queryClient.clear() from triggering a re-fetch on the now-accepted invite.
+    if (hasFetchedRef.current) return;
 
     if (!invitationId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -136,6 +145,7 @@ function AcceptInviteContent() {
           organizationSlug: invData.organizationSlug,
           inviterName: undefined, // getInvitation only returns inviterEmail, not name
         });
+        hasFetchedRef.current = true;
         setState('ready');
       } catch (err) {
         console.error('[accept-invite] Failed to fetch invitation:', err);
@@ -150,7 +160,7 @@ function AcceptInviteContent() {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleAccept = async () => {
-    if (!invitationId) return;
+    if (!invitationId || state === 'accepting' || state === 'success') return;
     setState('accepting');
 
     try {
