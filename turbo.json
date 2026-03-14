@@ -8,7 +8,9 @@
         "BETTER_AUTH_URL",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
-        "RESEND_API_KEY"
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "RESEND_FROM_EMAIL"
       ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
