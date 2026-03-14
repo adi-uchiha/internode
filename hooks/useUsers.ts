@@ -20,6 +20,7 @@ export function useUsers() {
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     },
+    staleTime: 10 * 60 * 1000, // Users list is quite stable
   });
 }
 
@@ -38,8 +39,24 @@ export function useUpdateProfile() {
       if (!res.ok) throw new Error('Failed to update profile');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (updatedProfile) => {
+      await queryClient.cancelQueries({ queryKey: ['users'] });
+      const previousUsers = queryClient.getQueryData(['users']);
+
+      // Update in all lists
+      queryClient.setQueryData(['users'], (old: User[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((u) => (u.email === updatedProfile.email ? { ...u, ...updatedProfile } : u));
+      });
+
+      return { previousUsers };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['users'], context?.previousUsers);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] }); // User profiles appear in tickets
     },
   });
 }

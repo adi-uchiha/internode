@@ -8,6 +8,8 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
+import { CacheCore } from '@/lib/cache/core';
+import { nanoid } from 'nanoid';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,7 @@ export function useOrgMembers() {
       if (error) throw new Error(error.message ?? 'Failed to fetch members');
       return (data?.members ?? []) as unknown as OrgMember[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -63,7 +66,21 @@ export function useUpdateMemberRole() {
       });
       if (error) throw new Error(error.message ?? 'Failed to update role');
     },
-    onSuccess: () => {
+    onMutate: async ({ memberId, role }) => {
+      await queryClient.cancelQueries({ queryKey: ['org-members'] });
+      const previousMembers = queryClient.getQueryData(['org-members']);
+
+      queryClient.setQueryData(['org-members'], (old: OrgMember[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((m) => (m.id === memberId ? { ...m, role } : m));
+      });
+
+      return { previousMembers };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['org-members'], context?.previousMembers);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
     },
   });
@@ -79,7 +96,21 @@ export function useRemoveMember() {
       });
       if (error) throw new Error(error.message ?? 'Failed to remove member');
     },
-    onSuccess: () => {
+    onMutate: async (memberId) => {
+      await queryClient.cancelQueries({ queryKey: ['org-members'] });
+      const previousMembers = queryClient.getQueryData(['org-members']);
+
+      queryClient.setQueryData(['org-members'], (old: OrgMember[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((m) => m.id !== memberId);
+      });
+
+      return { previousMembers };
+    },
+    onError: (err, memberId, context) => {
+      queryClient.setQueryData(['org-members'], context?.previousMembers);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
     },
   });
@@ -96,6 +127,7 @@ export function useOrgInvitations() {
       if (!res.ok) throw new Error('Failed to fetch invitations');
       return res.json() as Promise<OrgInvitation[]>;
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -110,7 +142,23 @@ export function useInviteMember() {
       });
       if (error) throw new Error(error.message ?? 'Failed to send invitation');
     },
-    onSuccess: () => {
+    onMutate: async (newInvite) => {
+      await queryClient.cancelQueries({ queryKey: ['org-invitations'] });
+      const previousInvites = queryClient.getQueryData(['org-invitations']);
+
+      CacheCore.prependToLists(queryClient, ['org-invitations'], {
+        ...newInvite,
+        id: 'temp-' + nanoid(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+
+      return { previousInvites };
+    },
+    onError: (err, newInvite, context) => {
+      queryClient.setQueryData(['org-invitations'], context?.previousInvites);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['org-invitations'] });
     },
   });
@@ -126,7 +174,18 @@ export function useCancelInvitation() {
       });
       if (error) throw new Error(error.message ?? 'Failed to cancel invitation');
     },
-    onSuccess: () => {
+    onMutate: async (invitationId) => {
+      await queryClient.cancelQueries({ queryKey: ['org-invitations'] });
+      const previousInvites = queryClient.getQueryData(['org-invitations']);
+
+      CacheCore.removeFromLists(queryClient, ['org-invitations'], invitationId);
+
+      return { previousInvites };
+    },
+    onError: (err, invitationId, context) => {
+      queryClient.setQueryData(['org-invitations'], context?.previousInvites);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['org-invitations'] });
     },
   });

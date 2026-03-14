@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { tickets, comments, timeLogs } from '@/db/schema';
 import type { User } from './useUsers';
+import { CacheManager } from '@/lib/cache/manager';
+import { useAuth } from '@/contexts/AuthContext';
+import { nanoid } from 'nanoid';
 
 // Extended type mixing relations returned from drizzle `with` schema
 export type CommentWithUser = InferSelectModel<typeof comments> & {
@@ -28,6 +31,7 @@ export function useTickets(params?: { projectId?: string; assigneeId?: string })
       if (!res.ok) throw new Error('Failed to fetch tickets');
       return res.json();
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 }
 
@@ -40,11 +44,13 @@ export function useTicket(id: string) {
       return res.json();
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useCreateTicket() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (data: Partial<InferSelectModel<typeof tickets>>) => {
@@ -56,8 +62,27 @@ export function useCreateTicket() {
       if (!res.ok) throw new Error('Failed to create ticket');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newTicket) => {
+      await queryClient.cancelQueries({ queryKey: ['tickets'] });
+      const previousTickets = queryClient.getQueryData(['tickets']);
+      if (user) {
+        CacheManager.tickets.optimisticCreate(
+          queryClient,
+          { ...newTicket, id: 'temp-' + nanoid() },
+          user as unknown as User
+        );
+      }
+      return { previousTickets };
+    },
+    onError: (err, newTicket, context) => {
+      queryClient.setQueryData(['tickets'], context?.previousTickets);
+    },
+    onSuccess: (data) => {
+      CacheManager.tickets.sync(queryClient, data);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }
@@ -78,15 +103,34 @@ export function useUpdateTicket() {
       if (!res.ok) throw new Error('Failed to update ticket');
       return res.json();
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (updatedTicket) => {
+      await queryClient.cancelQueries({ queryKey: ['tickets', updatedTicket.id] });
+      await queryClient.cancelQueries({ queryKey: ['tickets'] });
+
+      const previousTicket = queryClient.getQueryData(['tickets', updatedTicket.id]);
+      const previousTickets = queryClient.getQueryData(['tickets']);
+
+      CacheManager.tickets.optimisticUpdate(queryClient, updatedTicket.id, updatedTicket);
+
+      return { previousTicket, previousTickets };
+    },
+    onError: (err, updatedTicket, context) => {
+      queryClient.setQueryData(['tickets', updatedTicket.id], context?.previousTicket);
+      queryClient.setQueryData(['tickets'], context?.previousTickets);
+    },
+    onSuccess: (data) => {
+      CacheManager.tickets.sync(queryClient, data);
+    },
+    onSettled: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['tickets', data?.id] });
     },
   });
 }
 
 export function useLogTime() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -110,10 +154,29 @@ export function useLogTime() {
       if (!res.ok) throw new Error('Failed to log time');
       return res.json();
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (newLog) => {
+      await queryClient.cancelQueries({ queryKey: ['tickets', newLog.id] });
+      await queryClient.cancelQueries({ queryKey: ['analytics'] });
+
+      const previousTicket = queryClient.getQueryData(['tickets', newLog.id]);
+
+      if (user) {
+        CacheManager.tickets.optimisticLogTime(queryClient, newLog.id, newLog.hours);
+      }
+
+      return { previousTicket };
+    },
+    onError: (err, newLog, context) => {
+      queryClient.setQueryData(['tickets', newLog.id], context?.previousTicket);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+      // The ticket hours update is handled by optimistic update + settled refetch
+    },
+    onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 }
@@ -127,11 +190,13 @@ export function useTicketComments(ticketId: string) {
       return res.json();
     },
     enabled: !!ticketId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useCreateComment() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ ticketId, content }: { ticketId: string; content: string }) => {
@@ -143,7 +208,25 @@ export function useCreateComment() {
       if (!res.ok) throw new Error('Failed to create comment');
       return res.json();
     },
-    onSuccess: (_, variables) => {
+    onMutate: async (newComment) => {
+      await queryClient.cancelQueries({ queryKey: ['comments', newComment.ticketId] });
+      const previousComments = queryClient.getQueryData(['comments', newComment.ticketId]);
+
+      if (user) {
+        CacheManager.tickets.optimisticCreateComment(
+          queryClient,
+          newComment.ticketId,
+          { ...newComment, id: 'temp-' + nanoid(), createdAt: new Date().toISOString() },
+          user as unknown as User
+        );
+      }
+
+      return { previousComments };
+    },
+    onError: (err, newComment, context) => {
+      queryClient.setQueryData(['comments', newComment.ticketId], context?.previousComments);
+    },
+    onSettled: (_, __, variables) => {
       queryClient.invalidateQueries({ queryKey: ['comments', variables.ticketId] });
     },
   });

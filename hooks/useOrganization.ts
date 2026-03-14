@@ -13,6 +13,7 @@ export function useOrganization() {
       if (!res.ok) throw new Error('Failed to fetch organization');
       return res.json() as Promise<Organization>;
     },
+    staleTime: 24 * 60 * 60 * 1000, // Org info is very static
   });
 }
 
@@ -31,7 +32,21 @@ export function useUpdateOrganization() {
       if (!res.ok) throw new Error('Failed to update organization');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (updatedOrg) => {
+      await queryClient.cancelQueries({ queryKey: ['organization'] });
+      const previousOrg = queryClient.getQueryData(['organization']);
+
+      queryClient.setQueryData(['organization'], (old: Organization | undefined) => {
+        if (!old) return old;
+        return { ...old, ...updatedOrg };
+      });
+
+      return { previousOrg };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['organization'], context?.previousOrg);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['organization'] });
     },
   });

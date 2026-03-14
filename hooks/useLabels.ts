@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CacheCore } from '@/lib/cache/core';
+import { nanoid } from 'nanoid';
 
 export interface Label {
   id: string;
@@ -16,6 +18,7 @@ export function useLabels() {
       if (!res.ok) throw new Error('Failed to fetch labels');
       return res.json();
     },
+    staleTime: 24 * 60 * 60 * 1000, // Labels are very static, cache for 1 day
   });
 }
 
@@ -33,7 +36,23 @@ export function useCreateLabel() {
       if (!res.ok) throw new Error('Failed to create label');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newLabel) => {
+      await queryClient.cancelQueries({ queryKey: ['labels'] });
+      const previousLabels = queryClient.getQueryData(['labels']);
+
+      CacheCore.prependToLists(queryClient, ['labels'], {
+        ...newLabel,
+        id: 'temp-' + nanoid(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      return { previousLabels };
+    },
+    onError: (err, newLabel, context) => {
+      queryClient.setQueryData(['labels'], context?.previousLabels);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] });
     },
   });
@@ -49,8 +68,20 @@ export function useDeleteLabel() {
       if (!res.ok) throw new Error('Failed to delete label');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['labels'] });
+      const previousLabels = queryClient.getQueryData(['labels']);
+
+      CacheCore.removeFromLists(queryClient, ['labels'], id);
+
+      return { previousLabels };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['labels'], context?.previousLabels);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] }); // Labels appear in tickets
     },
   });
 }

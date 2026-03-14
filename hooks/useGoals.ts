@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { weeklyGoals, goalItems } from '@/db/schema';
+import { nanoid } from 'nanoid';
 
 export type GoalItem = InferSelectModel<typeof goalItems>;
 export type WeeklyGoalWithItems = InferSelectModel<typeof weeklyGoals> & {
@@ -15,6 +16,7 @@ export function useGoals() {
       if (!res.ok) throw new Error('Failed to fetch goals');
       return res.json();
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -31,7 +33,34 @@ export function useAddGoalItem() {
       if (!res.ok) throw new Error('Failed to add goal item');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newItem) => {
+      await queryClient.cancelQueries({ queryKey: ['goals', 'current'] });
+      const previousGoal = queryClient.getQueryData(['goals', 'current']);
+
+      queryClient.setQueryData(['goals', 'current'], (old: WeeklyGoalWithItems | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: [
+            ...old.items,
+            {
+              id: 'temp-' + nanoid(),
+              weeklyGoalId: newItem.weeklyGoalId,
+              text: newItem.text,
+              completed: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            } as unknown as GoalItem,
+          ],
+        };
+      });
+
+      return { previousGoal };
+    },
+    onError: (err, newItem, context) => {
+      queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', 'current'] });
     },
   });
@@ -74,7 +103,7 @@ export function useUpdateGoalItem() {
 
       return { previousGoal };
     },
-    onError: (err, newTodo, context) => {
+    onError: (err, updatedItem, context) => {
       queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
     },
     onSettled: () => {
@@ -94,7 +123,24 @@ export function useDeleteGoalItem() {
       if (!res.ok) throw new Error('Failed to delete goal item');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['goals', 'current'] });
+      const previousGoal = queryClient.getQueryData(['goals', 'current']);
+
+      queryClient.setQueryData(['goals', 'current'], (old: WeeklyGoalWithItems | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.filter((item: GoalItem) => item.id !== id),
+        };
+      });
+
+      return { previousGoal };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['goals', 'current'], context?.previousGoal);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', 'current'] });
     },
   });

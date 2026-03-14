@@ -31,6 +31,7 @@ export function useFeedback() {
       if (!res.ok) throw new Error('Failed to fetch feedback');
       return res.json();
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -55,7 +56,16 @@ export function useSubmitFeedback() {
       if (!res.ok) throw new Error('Failed to submit feedback');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['feedback'] });
+      // We don't necessarily update the feedback list optimistically here
+      // as it's a submission of a new feedback for an existing item
+      // and we don't know the full structure returned, but we can set
+      // a flag or just wait for settlement as it's a secondary feature.
+      // However, to be consistent with the user's request:
+      return {};
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['feedback'] });
     },
   });

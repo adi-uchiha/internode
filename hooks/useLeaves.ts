@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { leaveRequests } from '@/db/schema';
 import type { User } from './useUsers';
+import { CacheCore } from '@/lib/cache/core';
+import { useAuth } from '@/contexts/AuthContext';
+import { nanoid } from 'nanoid';
 
 export type LeaveRequestWithUser = InferSelectModel<typeof leaveRequests> & {
   user?: User;
@@ -15,11 +18,13 @@ export function useLeaves() {
       if (!res.ok) throw new Error('Failed to fetch leave requests');
       return res.json();
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useCreateLeave() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ type, date, reason }: { type: string; date: string; reason?: string }) => {
@@ -31,7 +36,27 @@ export function useCreateLeave() {
       if (!res.ok) throw new Error('Failed to submit leave request');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newLeave) => {
+      await queryClient.cancelQueries({ queryKey: ['leaves'] });
+      const previousLeaves = queryClient.getQueryData(['leaves']);
+
+      if (user) {
+        CacheCore.prependToLists(queryClient, ['leaves'], {
+          ...newLeave,
+          id: 'temp-' + nanoid(),
+          userId: user.id,
+          status: 'pending',
+          user: user as unknown as User,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      return { previousLeaves };
+    },
+    onError: (err, newLeave, context) => {
+      queryClient.setQueryData(['leaves'], context?.previousLeaves);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] });
     },
   });
@@ -56,7 +81,21 @@ export function useUpdateLeave() {
       if (!res.ok) throw new Error('Failed to update leave request');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (updatedLeave) => {
+      await queryClient.cancelQueries({ queryKey: ['leaves'] });
+      const previousLeaves = queryClient.getQueryData(['leaves']);
+
+      CacheCore.updateInLists(queryClient, ['leaves'], {
+        id: updatedLeave.id,
+        status: updatedLeave.status,
+      } as unknown as LeaveRequestWithUser);
+
+      return { previousLeaves };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['leaves'], context?.previousLeaves);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] });
     },
   });
@@ -73,7 +112,18 @@ export function useDeleteLeave() {
       if (!res.ok) throw new Error('Failed to cancel leave request');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['leaves'] });
+      const previousLeaves = queryClient.getQueryData(['leaves']);
+
+      CacheCore.removeFromLists(queryClient, ['leaves'], id);
+
+      return { previousLeaves };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['leaves'], context?.previousLeaves);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] });
     },
   });

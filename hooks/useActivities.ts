@@ -16,5 +16,6 @@ export function useActivities(params?: { userId?: string; type?: string; limit?:
       if (!res.ok) throw new Error('Failed to fetch activities');
       return res.json();
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
