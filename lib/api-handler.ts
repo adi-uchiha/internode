@@ -51,12 +51,25 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           throw new ApiError('Not a member of this organization', 403, 'not_a_member');
         }
 
+        const ROLE_LEVELS: Record<string, number> = {
+          owner: 100,
+          admin: 50,
+          member: 10,
+        };
+
         if (options.requiredRole) {
+          const userRole = member.role;
           const roles = Array.isArray(options.requiredRole)
             ? options.requiredRole
             : [options.requiredRole];
 
-          if (!roles.includes(member.role)) {
+          const hasAccess = roles.some((reqRole) => {
+            const userRoleLevel = ROLE_LEVELS[userRole] || 0;
+            const reqRoleLevel = ROLE_LEVELS[reqRole] || 0;
+            return userRoleLevel >= reqRoleLevel;
+          });
+
+          if (!hasAccess) {
             throw new ApiError('Forbidden: Insufficient organization privileges', 403, 'forbidden');
           }
         }
