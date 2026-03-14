@@ -66,7 +66,7 @@ export function useSubmitFeedback() {
       return {};
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['feedback'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback'], refetchType: 'none' });
     },
   });
 }

@@ -234,7 +234,7 @@ export function useAcceptInvitation() {
       queryClient.setQueryData(['user-invitations'], context?.previousInvites);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['user-invitations'], refetchType: 'none' });
     },
   });
 }

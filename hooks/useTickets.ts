@@ -82,7 +82,7 @@ export function useCreateTicket() {
     },
     onSettled: () => {
       // analytics invalidated because it depends on ticket count/status
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
   });
 }
@@ -174,7 +174,7 @@ export function useLogTime() {
       queryClient.setQueryData(['tickets', newLog.id], context?.previousTicket);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['logs'], refetchType: 'none' });
       // The ticket hours update is handled by optimistic update + settled refetch
     },
     onSettled: (data, error, variables) => {
@@ -182,7 +182,7 @@ export function useLogTime() {
       // are updated via optimistic update and confirmed by sync logic.
       queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id], refetchType: 'none' });
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
   });
 }

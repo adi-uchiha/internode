@@ -64,7 +64,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
       await authClient.organization.setActive({ organizationId: data.id });
       await authClient.getSession();
-      await queryClient.invalidateQueries();
+      await queryClient.invalidateQueries({ refetchType: 'none' });
 
       toast.success('Organization created successfully');
       onOpenChange(false);

@@ -37,7 +37,7 @@ export function useLogSearch() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['search-history'] });
+      queryClient.invalidateQueries({ queryKey: ['search-history'], refetchType: 'none' });
     },
   });
 }

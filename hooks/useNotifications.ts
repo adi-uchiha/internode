@@ -48,7 +48,7 @@ export function useMarkNotificationsRead() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'none' });
     },
   });
 }

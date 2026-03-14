@@ -43,8 +43,11 @@ export function useUpdateOrganization() {
       if (error) throw new Error(error.message ?? 'Failed to update organization');
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['active-organization-details'] });
-      queryClient.invalidateQueries({ queryKey: ['list-organizations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['active-organization-details'],
+        refetchType: 'none',
+      });
+      queryClient.invalidateQueries({ queryKey: ['list-organizations'], refetchType: 'none' });
     },
   });
 }
