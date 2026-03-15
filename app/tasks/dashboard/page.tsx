@@ -3,16 +3,22 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from '@/components/ui/dialog';
+import { format, startOfWeek, addDays } from 'date-fns';
 
-import { getPriorityColor } from '@/lib/ticket-utils';
+import {
+  getPriorityColor,
+  getStatusColor,
+  getStatusLabel,
+  getTimeBarColor,
+} from '@/lib/ticket-utils';
 
-import { useTickets, useLogTime, type TicketWithRelations } from '@/hooks/useTickets';
+import { useTickets, useLogTime } from '@/hooks/useTickets';
 import { useUsers } from '@/hooks/useUsers';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useActivities, type ActivityWithUser } from '@/hooks/useActivities';
@@ -375,50 +381,92 @@ const AdminDashboardContent = () => {
   );
 };
 
-// Main Dashboard Component
-export default function DashboardPage() {
-  const { data: tickets } = useTickets();
-  const { orgRole } = useAuth();
-  const [selectedTicket, setSelectedTicket] = useState<TicketWithRelations | null>(null);
-  const [logTimeModal, setLogTimeModal] = useState(false);
-  const [logValue, setLogValue] = useState('1');
-  const [logNote, setLogNote] = useState('');
-  const { mutateAsync: logTime } = useLogTime();
+// Member Dashboard
+const MemberDashboardContent = () => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { data: tickets, isLoading: ticketsLoading } = useTickets();
+  const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
+  const { data: users } = useUsers();
 
-  const handleLogTime = async () => {
-    if (!selectedTicket || !logValue) return;
+  const focusTicket = tickets?.find((t) => t.status === 'in-progress' && t.assigneeId === user?.id);
+  const upcomingTickets =
+    tickets?.filter((t) => t.status === 'todo' && t.assigneeId === user?.id) || [];
+
+  // Weekly stats calculation from real logs (derived from tickets)
+  const startOfCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weeklyLogs = useMemo(() => {
+    if (!tickets) return [];
+    return tickets
+      .flatMap((t) => t.timeLogs || [])
+      .filter((l) => l.userId === user?.id && new Date(l.date) >= startOfCurrentWeek);
+  }, [tickets, user?.id, startOfCurrentWeek]);
+
+  const weeklyHours = weeklyLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
+
+  const dailyHours = [0, 0, 0, 0, 0].map((_, i) => {
+    const date = format(addDays(startOfCurrentWeek, i), 'yyyy-MM-dd');
+    return weeklyLogs
+      .filter((l) => format(new Date(l.date), 'yyyy-MM-dd') === date)
+      .reduce((sum, l) => sum + (l.hours || 0), 0);
+  });
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+  // Leaderboard calculation
+  const leaderboard = useMemo(() => {
+    if (!users || !tickets) return [];
+    return users
+      .map((u) => {
+        const doneTickets = tickets.filter(
+          (t) => t.assigneeId === u.id && t.status === 'done'
+        ).length;
+        const hours = tickets
+          .filter((t) => t.assigneeId === u.id)
+          .reduce((sum, t) => sum + (t.loggedHours || 0), 0);
+        return {
+          id: u.id,
+          name: u.name,
+          image: u.image,
+          ticketsDone: doneTickets,
+          hoursLogged: hours.toFixed(1),
+          efficiency: hours > 0 ? Math.min(100, Math.round(((doneTickets * 4) / hours) * 100)) : 0,
+        };
+      })
+      .sort((a, b) => b.ticketsDone - a.ticketsDone)
+      .slice(0, 5);
+  }, [users, tickets]);
+
+  // Quick Log state
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [quickLogHours, setQuickLogHours] = useState('1');
+  const [quickLogNote, setQuickLogNote] = useState('');
+  const { mutateAsync: logTime, isPending: isLogging } = useLogTime();
+
+  const handleQuickLog = async () => {
+    if (!quickLogHours || parseFloat(quickLogHours) <= 0 || !focusTicket) return;
     try {
       await logTime({
-        id: selectedTicket.id,
-        hours: parseFloat(logValue),
-        note: logNote || 'Manual progress log',
+        id: focusTicket.id,
+        hours: parseFloat(quickLogHours),
+        note: quickLogNote || 'Manual progress log',
         date: new Date().toISOString(),
       });
-      toast.success('Resource logged successfully');
-      setLogTimeModal(false);
-      setLogValue('1');
-      setLogNote('');
+      toast.success(`Logged ${quickLogHours}h on "${focusTicket.title}"`);
+      setShowQuickLog(false);
+      setQuickLogHours('1');
+      setQuickLogNote('');
     } catch {
       toast.error('Failed to log resource');
     }
   };
 
-  const tasksByStatus = useMemo(() => {
-    if (!tickets)
-      return {
-        'in-progress': [] as TicketWithRelations[],
-        'in-review': [] as TicketWithRelations[],
-        todo: [] as TicketWithRelations[],
-      };
-    return {
-      'in-progress': tickets.filter((t) => t.status === 'in-progress'),
-      'in-review': tickets.filter((t) => t.status === 'in-review'),
-      todo: tickets.filter((t) => t.status === 'todo'),
-    };
-  }, [tickets]);
-
-  if (orgRole !== 'member') {
-    return <AdminDashboardContent />;
+  if (ticketsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
+        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
+        LOADING_PERSONAL_ORGANIZATION...
+      </div>
+    );
   }
 
   return (
@@ -441,132 +489,396 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-12">
-          <div className="space-y-6">
-            <h3 className="font-display text-xl font-bold flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              IN_PROGRESS_VECTOR
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tasksByStatus['in-progress']?.length > 0 ? (
-                tasksByStatus['in-progress'].map((task: TicketWithRelations) => (
-                  <motion.div
-                    key={task.id}
-                    onClick={() => setSelectedTicket(task)}
-                    className="group border border-border bg-card p-6 shadow-sm hover:border-blue-500/50 transition-all cursor-pointer relative overflow-hidden"
+          {/* My Focus */}
+          {focusTicket && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border border-border bg-card p-6"
+            >
+              <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
+                [MY FOCUS]
+              </div>
+              <div className="text-sm text-muted-foreground mb-2">Currently working on:</div>
+              <div className="border border-border bg-background p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className={cn(
+                      'w-2.5 h-2.5 rounded-full',
+                      getTimeBarColor(focusTicket.loggedHours, focusTicket.estimatedHours)
+                    )}
+                  />
+                  <span className="font-display font-semibold flex-1">{focusTicket.title}</span>
+                  <span
+                    className={cn(
+                      'font-mono text-[10px] uppercase px-2 py-0.5',
+                      getStatusColor(focusTicket.status)
+                    )}
                   >
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="font-mono text-[10px] font-bold text-blue-500 uppercase tracking-widest">
-                        {task.ticketId}
-                      </span>
-                      <div className={`w-1 h-3 ${getPriorityColor(task.priority)}`} />
-                    </div>
-                    <h4 className="font-display font-bold text-lg leading-tight mb-4 group-hover:text-blue-500 transition-colors">
-                      {task.title}
-                    </h4>
-                    <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Icon
-                          icon="solar:clock-circle-linear"
-                          className="w-3.5 h-3.5 text-muted-foreground"
-                        />
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {task.loggedHours}/{task.estimatedHours}h
-                        </span>
+                    {getStatusLabel(focusTicket.status)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    Ticket ID: {focusTicket.ticketId}
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                  <div
+                    className={cn('w-2 h-2 rounded-full', getPriorityColor(focusTicket.priority))}
+                  />
+                  <span className="font-mono text-xs capitalize">{focusTicket.priority}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-muted overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full',
+                        getTimeBarColor(focusTicket.loggedHours, focusTicket.estimatedHours)
+                      )}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (focusTicket.loggedHours / Math.max(focusTicket.estimatedHours, 1)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {focusTicket.loggedHours}h / {focusTicket.estimatedHours}h estimated
+                  </span>
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <Button variant="outline" size="sm" onClick={() => setShowQuickLog(true)}>
+                    <Icon icon="solar:clock-circle-linear" className="w-4 h-4 mr-1" />
+                    Quick Log +
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="border border-border"
+                    onClick={() => router.push(`/tasks/ticket/${focusTicket.id}`)}
+                  >
+                    <Icon icon="solar:arrow-right-linear" className="w-4 h-4 mr-1" />
+                    View Ticket →
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Row 2: Weekly Stats + Up Next */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="border border-border bg-card p-6"
+            >
+              <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">
+                [MY WEEK]
+              </div>
+              <div className="flex justify-center mb-6">
+                <div className="relative w-32 h-32">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.915"
+                      fill="none"
+                      stroke="currentColor"
+                      className="text-muted/10"
+                      strokeWidth="2.5"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.915"
+                      fill="none"
+                      stroke="currentColor"
+                      className="text-primary"
+                      strokeWidth="2.5"
+                      strokeDasharray={`${(weeklyHours / 40) * 100} 100`}
+                      strokeLinecap="butt"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-2xl font-bold">
+                      {weeklyHours.toFixed(1)}h
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">/ 40h</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-center font-mono text-xs text-muted-foreground mb-4">
+                Hours logged this week
+              </div>
+              <div className="flex items-end gap-2 justify-center h-16">
+                {dailyHours.map((h, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div
+                      className={cn(
+                        'w-8 transition-all',
+                        h > 0 ? 'bg-primary' : 'bg-muted-foreground/10'
+                      )}
+                      style={{ height: `${Math.min(48, (h / 8) * 48)}px` }}
+                    />
+                    <span className="font-mono text-[10px] text-muted-foreground">{days[i]}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="border border-border bg-card p-6"
+            >
+              <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">
+                [UP NEXT]
+              </div>
+              {upcomingTickets.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingTickets.slice(0, 5).map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => router.push(`/tasks/ticket/${t.id}`)}
+                      className="flex items-center gap-3 p-3 border border-border bg-background hover:border-primary/30 transition-colors cursor-pointer"
+                    >
+                      <div className={cn('w-2 h-2 rounded-full', getPriorityColor(t.priority))} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">{t.title}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground">
+                          ID: {t.ticketId}
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 font-mono text-[10px] border border-border"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTicket(task);
-                          setLogTimeModal(true);
-                        }}
-                      >
-                        LOG_RES
-                      </Button>
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        ~{t.estimatedHours}h
+                      </span>
                     </div>
-                  </motion.div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <div className="col-span-2 py-12 border border-dashed border-border flex flex-col items-center justify-center opacity-40">
-                  <p className="font-mono text-[10px] uppercase">No active vectors found</p>
+                <div className="text-center py-8 opacity-30">
+                  <Icon
+                    icon="solar:check-circle-linear"
+                    className="w-8 h-8 text-primary mx-auto mb-2"
+                  />
+                  <p className="font-mono text-xs uppercase tracking-tighter">System Clear</p>
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <h3 className="font-display font-bold text-lg uppercase tracking-tight flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                Waiting_Validation
-              </h3>
-              <div className="space-y-3">
-                {tasksByStatus['in-review']?.map((task: TicketWithRelations) => (
+          {/* Leaderboard */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="border border-border bg-card p-6"
+          >
+            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1">
+              [LEADERBOARD]
+            </div>
+            <h3 className="font-display font-semibold text-lg mb-4">Top Contributors</h3>
+            <div className="space-y-2">
+              {leaderboard.map((entry, i) => {
+                const isYou = entry.id === user?.id;
+                const medals = ['🥇', '🥈', '🥉'];
+                return (
                   <div
-                    key={task.id}
-                    className="p-4 border border-border bg-card/50 hover:border-amber-500/50 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedTicket(task)}
+                    key={entry.id}
+                    className={cn(
+                      'flex items-center gap-4 p-3 border',
+                      isYou ? 'bg-primary/5 border-primary/30' : 'border-border bg-muted/5'
+                    )}
                   >
-                    <div className="font-medium text-sm truncate uppercase tracking-tight">
-                      {task.title}
+                    <span
+                      className={cn(
+                        'font-mono text-sm w-10',
+                        i < 3 ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                    >
+                      #{i + 1} {medals[i] || ''}
+                    </span>
+                    <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                      {entry.image ? (
+                        <Image
+                          src={entry.image}
+                          alt=""
+                          width={28}
+                          height={28}
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <Icon
+                          icon="solar:user-linear"
+                          className="w-3.5 h-3.5 text-muted-foreground"
+                        />
+                      )}
+                    </div>
+                    <span className="text-sm flex-1 truncate">
+                      {isYou ? <span className="text-primary font-medium">You</span> : entry.name}
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="font-mono text-[10px] text-muted-foreground uppercase">
+                          Tickets
+                        </div>
+                        <div className="font-display font-bold text-xs">{entry.ticketsDone}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-[10px] text-muted-foreground uppercase">
+                          Hours
+                        </div>
+                        <div className="font-display font-bold text-xs">{entry.hoursLogged}h</div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-            <div className="space-y-6">
-              <h3 className="font-display font-bold text-lg uppercase tracking-tight flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
-                Pending_Deployment
-              </h3>
-              <div className="space-y-3">
-                {tasksByStatus['todo']?.slice(0, 4).map((task: TicketWithRelations) => (
-                  <div
-                    key={task.id}
-                    className="p-4 border border-border bg-card/50 hover:border-primary/50 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedTicket(task)}
-                  >
-                    <div className="font-medium text-sm truncate uppercase tracking-tight">
-                      {task.title}
+          </motion.div>
+
+          {/* Personal Activity Feed */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="border border-border bg-card p-6"
+          >
+            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">
+              [PERSONAL_ACTIVITY_STREAM]
+            </div>
+            <div className="space-y-4">
+              {activities?.map((a) => (
+                <div
+                  key={a.id}
+                  onClick={() => a.ticketId && router.push(`/tasks/ticket/${a.ticketId}`)}
+                  className="flex items-center gap-4 py-3 border-b border-border/50 group cursor-pointer hover:bg-muted/10 transition-colors px-2"
+                >
+                  <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
+                    <Icon
+                      icon={
+                        a.type === 'time-log'
+                          ? 'solar:clock-circle-linear'
+                          : a.type === 'completed'
+                            ? 'solar:check-circle-linear'
+                            : 'solar:document-text-linear'
+                      }
+                      className="w-4 h-4 text-primary"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate">
+                      <span className="text-muted-foreground">{a.action}</span>{' '}
+                      {a.ticketId && (
+                        <span className="text-primary font-mono text-[10px] bg-primary/10 px-1">
+                          {a.ticketId}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-0.5 opacity-50">
+                      {format(new Date(a.createdAt), 'HH:mm:ss')} • {a.type.toUpperCase()}
                     </div>
                   </div>
-                ))}
-              </div>
+                  <Icon
+                    icon="solar:alt-arrow-right-linear"
+                    className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
+              ))}
             </div>
-          </div>
+          </motion.div>
         </div>
 
+        {/* Right Sidebar */}
         <div className="lg:col-span-4 space-y-10">
           <WeeklyGoals />
+
+          <div className="border border-border bg-card p-6">
+            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">
+              [SYSTEM_STATUS]
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs">Network Latency</span>
+                <span className="font-mono text-[10px] text-primary">12ms</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs">Database Sync</span>
+                <span className="font-mono text-[10px] text-primary">ONLINE</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs">Encryption</span>
+                <span className="font-mono text-[10px] text-primary">AES-256</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Dialog open={logTimeModal} onOpenChange={setLogTimeModal}>
-        <DialogContent className="bg-card border-border shadow-2xl font-mono p-8 max-w-md rounded-none">
-          <DialogTitle className="font-display text-2xl font-bold tracking-tight uppercase mb-8">
-            {selectedTicket?.ticketId} Update
-          </DialogTitle>
+      {/* Quick Log Dialog */}
+      <Dialog open={showQuickLog} onOpenChange={setShowQuickLog}>
+        <DialogContent className="bg-card border-border p-8 max-w-md rounded-none font-mono">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-bold tracking-tight uppercase mb-4">
+              Quick Log Update
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-8">
-            <Input
-              type="number"
-              value={logValue}
-              onChange={(e) => setLogValue(e.target.value)}
-              className="bg-muted/30 border-border h-14 font-display text-4xl font-bold text-center"
-            />
-            <Textarea
-              placeholder="Brief summary of activities..."
-              className="bg-muted/30 border-border min-h-[100px] text-xs"
-              value={logNote}
-              onChange={(e) => setLogNote(e.target.value)}
-            />
-            <Button className="w-full h-14 font-bold bg-primary text-black" onClick={handleLogTime}>
-              Confirm_Allocation
+            <div className="space-y-2">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-widest block">
+                Resource Allocation (Hours)
+              </label>
+              <Input
+                type="number"
+                min="0.25"
+                step="0.25"
+                value={quickLogHours}
+                onChange={(e) => setQuickLogHours(e.target.value)}
+                className="bg-muted/30 border-border h-14 font-display text-4xl font-bold text-center"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-widest block">
+                Activity Manifest
+              </label>
+              <Textarea
+                value={quickLogNote}
+                onChange={(e) => setQuickLogNote(e.target.value)}
+                placeholder="Describe the unit of work..."
+                className="bg-muted/30 border-border min-h-[100px] text-xs"
+              />
+            </div>
+            <Button
+              className="w-full h-14 font-bold bg-primary text-background hover:bg-primary/90"
+              onClick={handleQuickLog}
+              disabled={!quickLogHours || parseFloat(quickLogHours) <= 0 || isLogging}
+            >
+              {isLogging ? (
+                <>
+                  <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin mr-2" />
+                  SYNCING_VECTORS...
+                </>
+              ) : (
+                'CONFIRM_LOG'
+              )}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
+};
+
+export default function DashboardPage() {
+  const { orgRole } = useAuth();
+
+  if (orgRole !== 'member') {
+    return <AdminDashboardContent />;
+  }
+
+  return <MemberDashboardContent />;
 }

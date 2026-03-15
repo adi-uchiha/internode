@@ -104,6 +104,59 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
     .where(and(eq(timeLogs.organizationId, orgId), gte(timeLogs.date, subDays(new Date(), 365))))
     .groupBy(sql`date_trunc('day', ${timeLogs.date})`);
 
+  const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), 6 - i));
+  const dailyTrendsRaw = await db
+    .select({
+      day: sql<string>`date_trunc('day', ${tickets.createdAt})`,
+      created: sql<number>`count(*)::integer`,
+      closed: sql<number>`count(*) filter (where ${tickets.status} = 'done')::integer`,
+    })
+    .from(tickets)
+    .where(and(eq(tickets.organizationId, orgId), gte(tickets.createdAt, subDays(new Date(), 7))))
+    .groupBy(sql`date_trunc('day', ${tickets.createdAt})`);
+
+  const dailyHoursRaw = await db
+    .select({
+      day: sql<string>`date_trunc('day', ${timeLogs.date})`,
+      hours: sql<number>`sum(${timeLogs.hours})::float`,
+    })
+    .from(timeLogs)
+    .where(and(eq(timeLogs.organizationId, orgId), gte(timeLogs.date, subDays(new Date(), 7))))
+    .groupBy(sql`date_trunc('day', ${timeLogs.date})`);
+
+  const trends = {
+    tickets: last7Days.map((date) => {
+      const d = format(date, 'yyyy-MM-dd');
+      return dailyTrendsRaw.find((r) => format(new Date(r.day), 'yyyy-MM-dd') === d)?.created || 0;
+    }),
+    hours: last7Days.map((date) => {
+      const d = format(date, 'yyyy-MM-dd');
+      return dailyHoursRaw.find((r) => format(new Date(r.day), 'yyyy-MM-dd') === d)?.hours || 0;
+    }),
+    completion: last7Days.map((date) => {
+      const d = format(date, 'yyyy-MM-dd');
+      return dailyTrendsRaw.find((r) => format(new Date(r.day), 'yyyy-MM-dd') === d)?.closed || 0;
+    }),
+    velocity: last7Days.map((date) => {
+      const d = format(date, 'yyyy-MM-dd');
+      const closed =
+        dailyTrendsRaw.find((r) => format(new Date(r.day), 'yyyy-MM-dd') === d)?.closed || 0;
+      return closed; // Simple velocity for now
+    }),
+  };
+
+  const burnRate = last7Days.map((date) => {
+    const d = format(date, 'yyyy-MM-dd');
+    const dayName = format(date, 'EEE');
+    const hours =
+      dailyHoursRaw.find((r) => format(new Date(r.day), 'yyyy-MM-dd') === d)?.hours || 0;
+    return {
+      day: dayName,
+      actual: hours,
+      estimated: 8, // Standard 8h benchmark per day for the org? Or maybe based on members * 8.
+    };
+  });
+
   return NextResponse.json({
     kpis: {
       ticketsTotal: ticketMetrics?.total || 0,
@@ -121,22 +174,13 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
       closed: t.closed,
       created: t.created,
     })),
-    trends: {
-      tickets: [0, 0, 0, 0, 0, 0, 0],
-      hours: [0, 0, 0, 0, 0, 0, 0],
-      completion: [0, 0, 0, 0, 0, 0, 0],
-      velocity: [0, 0, 0, 0, 0, 0, 0],
-    },
+    trends,
     statusFlow: Object.values(statusFlowMap).sort((a, b) => a.week.localeCompare(b.week)),
     projects: projectDistribution,
     heatmap: heatmapRaw.map((h) => ({
       date: format(new Date(h.day), 'yyyy-MM-dd'),
       count: Math.ceil(h.hours),
     })),
-    burnRate: [
-      { day: 'Mon', actual: 10, estimated: 12 },
-      { day: 'Tue', actual: 15, estimated: 12 },
-      { day: 'Wed', actual: 8, estimated: 12 },
-    ],
+    burnRate,
   });
 });

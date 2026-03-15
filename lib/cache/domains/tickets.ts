@@ -20,6 +20,8 @@ export const TicketDomain = {
     currentUser: User
   ) => {
     const augmentedTicket = {
+      status: 'todo',
+      ticketId: 'PENDING',
       ...rawTicket,
       createdBy: currentUser,
       assignee: CacheAugmenter.user(queryClient, rawTicket.assigneeId ?? null),
@@ -31,7 +33,11 @@ export const TicketDomain = {
     CacheCore.prependToLists(queryClient, ['tickets'], augmentedTicket);
 
     // 2. Update analytics counters
-    AnalyticsDomain.adjustTicketCounts(queryClient, { total: 1, inProgress: 1 });
+    const status = rawTicket.status || 'todo';
+    AnalyticsDomain.adjustTicketCounts(queryClient, {
+      total: 1,
+      inProgress: status === 'in-progress' ? 1 : 0,
+    });
 
     return augmentedTicket;
   },

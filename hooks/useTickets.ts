@@ -26,7 +26,7 @@ export type TicketWithRelations = InferSelectModel<typeof tickets> & {
 export function useTickets(params?: { projectId?: string; assigneeId?: string }) {
   const query = new URLSearchParams(params as Record<string, string>).toString();
   return useQuery<TicketWithRelations[]>({
-    queryKey: ['tickets', params],
+    queryKey: params ? ['tickets', params] : ['tickets'],
     queryFn: () => apiClient.get(`/api/tickets${query ? `?${query}` : ''}`),
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
