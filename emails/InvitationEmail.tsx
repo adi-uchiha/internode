@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font */
 import {
   Body,
   Button,
@@ -39,11 +40,17 @@ export function InvitationEmail({
   return (
     <Html lang="en">
       <Head>
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        {}
+        <link
+          href="https://fonts.googleapis.com/css?family=Space+Grotesk:400,700&display=swap"
+          rel="stylesheet"
+        />
+        {}
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap"
           rel="stylesheet"
         />
+        {}
         <Font
           fontFamily="Space Grotesk"
           fallbackFontFamily="Helvetica"
@@ -54,6 +61,16 @@ export function InvitationEmail({
           fontWeight={400}
           fontStyle="normal"
         />
+        {/* Force Outlook to use sans-serif instead of Times New Roman */}
+        {`
+          <!--[if mso]>
+            <style type="text/css">
+              * {
+                font-family: sans-serif !important;
+              }
+            </style>
+          <![endif]-->
+        `}
       </Head>
       <Preview>
         {inviterName} invited you to join {organizationName} on Internode
@@ -123,7 +140,8 @@ export default InvitationEmail;
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const fontFamily = 'Space Grotesk, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
+const fontFamily =
+  'Space Grotesk, "Google Sans", Roboto, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 const main: React.CSSProperties = {
   backgroundColor: '#080808',
