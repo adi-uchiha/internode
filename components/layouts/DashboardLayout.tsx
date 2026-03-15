@@ -51,7 +51,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
 
   const handleMarkAllRead = async () => {
     if (unreadCount > 0) {
-      await markAsRead();
+      await markAsRead(undefined);
     }
   };
 

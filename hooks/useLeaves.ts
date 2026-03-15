@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { leaveRequests } from '@/db/schema';
 import type { User } from './useUsers';
-import { CacheCore } from '@/lib/cache/core';
 import { useAuth } from '@/contexts/AuthContext';
 import { nanoid } from 'nanoid';
 import { apiClient } from '@/lib/api-client';
+import { CacheManager } from '@/lib/cache/manager';
 
 export interface Leave {
   id: string;
@@ -45,7 +45,7 @@ export function useCreateLeave() {
       const previousLeaves = queryClient.getQueryData(['leaves']);
 
       if (user) {
-        CacheCore.prependToLists(queryClient, ['leaves'], {
+        const leave = {
           ...newLeave,
           id: 'temp-' + nanoid(),
           userId: user.id,
@@ -53,6 +53,13 @@ export function useCreateLeave() {
           user: user as unknown as User,
           date: newLeave.date,
           createdAt: new Date().toISOString(),
+        } as unknown as Leave;
+
+        queryClient.setQueryData(['leaves'], (old: Leave[] | undefined) => [leave, ...(old || [])]);
+
+        CacheManager.dispatch(queryClient, 'leaves.created', {
+          leave,
+          userName: user.name,
         });
       }
 
@@ -77,10 +84,20 @@ export function useUpdateLeave() {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);
 
-      CacheCore.updateInLists<Leave>(queryClient, ['leaves'], {
-        id: updated.id,
-        status: updated.status,
+      const existing = (previousLeaves as Leave[] | undefined)?.find((l) => l.id === updated.id);
+
+      queryClient.setQueryData(['leaves'], (old: Leave[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((l) => (l.id === updated.id ? { ...l, status: updated.status } : l));
       });
+
+      if (existing) {
+        CacheManager.dispatch(queryClient, 'leaves.statusChanged', {
+          leaveId: updated.id,
+          status: updated.status,
+          userId: existing.userId,
+        });
+      }
 
       return { previousLeaves };
     },
@@ -102,7 +119,10 @@ export function useDeleteLeave() {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);
 
-      CacheCore.removeFromLists(queryClient, ['leaves'], id);
+      queryClient.setQueryData(['leaves'], (old: Leave[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((l) => l.id !== id);
+      });
 
       return { previousLeaves };
     },

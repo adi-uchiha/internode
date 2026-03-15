@@ -19,7 +19,7 @@ export default function NotificationsPage() {
   const handleMarkAllRead = async () => {
     const unreadCount = notifications.filter((n) => !n.read).length;
     if (unreadCount > 0) {
-      await markAsRead();
+      await markAsRead(undefined);
     }
   };
 

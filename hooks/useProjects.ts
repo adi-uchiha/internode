@@ -63,3 +63,32 @@ export function useDeleteProject() {
     },
   });
 }
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<Project> & { id: string }) =>
+      apiClient.patch<Project>(`/api/projects/${id}`, data),
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: ['projects'] });
+      await queryClient.cancelQueries({ queryKey: ['projects', id] });
+      const previousProjects = queryClient.getQueryData(['projects']);
+
+      CacheManager.projects.sync(queryClient, { id, ...updates } as Project);
+
+      // Dispatch synergy for branding/ripple effects
+      CacheManager.dispatch(queryClient, 'projects.updated', {
+        projectId: id,
+        updates,
+      });
+
+      return { previousProjects };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(['projects'], context?.previousProjects);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'], refetchType: 'none' });
+    },
+  });
+}

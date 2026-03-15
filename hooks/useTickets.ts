@@ -52,11 +52,13 @@ export function useCreateTicket() {
       await queryClient.cancelQueries({ queryKey: ['tickets'] });
       const previousTickets = queryClient.getQueryData(['tickets']);
       if (user) {
-        CacheManager.tickets.optimisticCreate(
+        const ticket = CacheManager.tickets.optimisticCreate(
           queryClient,
           { ...newTicket, id: 'temp-' + nanoid() },
           user as unknown as User
         );
+        // Dispatch synergy for analytics/activities
+        CacheManager.dispatch(queryClient, 'tickets.created', { ticket });
       }
       return { previousTickets };
     },
@@ -67,7 +69,6 @@ export function useCreateTicket() {
       CacheManager.tickets.sync(queryClient, data);
     },
     onSettled: () => {
-      // analytics invalidated because it depends on ticket count/status
       queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
   });
@@ -86,23 +87,52 @@ export function useUpdateTicket() {
       await queryClient.cancelQueries({ queryKey: ['tickets', updatedTicket.id] });
       await queryClient.cancelQueries({ queryKey: ['tickets'] });
 
-      const previousTicket = queryClient.getQueryData(['tickets', updatedTicket.id]);
+      const previousTicket = queryClient.getQueryData<TicketWithRelations>([
+        'tickets',
+        updatedTicket.id,
+      ]);
       const previousTickets = queryClient.getQueryData(['tickets']);
 
+      // 1. Primary Entity Update
       CacheManager.tickets.optimisticUpdate(queryClient, updatedTicket.id, updatedTicket);
+
+      // 2. Synergy Dispatch for status changes
+      if (
+        updatedTicket.status &&
+        previousTicket &&
+        updatedTicket.status !== previousTicket.status
+      ) {
+        CacheManager.dispatch(queryClient, 'tickets.statusChanged', {
+          ticketId: updatedTicket.id,
+          from: previousTicket.status,
+          to: updatedTicket.status,
+          assigneeId: previousTicket.assigneeId,
+          ticketTitle: previousTicket.title,
+        });
+      }
 
       return { previousTicket, previousTickets };
     },
-    onError: (err, updatedTicket, context) => {
-      queryClient.setQueryData(['tickets', updatedTicket.id], context?.previousTicket);
-      queryClient.setQueryData(['tickets'], context?.previousTickets);
+    onError: (
+      err,
+      updatedTicket,
+      context: { previousTicket?: TicketWithRelations; previousTickets?: unknown } | undefined
+    ) => {
+      if (context?.previousTicket) {
+        queryClient.setQueryData(['tickets', updatedTicket.id], context.previousTicket);
+      }
+      if (context?.previousTickets) {
+        queryClient.setQueryData(['tickets'], context.previousTickets);
+      }
     },
     onSuccess: (data) => {
-      CacheManager.tickets.sync(queryClient, data);
+      // Definitive sync with server response (Blueprint Section 10)
+      if (data) {
+        CacheManager.tickets.sync(queryClient, data);
+      }
     },
     onSettled: (data) => {
-      // We rely on CacheManager.sync for the ticket update.
-      // Invalidation is still called to mark it as stale, but we don't trigger refetch.
+      // Mark as stale for background sync (Blueprint Section 7.3)
       queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
       if (data?.id) {
         queryClient.invalidateQueries({ queryKey: ['tickets', data.id], refetchType: 'none' });
@@ -128,40 +158,47 @@ export function useLogTime() {
       note?: string;
       isBreakthrough?: boolean;
       date?: string;
-    }) => apiClient.post(`/api/tickets/${id}/time`, { hours, note, isBreakthrough, date }),
+    }) =>
+      apiClient.post<TicketWithRelations>(`/api/tickets/${id}/time`, {
+        hours,
+        note,
+        isBreakthrough,
+        date,
+      }),
     onMutate: async (newLog) => {
       await queryClient.cancelQueries({ queryKey: ['tickets', newLog.id] });
       await queryClient.cancelQueries({ queryKey: ['analytics'] });
+      await queryClient.cancelQueries({ queryKey: ['logs'] });
 
-      const previousTicket = queryClient.getQueryData(['tickets', newLog.id]);
+      const previousTicket = queryClient.getQueryData<TicketWithRelations>(['tickets', newLog.id]);
 
       if (user) {
-        CacheManager.tickets.optimisticLogTime(
-          queryClient,
-          newLog.id,
-          newLog.hours,
-          user as unknown as User,
-          newLog.note,
-          newLog.isBreakthrough,
-          newLog.date
-        );
+        // 1. Dispatch the record creation synergy
+        CacheManager.dispatch(queryClient, 'timeLogs.created', {
+          ticketId: newLog.id,
+          hours: newLog.hours,
+          userId: user.id,
+          date: newLog.date || new Date().toISOString(),
+          note: newLog.note,
+        });
       }
 
       return { previousTicket };
     },
-    onError: (err, newLog, context) => {
+    onError: (err, newLog, context: { previousTicket?: TicketWithRelations } | undefined) => {
       queryClient.setQueryData(['tickets', newLog.id], context?.previousTicket);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Reconcile hours definitive (Blueprint Section 9.2)
+      if (data) {
+        CacheManager.tickets.sync(queryClient, data);
+      }
       queryClient.invalidateQueries({ queryKey: ['logs'], refetchType: 'none' });
-      // The ticket hours update is handled by optimistic update + settled refetch
+      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
     onSettled: (data, error, variables) => {
-      // Logs are refreshed manually if needed, but the ticket hours
-      // are updated via optimistic update and confirmed by sync logic.
-      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
+      // Safety background marker
       queryClient.invalidateQueries({ queryKey: ['tickets', variables.id], refetchType: 'none' });
-      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
   });
 }
@@ -220,7 +257,12 @@ export function useDeleteTicket() {
       await queryClient.cancelQueries({ queryKey: ['tickets', id] });
 
       const previousTickets = queryClient.getQueryData(['tickets']);
+      const ticket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+
       CacheManager.tickets.optimisticDelete(queryClient, id);
+
+      // Dispatch synergy for analytics/activities
+      CacheManager.dispatch(queryClient, 'tickets.deleted', { ticket });
 
       return { previousTickets };
     },

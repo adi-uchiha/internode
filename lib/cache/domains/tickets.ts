@@ -1,9 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { QueryClient } from '@tanstack/react-query';
 import { CacheCore } from '../core';
 import { CacheAugmenter } from '../augmenter';
 import { AnalyticsDomain } from './analytics';
 import { type TicketWithRelations } from '@/hooks/useTickets';
 import { type User } from '@/hooks/useUsers';
+
+export type TicketUpdatePayload = Partial<TicketWithRelations> & {
+  addLoggedHours?: number;
+  addTimeLog?: unknown;
+};
 
 /**
  * Domain logic for Ticket cache synchronization.
@@ -42,24 +48,15 @@ export const TicketDomain = {
       return true;
     });
 
-    // 2. Update analytics counters
-    AnalyticsDomain.adjustStatusFlow(queryClient, augmentedTicket.status, 1);
-    AnalyticsDomain.adjustTicketCounts(queryClient, { total: 1 });
-
+    // 2. Local list update handled by prependToLists in step 1.
     return augmentedTicket;
   },
 
   /**
    * Optimistically updates a ticket status, priority, or other field.
-   * Handles status-flow synergy with analytics.
+   * Focuses strictly on ticket entity state. Synergies are handled by the Registry.
    */
-  optimisticUpdate: (
-    queryClient: QueryClient,
-    id: string,
-    updates: Partial<TicketWithRelations> & { addLoggedHours?: number }
-  ) => {
-    const oldTicket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
-
+  optimisticUpdate: (queryClient: QueryClient, id: string, updates: TicketUpdatePayload) => {
     // 1. Prepare augmented update (hydrate IDs if changed)
     const augmentedUpdates = { ...updates } as Partial<TicketWithRelations>;
     if (updates.assigneeId !== undefined) {
@@ -69,91 +66,36 @@ export const TicketDomain = {
       augmentedUpdates.projects = CacheAugmenter.projects(queryClient, updates.projectIds);
     }
 
-    // 2. Update in all list variations with filter awareness
+    // 2. Update in all list variations (Board, List, Projects, etc.)
     CacheCore.updateInLists(
       queryClient,
       ['tickets'],
       { id, ...augmentedUpdates },
       (item, filters) => {
         const f = filters as Record<string, string>;
-        // Dynamically re-verify filters after update
+        // Re-verify filters: If an update moves the ticket out of current view (e.g. project changed)
         if (f.projectId && !(item.projectIds || []).includes(f.projectId)) return false;
         if (f.assigneeId && item.assigneeId !== f.assigneeId) return false;
         return true;
       }
     );
 
-    // 3. Update single ticket view
+    // 3. Update single ticket detail view
     CacheCore.updateItem(queryClient, ['tickets', id], (old: TicketWithRelations | undefined) => {
       if (!old) return old;
       const next = { ...old, ...augmentedUpdates } as TicketWithRelations;
 
-      // Incremental hours synergy
+      // Incremental hours synergy inside the ticket object
       if (updates.addLoggedHours) {
         next.loggedHours = (old.loggedHours || 0) + updates.addLoggedHours;
       }
 
-      // Optimistic log insertion
-      // @ts-expect-error - synergy property for internal cache updates
       if (updates.addTimeLog) {
-        next.timeLogs = [
-          // @ts-expect-error - log entry type mismatch
-          updates.addTimeLog,
-          ...(old.timeLogs || []),
-        ];
+        next.timeLogs = [updates.addTimeLog as any, ...(old.timeLogs || [])];
       }
 
       return next;
     });
-
-    // 4. Synergy with Lists (Iterate lists and apply same logic)
-    const lists = queryClient.getQueryCache().findAll({ queryKey: ['tickets'] });
-    lists.forEach((query) => {
-      if (query.queryKey.length > 1 && query.queryKey[1] === id) return; // skip detail
-
-      queryClient.setQueryData(query.queryKey, (old: TicketWithRelations[] | undefined) => {
-        if (!Array.isArray(old)) return old;
-        return old.map((item) => {
-          if (item.id !== id) return item;
-          const next = { ...item, ...augmentedUpdates } as TicketWithRelations;
-          if (updates.addLoggedHours) {
-            next.loggedHours = (item.loggedHours || 0) + updates.addLoggedHours;
-          }
-          // @ts-expect-error - synergy property
-          if (updates.addTimeLog) {
-            // @ts-expect-error - log entry type mismatch
-            next.timeLogs = [updates.addTimeLog, ...(item.timeLogs || [])];
-          }
-          return next;
-        });
-      });
-    });
-
-    // 5. Status Changes & Analytics synergy
-    if (oldTicket) {
-      const nextStatus = updates.status || oldTicket.status;
-      if (updates.status && oldTicket.status !== updates.status) {
-        AnalyticsDomain.moveTicketStatus(queryClient, oldTicket.status, updates.status);
-
-        // Leaderboard completion synergy
-        if (updates.status === 'done') {
-          AnalyticsDomain.adjustLeaderboard(queryClient, oldTicket.assigneeId || 'system', 0, 1);
-        } else if (oldTicket.status === 'done') {
-          AnalyticsDomain.adjustLeaderboard(queryClient, oldTicket.assigneeId || 'system', 0, -1);
-        }
-      }
-
-      // KPI Sync for In Progress
-      if (nextStatus === 'in-progress' && oldTicket.status !== 'in-progress') {
-        AnalyticsDomain.adjustTicketCounts(queryClient, { inProgress: 1 });
-      } else if (
-        oldTicket.status === 'in-progress' &&
-        updates.status &&
-        updates.status !== 'in-progress'
-      ) {
-        AnalyticsDomain.adjustTicketCounts(queryClient, { inProgress: -1 });
-      }
-    }
 
     return { id, updates: augmentedUpdates };
   },
@@ -213,7 +155,6 @@ export const TicketDomain = {
     // 2. Update the ticket's loggedHours and timeLogs in all caches
     TicketDomain.optimisticUpdate(queryClient, ticketId, {
       addLoggedHours: hours,
-      // @ts-expect-error - synergy property for internal orchestration
       addTimeLog: tempLog,
     });
 
@@ -247,28 +188,17 @@ export const TicketDomain = {
    * Updates analytics to reflect resource removal.
    */
   optimisticDelete: (queryClient: QueryClient, id: string) => {
-    // 1. Get ticket data before deletion to adjust analytics
-    const ticket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
-
-    // 2. Remove from lists and detail view
+    // 1. Remove from lists and detail view
     CacheCore.removeFromLists(queryClient, ['tickets'], id);
     queryClient.removeQueries({ queryKey: ['tickets', id] });
 
-    // 3. Adjust analytics synergy
-    if (ticket) {
-      AnalyticsDomain.adjustTicketCounts(queryClient, {
-        total: -1,
-        inProgress: ticket.status === 'in-progress' ? -1 : 0,
-      });
-      AnalyticsDomain.adjustStatusFlow(queryClient, ticket.status, -1);
+    // 3. Synergy handles the rest via dispatch
+  },
 
-      if (ticket.loggedHours) {
-        AnalyticsDomain.adjustLoggedHours(queryClient, -ticket.loggedHours);
-      }
-
-      if (ticket.status === 'done') {
-        AnalyticsDomain.adjustLeaderboard(queryClient, ticket.assigneeId || 'system', 0, -1);
-      }
-    }
+  /**
+   * Resolve a ticket from cache.
+   */
+  resolve: (queryClient: QueryClient, id: string): TicketWithRelations | undefined => {
+    return queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
   },
 };

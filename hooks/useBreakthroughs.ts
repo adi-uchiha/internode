@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { nanoid } from 'nanoid';
-import { CacheCore } from '@/lib/cache/core';
 import { apiClient } from '@/lib/api-client';
+import { CacheManager } from '@/lib/cache/manager';
 
 export interface User {
   id: string;
@@ -33,7 +33,8 @@ export function useBreakthroughs() {
 
 export function useCreateBreakthrough() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const activeOrganizationId = session?.session.activeOrganizationId;
 
   return useMutation({
     mutationFn: (data: Partial<Breakthrough>) =>
@@ -43,7 +44,7 @@ export function useCreateBreakthrough() {
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);
 
       if (user) {
-        CacheCore.prependToLists(queryClient, ['breakthroughs'], {
+        const breakthrough = {
           ...newBreakthrough,
           id: 'temp-' + nanoid(),
           userId: user.id,
@@ -53,7 +54,19 @@ export function useCreateBreakthrough() {
             image: user.image,
           },
           date: new Date().toISOString(),
-        } as unknown as Breakthrough);
+        } as unknown as Breakthrough;
+
+        queryClient.setQueryData(['breakthroughs'], (old: Breakthrough[] | undefined) => [
+          breakthrough,
+          ...(old || []),
+        ]);
+
+        // Dispatch synergy for celebration/notifications
+        CacheManager.dispatch(queryClient, 'breakthroughs.created', {
+          breakthrough,
+          orgId: activeOrganizationId,
+          orgName: 'the organization', // Fallback for now
+        });
       }
 
       return { previousBreakthroughs };
@@ -77,7 +90,7 @@ export function useUpdateBreakthrough() {
       await queryClient.cancelQueries({ queryKey: ['breakthroughs'] });
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);
 
-      CacheCore.updateInLists<Breakthrough>(queryClient, ['breakthroughs'], updated);
+      CacheManager.breakthroughs.optimisticUpdate(queryClient, updated);
 
       return { previousBreakthroughs };
     },
@@ -99,7 +112,7 @@ export function useDeleteBreakthrough() {
       await queryClient.cancelQueries({ queryKey: ['breakthroughs'] });
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);
 
-      CacheCore.removeFromLists(queryClient, ['breakthroughs'], id);
+      CacheManager.breakthroughs.optimisticDelete(queryClient, id);
 
       return { previousBreakthroughs };
     },

@@ -140,4 +140,23 @@ export const CacheCore = {
       return { ...old, ...update };
     });
   },
+
+  /**
+   * Section 9.2: Derived State Drift Reconciliation.
+   * Compares cached stats with a fresh server snapshot.
+   */
+  reconcileDrift: <T>(queryClient: QueryClient, queryKey: QueryKey, serverSnapshot: T) => {
+    const cachedData = queryClient.getQueryData<T>(queryKey);
+    if (!cachedData) return;
+
+    // Deep comparison logic (simplified for numeric KPIs)
+    const hasDrift = JSON.stringify(cachedData) !== JSON.stringify(serverSnapshot);
+
+    if (hasDrift) {
+      console.warn(`[Cache Synergy] Drift detected in ${queryKey.join('.')}. Reconciling...`);
+      queryClient.setQueryData(queryKey, serverSnapshot);
+      // Force invalidation to ensure all components are synced
+      queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
+    }
+  },
 };

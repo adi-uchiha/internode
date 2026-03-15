@@ -9,6 +9,7 @@ import { type Project } from '@/hooks/useProjects';
 export const CacheAugmenter = {
   /**
    * Hydrates a User reference from the ['users'] cache.
+   * Silently triggers a prefetch if the user is missing.
    */
   user: (queryClient: QueryClient, userId: string | null): User | undefined => {
     if (!userId) return undefined;
@@ -16,6 +17,12 @@ export const CacheAugmenter = {
     const found = users?.find((u) => u.id === userId);
 
     if (!found) {
+      // Trigger prefetch for the missing user
+      queryClient.prefetchQuery({
+        queryKey: ['users', userId],
+        staleTime: 5 * 60 * 1000,
+      });
+
       const isSystem = userId.toLowerCase() === 'system';
       return {
         id: userId,
@@ -39,18 +46,36 @@ export const CacheAugmenter = {
 
     return projectIds.map((pid) => {
       const project = allProjects?.find((p) => p.id === pid);
-      return project ? { id: project.id, name: project.name } : { id: pid, name: '...' };
+      if (project) return { id: project.id, name: project.name };
+
+      // Prefetch single project if missing
+      queryClient.prefetchQuery({
+        queryKey: ['projects', pid],
+        staleTime: 5 * 60 * 1000,
+      });
+
+      return { id: pid, name: '...' };
     });
   },
 
   /**
-   * Helper to get the current authenticated user's ID from better-auth session if needed.
-   * Note: In most hooks, the session is already available.
+   * Resolve an entity from the global Entity Registry (Section 2.1).
    */
-  currentUser: (): User | undefined => {
-    // This is a placeholder. Better-auth state is usually handled by useSession.
-    // However, if we need it for cache sync, we can look up the user in the 'users' cache
-    // if we have the session ID.
-    return undefined;
+  resolve: <T extends { id: string }>(
+    queryClient: QueryClient,
+    key: string[],
+    id: string
+  ): T | undefined => {
+    const data = queryClient.getQueryData<T[]>(key);
+    const found = data?.find((item: { id: string }) => item.id === id);
+
+    if (!found) {
+      queryClient.prefetchQuery({
+        queryKey: [...key, id],
+        staleTime: 5 * 60 * 1000,
+      });
+      return undefined;
+    }
+    return found;
   },
 };

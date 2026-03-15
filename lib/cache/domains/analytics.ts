@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { CacheCore } from '../core';
 import { type TaskAnalyticsData, type LeaderboardEntry } from '@/hooks/useAnalytics';
 import { calculateEfficiency } from '@/lib/ticket-utils';
 
@@ -148,5 +149,16 @@ export const AnalyticsDomain = {
 
       return { ...old, statusFlow: nextStatusFlow };
     });
+  },
+
+  /**
+   * Section 9.2: Derived State Drift Reconciliation.
+   */
+  reconcileTasks: (queryClient: QueryClient, serverSnapshot: TaskAnalyticsData) => {
+    CacheCore.reconcileDrift(queryClient, ['analytics', 'tasks'], serverSnapshot);
+  },
+
+  reconcileLeaderboard: (queryClient: QueryClient, serverSnapshot: LeaderboardEntry[]) => {
+    CacheCore.reconcileDrift(queryClient, ['analytics', 'leaderboard'], serverSnapshot);
   },
 };

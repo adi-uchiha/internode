@@ -1,7 +1,8 @@
 'use client';
 
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
-import { useState } from 'react';
+import { broadcastQueryClient } from '@tanstack/query-broadcast-client-experimental';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api-client';
 
@@ -12,9 +13,6 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         queryCache: new QueryCache({
           onError: (error) => {
             if (error instanceof ApiClientError) {
-              // apiClient already handles toasts for most cases,
-              // but we can add global handling here if needed for background errors.
-              // For now, let's just log it or handle specific global cases.
               console.error('[Global Query Error]', error);
             }
           },
@@ -22,7 +20,6 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         mutationCache: new MutationCache({
           onError: (error) => {
             if (error instanceof ApiClientError) {
-              // apiClient handles mutation toasts by default.
               console.error('[Global Mutation Error]', error);
             } else if (error instanceof Error) {
               toast.error(error.message);
@@ -39,6 +36,16 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         },
       })
   );
+
+  useEffect(() => {
+    // Section 9.1: Cross-Tab Synchronization
+    const unsubscribe = broadcastQueryClient({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      queryClient: queryClient as any,
+      broadcastChannel: 'internode-cache-sync',
+    });
+    return () => unsubscribe();
+  }, [queryClient]);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
