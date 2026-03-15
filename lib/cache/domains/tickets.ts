@@ -27,17 +27,22 @@ export const TicketDomain = {
       assignee: CacheAugmenter.user(queryClient, rawTicket.assigneeId ?? null),
       projects: CacheAugmenter.projects(queryClient, rawTicket.projectIds ?? []),
       timeLogs: [],
+      loggedHours: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     } as TicketWithRelations;
 
-    // 1. Update ticket lists
-    CacheCore.prependToLists(queryClient, ['tickets'], augmentedTicket);
+    // 1. Update ticket lists with filter synergy
+    CacheCore.prependToLists(
+      queryClient,
+      ['tickets'],
+      augmentedTicket,
+      () => !rawTicket.projectIds || rawTicket.projectIds.length === 0 // Basic filter logic
+    );
 
     // 2. Update analytics counters
-    const status = rawTicket.status || 'todo';
-    AnalyticsDomain.adjustTicketCounts(queryClient, {
-      total: 1,
-      inProgress: status === 'in-progress' ? 1 : 0,
-    });
+    AnalyticsDomain.adjustStatusFlow(queryClient, augmentedTicket.status, 1);
+    AnalyticsDomain.adjustTicketCounts(queryClient, { total: 1 });
 
     return augmentedTicket;
   },
@@ -51,42 +56,54 @@ export const TicketDomain = {
     id: string,
     updates: Partial<TicketWithRelations> & { addLoggedHours?: number }
   ) => {
-    // 0. Capture the old state for synergy calculations before cache is modified
     const oldTicket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
 
-    // 1. Update in all list variations (including filtered lists)
-    queryClient.setQueriesData(
-      { queryKey: ['tickets'] },
-      (old: TicketWithRelations[] | undefined) => {
-        if (!Array.isArray(old)) return old;
-        return old.map((item) => {
-          if (item.id !== id) return item;
-
-          // Handle special additive updates like loggedHours
-          const nextLoggedHours = updates.addLoggedHours
-            ? (item.loggedHours || 0) + updates.addLoggedHours
-            : (updates.loggedHours ?? item.loggedHours);
-
-          return { ...item, ...updates, loggedHours: nextLoggedHours };
-        });
-      }
-    );
-
-    // 2. Update single ticket view
-    queryClient.setQueryData(['tickets', id], (old: TicketWithRelations | undefined) => {
-      if (!old) return old;
-      const nextLoggedHours = updates.addLoggedHours
-        ? (old.loggedHours || 0) + updates.addLoggedHours
-        : (updates.loggedHours ?? old.loggedHours);
-      return { ...old, ...updates, loggedHours: nextLoggedHours };
-    });
-
-    // 3. Status flow synergy
-    if (updates.status && oldTicket && oldTicket.status !== updates.status) {
-      AnalyticsDomain.moveTicketStatus(queryClient, oldTicket.status, updates.status);
+    // 1. Prepare augmented update (hydrate IDs if changed)
+    const augmentedUpdates = { ...updates } as Partial<TicketWithRelations>;
+    if (updates.assigneeId !== undefined) {
+      augmentedUpdates.assignee = CacheAugmenter.user(queryClient, updates.assigneeId);
+    }
+    if (updates.projectIds !== undefined) {
+      augmentedUpdates.projects = CacheAugmenter.projects(queryClient, updates.projectIds);
     }
 
-    return { id, updates };
+    // 2. Update in all list variations with filter awareness
+    CacheCore.updateInLists(queryClient, ['tickets'], { id, ...augmentedUpdates }, () => {
+      // Example filter: if list is filtered by project, check if ticket still belongs
+      // This is dynamic based on how useTickets hooks are called
+      return true;
+    });
+
+    // 3. Update single ticket view
+    CacheCore.updateItem(queryClient, ['tickets', id], augmentedUpdates);
+
+    // 4. Synergy with Analytics
+    if (oldTicket) {
+      // Status Changes
+      if (updates.status && oldTicket.status !== updates.status) {
+        AnalyticsDomain.moveTicketStatus(queryClient, oldTicket.status, updates.status);
+
+        // Leaderboard completion synergy
+        if (updates.status === 'done') {
+          AnalyticsDomain.adjustLeaderboard(queryClient, oldTicket.assigneeId || 'system', 0, 1);
+        } else if (oldTicket.status === 'done') {
+          AnalyticsDomain.adjustLeaderboard(queryClient, oldTicket.assigneeId || 'system', 0, -1);
+        }
+      }
+
+      // KPI Sync for In Progress
+      if (updates.status === 'in-progress' && oldTicket.status !== 'in-progress') {
+        AnalyticsDomain.adjustTicketCounts(queryClient, { inProgress: 1 });
+      } else if (
+        oldTicket.status === 'in-progress' &&
+        updates.status &&
+        updates.status !== 'in-progress'
+      ) {
+        AnalyticsDomain.adjustTicketCounts(queryClient, { inProgress: -1 });
+      }
+    }
+
+    return { id, updates: augmentedUpdates };
   },
 
   /**
@@ -143,21 +160,8 @@ export const TicketDomain = {
       projects: CacheAugmenter.projects(queryClient, rawResponse.projectIds ?? []),
     };
 
-    // Use setQueriesData to update both global and filtered lists
-    queryClient.setQueriesData(
-      { queryKey: ['tickets'] },
-      (old: TicketWithRelations[] | undefined) => {
-        if (!Array.isArray(old)) return old;
-        const exists = old.some((t) => t.id === id);
-        if (exists) {
-          return old.map((item) => (item.id === id ? augmented : item));
-        }
-        // If it's a filtered list and doesn't exist, we might not want to prepend
-        // unless we know it matches the filter. For now, keep it safe.
-        return old;
-      }
-    );
-
+    // Use CacheCore.updateInLists for consistency
+    CacheCore.updateInLists(queryClient, ['tickets'], augmented);
     CacheCore.updateItem(queryClient, ['tickets', id], augmented);
   },
 
@@ -173,14 +177,20 @@ export const TicketDomain = {
     CacheCore.removeFromLists(queryClient, ['tickets'], id);
     queryClient.removeQueries({ queryKey: ['tickets', id] });
 
-    // 3. Adjust analytics
+    // 3. Adjust analytics synergy
     if (ticket) {
       AnalyticsDomain.adjustTicketCounts(queryClient, {
         total: -1,
         inProgress: ticket.status === 'in-progress' ? -1 : 0,
       });
+      AnalyticsDomain.adjustStatusFlow(queryClient, ticket.status, -1);
+
       if (ticket.loggedHours) {
         AnalyticsDomain.adjustLoggedHours(queryClient, -ticket.loggedHours);
+      }
+
+      if (ticket.status === 'done') {
+        AnalyticsDomain.adjustLeaderboard(queryClient, ticket.assigneeId || 'system', 0, -1);
       }
     }
   },

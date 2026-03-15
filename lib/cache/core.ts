@@ -15,41 +15,71 @@ export const CacheCore = {
   /**
    * Updates an item in all queries matching the base key.
    * Useful for list views (like "all tickets") where the item might appear.
+   * @param filter Optional predicate to determine if item belongs in a filtered list.
    */
   updateInLists: <T extends { id: string }>(
     queryClient: QueryClient,
     baseKey: QueryKey,
-    updatedItem: Partial<T> & { id: string }
+    updatedItem: Partial<T> & { id: string },
+    filter?: (item: T) => boolean
   ) => {
-    queryClient.setQueriesData({ queryKey: baseKey }, (old: T[] | undefined) => {
-      if (!Array.isArray(old)) return old;
-      return old.map((item) => (item.id === updatedItem.id ? { ...item, ...updatedItem } : item));
-    });
+    queryClient.setQueriesData(
+      { queryKey: baseKey },
+      (old: T[] | undefined, queryKey: QueryKey) => {
+        if (!Array.isArray(old)) return old;
+
+        // If it's a filtered list (queryKey.length > baseKey.length) and we have a filter,
+        // decide if the item still belongs or should be removed.
+        const isFiltered = queryKey.length > baseKey.length;
+
+        return old
+          .map((item) => {
+            if (item.id !== updatedItem.id) return item;
+            const merged = { ...item, ...updatedItem };
+
+            // If the filter says it no longer matches, we'll mark it for removal (null)
+            if (isFiltered && filter && !filter(merged)) return null;
+            return merged;
+          })
+          .filter((item): item is T => item !== null);
+      }
+    );
   },
 
   /**
    * Prepends an item to all lists matching the base key.
    * Handles temporary IDs and partial key matching for filtered queries.
    */
-  prependToLists: <T>(queryClient: QueryClient, baseKey: QueryKey, newItem: T) => {
-    queryClient.setQueriesData({ queryKey: baseKey }, (old: T[] | undefined) => {
-      // If the cache is empty, initialize with the new item
-      if (!old) return [newItem];
-      if (!Array.isArray(old)) return old;
+  prependToLists: <T>(
+    queryClient: QueryClient,
+    baseKey: QueryKey,
+    newItem: T,
+    filter?: (item: T) => boolean
+  ) => {
+    queryClient.setQueriesData(
+      { queryKey: baseKey },
+      (old: T[] | undefined, queryKey: QueryKey) => {
+        // If the cache is empty, initialize with the new item if it matches filters
+        const isFiltered = queryKey.length > baseKey.length;
+        if (isFiltered && filter && !filter(newItem)) return old;
 
-      const newId = (newItem as { id?: string }).id;
-      const tempId = (newItem as { id?: string | 'PENDING' }).id;
+        if (!old) return [newItem];
+        if (!Array.isArray(old)) return old;
 
-      // Prevent duplicates based on ID
-      const exists = old.some((item) => {
-        const itemId = (item as { id?: string }).id;
-        return itemId && (itemId === newId || itemId === tempId);
-      });
+        const newId = (newItem as { id?: string }).id;
+        const tempId = (newItem as { id?: string | 'PENDING' }).id;
 
-      if (exists) return old;
+        // Prevent duplicates based on ID
+        const exists = old.some((item) => {
+          const itemId = (item as { id?: string }).id;
+          return itemId && (itemId === newId || itemId === tempId);
+        });
 
-      return [newItem, ...old];
-    });
+        if (exists) return old;
+
+        return [newItem, ...old];
+      }
+    );
   },
 
   /**

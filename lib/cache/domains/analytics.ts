@@ -38,22 +38,37 @@ export const AnalyticsDomain = {
 
   /**
    * Helper to adjust total logged hours in analytics.
+   * Updates both the KPI and the daily burn rate chart.
    */
   adjustLoggedHours: (queryClient: QueryClient, hours: number, date?: string) => {
     AnalyticsDomain.updateTasks(queryClient, (old) => {
       const today = new Date().toISOString().split('T')[0];
-      const targetDate = date || today;
+      const targetDate = date ? new Date(date).toISOString().split('T')[0] : today;
 
-      // Update KPIs
+      // 1. Update KPIs
       const nextKpis = {
         ...old.kpis,
         totalHours: old.kpis.totalHours + hours,
       };
 
-      // Update Burn Rate chart
-      const nextBurnRate = old.burnRate?.map((item) =>
-        item.day === targetDate ? { ...item, actual: item.actual + hours } : item
-      );
+      // 2. Update Burn Rate chart
+      let nextBurnRate = [...(old.burnRate || [])];
+      const dayEntry = nextBurnRate.find((item) => item.day === targetDate);
+
+      if (dayEntry) {
+        nextBurnRate = nextBurnRate.map((item) =>
+          item.day === targetDate ? { ...item, actual: item.actual + hours } : item
+        );
+      } else if (hours !== 0) {
+        // Only add a new entry if we are actually adding hours
+        nextBurnRate.push({
+          day: targetDate,
+          actual: hours,
+          estimated: 0,
+        });
+        // Keep it sorted by date
+        nextBurnRate.sort((a, b) => a.day.localeCompare(b.day));
+      }
 
       return {
         ...old,
@@ -66,7 +81,12 @@ export const AnalyticsDomain = {
   /**
    * Optimistically updates the leaderboard.
    */
-  adjustLeaderboard: (queryClient: QueryClient, userId: string, hours: number) => {
+  adjustLeaderboard: (
+    queryClient: QueryClient,
+    userId: string,
+    hours: number,
+    ticketsDone: number = 0
+  ) => {
     queryClient.setQueryData(
       ['analytics', 'leaderboard'],
       (old: LeaderboardEntry[] | undefined) => {
@@ -78,7 +98,7 @@ export const AnalyticsDomain = {
             return {
               ...user,
               hoursLogged: (currentHours + hours).toString(),
-              ticketsDone: user.ticketsDone + (hours > 0 ? 0 : 0), // Hours doesn't strictly mean ticket done
+              ticketsDone: user.ticketsDone + ticketsDone,
             };
           })
           .sort((a, b) => parseFloat(b.hoursLogged) - parseFloat(a.hoursLogged));
@@ -90,15 +110,21 @@ export const AnalyticsDomain = {
    * Optimistically moves a ticket in the status flow chart.
    */
   moveTicketStatus: (queryClient: QueryClient, from: string, to: string) => {
-    AnalyticsDomain.updateTasks(queryClient, (old) => {
-      // Find current week or default to last entry
-      const currentWeekIndex = old.statusFlow.length - 1;
-      if (currentWeekIndex < 0) return old;
+    AnalyticsDomain.adjustStatusFlow(queryClient, from, -1);
+    AnalyticsDomain.adjustStatusFlow(queryClient, to, 1);
+  },
 
+  /**
+   * Helper to adjust specific status counts in the current week.
+   */
+  adjustStatusFlow: (queryClient: QueryClient, status: string, delta: number) => {
+    AnalyticsDomain.updateTasks(queryClient, (old) => {
+      if (!old.statusFlow || old.statusFlow.length === 0) return old;
+
+      const currentWeekIndex = old.statusFlow.length - 1;
       const nextStatusFlow = [...old.statusFlow];
       const weekEntry = { ...nextStatusFlow[currentWeekIndex] };
 
-      // Standardized mapping of status string to graph keys
       const map = (s: string) => {
         const normalized = s.toLowerCase().replace('_', '-');
         if (normalized === 'todo') return 'todo' as const;
@@ -108,29 +134,14 @@ export const AnalyticsDomain = {
         return null;
       };
 
-      const fromKey = map(from);
-      const toKey = map(to);
+      const key = map(status);
+      if (!key) return old;
 
-      if (fromKey === toKey) return old;
-
-      if (fromKey) {
-        (weekEntry as unknown as Record<string, number>)[fromKey] = Math.max(
-          0,
-          ((weekEntry as unknown as Record<string, number>)[fromKey] || 0) - 1
-        );
-      }
-
-      if (toKey) {
-        (weekEntry as unknown as Record<string, number>)[toKey] =
-          ((weekEntry as unknown as Record<string, number>)[toKey] || 0) + 1;
-      }
-
+      const typedWeekEntry = weekEntry as unknown as Record<string, number>;
+      typedWeekEntry[key] = Math.max(0, (typedWeekEntry[key] || 0) + delta);
       nextStatusFlow[currentWeekIndex] = weekEntry;
 
-      return {
-        ...old,
-        statusFlow: nextStatusFlow,
-      };
+      return { ...old, statusFlow: nextStatusFlow };
     });
   },
 };

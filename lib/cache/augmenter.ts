@@ -16,11 +16,10 @@ export const CacheAugmenter = {
     const found = users?.find((u) => u.id === userId);
 
     if (!found) {
-      // Hydration fallback during cache wipes/org switches.
-      // Prevents UI crashes when destructuring user details like user.name
+      const isSystem = userId.toLowerCase() === 'system';
       return {
         id: userId,
-        name: '...',
+        name: isSystem ? 'System' : 'Unknown',
         email: '',
         role: 'member',
         createdAt: new Date(),
