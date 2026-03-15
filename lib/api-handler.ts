@@ -8,6 +8,7 @@ type HandlerContext = {
   params: Promise<Record<string, string>>;
   session?: Session;
   orgId?: string;
+  orgRole?: import('./org-utils').OrgRole;
 };
 
 type ApiHandler = (req: Request, context: HandlerContext) => Promise<Response> | Response;
@@ -43,42 +44,43 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
         const { members } = await import('@/db/schema');
         const { and, eq } = await import('drizzle-orm');
 
-        const member = await db.query.members.findFirst({
+        const memberData = await db.query.members.findFirst({
           where: and(eq(members.userId, session.user.id), eq(members.organizationId, orgId)),
         });
 
-        if (!member) {
+        if (!memberData) {
           throw new ApiError('Not a member of this organization', 403, 'not_a_member');
         }
 
-        const ROLE_LEVELS: Record<string, number> = {
-          owner: 100,
-          admin: 50,
-          member: 10,
-        };
+        const { isAtLeast } = await import('./rbac');
 
         if (options.requiredRole) {
-          const userRole = member.role;
+          const userRole = memberData.role as import('./org-utils').OrgRole;
           const roles = Array.isArray(options.requiredRole)
-            ? options.requiredRole
-            : [options.requiredRole];
+            ? (options.requiredRole as import('./org-utils').OrgRole[])
+            : [options.requiredRole as import('./org-utils').OrgRole];
 
-          const hasAccess = roles.some((reqRole) => {
-            const userRoleLevel = ROLE_LEVELS[userRole] || 0;
-            const reqRoleLevel = ROLE_LEVELS[reqRole] || 0;
-            return userRoleLevel >= reqRoleLevel;
-          });
+          const hasAccess = roles.some((reqRole) => isAtLeast(userRole, reqRole));
 
           if (!hasAccess) {
             throw new ApiError('Forbidden: Insufficient organization privileges', 403, 'forbidden');
           }
         }
+
+        return await handler(req, {
+          params: context.params,
+          session: session as Session,
+          orgId: session?.session.activeOrganizationId || undefined,
+          orgRole: (memberData.role as import('./org-utils').OrgRole) || undefined,
+        });
       }
+
+      const safeSession = session as Session | null;
 
       return await handler(req, {
         params: context.params,
-        session: session as Session,
-        orgId: session?.session.activeOrganizationId || undefined,
+        session: safeSession || undefined,
+        orgId: safeSession?.session?.activeOrganizationId || undefined,
       });
     } catch (error) {
       console.error('[API_ERROR]', error);

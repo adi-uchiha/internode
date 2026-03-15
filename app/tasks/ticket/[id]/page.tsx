@@ -39,6 +39,7 @@ import {
   useLogTime,
   useTicketComments,
   useCreateComment,
+  useDeleteTicket,
 } from '@/hooks/useTickets';
 import { useProjects } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const { data: ticket, isLoading } = useTicket(ticketUrlId);
   const { mutateAsync: updateTicket } = useUpdateTicket();
   const { mutateAsync: logTime } = useLogTime();
+  const { mutateAsync: deleteTicket } = useDeleteTicket();
   const { data: commentsList } = useTicketComments(ticket?.id || '');
   const { mutateAsync: createComment } = useCreateComment();
   const { data: projects } = useProjects();
@@ -193,18 +195,19 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  const handleDuplicate = () => {
-    toast.success('Ticket duplicated (local only)');
-  };
-
-  const handleArchive = () => {
-    toast.success('Ticket archived (local only)');
-    router.back();
-  };
-
-  const handleDelete = () => {
-    toast.success('Ticket deleted (local only)');
-    router.back();
+  const handleDelete = async () => {
+    if (
+      !window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')
+    ) {
+      return;
+    }
+    try {
+      await deleteTicket(ticket.id);
+      toast.success('Ticket deleted successfully');
+      router.push('/tasks/kanban');
+    } catch {
+      toast.error('Failed to delete ticket');
+    }
   };
 
   return (
@@ -274,22 +277,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 <div className="w-2 h-2 rounded-full bg-primary mr-2" /> Done
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDuplicate} className="cursor-pointer">
-                <Icon icon="solar:copy-linear" className="w-4 h-4 mr-2" /> Duplicate
-              </DropdownMenuItem>
               {isAdmin && (
-                <>
-                  <DropdownMenuItem onClick={handleArchive} className="cursor-pointer">
-                    <Icon icon="solar:archive-linear" className="w-4 h-4 mr-2" /> Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleDelete}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    <Icon icon="solar:trash-bin-2-linear" className="w-4 h-4 mr-2" /> Delete
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <Icon icon="solar:trash-bin-2-linear" className="w-4 h-4 mr-2" /> Delete
+                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

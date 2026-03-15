@@ -97,3 +97,27 @@ export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
 
   return NextResponse.json(updatedTicket);
 });
+
+export const DELETE = withErrorHandler(
+  async (request, { params, orgId }) => {
+    const { id } = await params;
+
+    // Check if ID is a PK (nanoid) or a ticketId (TASK{N})
+    const isPk = id.length > 15;
+    const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
+
+    if (!orgId) throw new Error('No active organization');
+
+    const [deletedTicket] = await db
+      .delete(tickets)
+      .where(and(ticketQuery, eq(tickets.organizationId, orgId)))
+      .returning();
+
+    if (!deletedTicket) {
+      throw new NotFoundError('Ticket not found');
+    }
+
+    return NextResponse.json({ success: true, message: 'Ticket deleted successfully' });
+  },
+  { requiredRole: 'admin' }
+);

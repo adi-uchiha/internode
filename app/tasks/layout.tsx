@@ -69,15 +69,19 @@ export default function TaskManagerLayout({
   // Determine current page title based on pathname if not provided
   const title = useMemo(() => {
     if (pathname.includes('/tasks/dashboard')) return 'Dashboard';
+    if (pathname.includes('/tasks/projects')) return 'Projects';
     if (pathname.includes('/tasks/kanban')) return 'Kanban Board';
     if (pathname.includes('/tasks/my-tickets')) return 'My Tickets';
-    if (pathname.includes('/tasks/time-logs')) return 'Time Logs';
     if (pathname.includes('/tasks/members')) return 'Members';
     if (pathname.includes('/tasks/analytics')) return 'Analytics';
     if (pathname.includes('/tasks/settings')) return 'Settings';
     if (pathname.includes('/tasks/ticket')) return 'Ticket Detail';
     if (pathname.includes('/tasks/onboarding')) return 'Onboarding';
     if (pathname.includes('/tasks/profile')) return 'Profile';
+    if (pathname.includes('/tasks/breakthroughs')) return 'Wall of Fame';
+    if (pathname.includes('/tasks/leaves')) return 'Leave Registry';
+    if (pathname.includes('/tasks/admin-review')) return 'Admin Review';
+    if (pathname.includes('/tasks/notifications')) return 'Signal Hub';
     return initialTitle || 'Task Manager';
   }, [pathname, initialTitle]);
 
@@ -107,6 +111,7 @@ export default function TaskManagerLayout({
 
   const navItems = [
     { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },
+    { label: 'Projects', href: '/tasks/projects', icon: 'ph:folder-duotone' },
     { label: 'Board', href: '/tasks/kanban', icon: 'ph:kanban-duotone' },
     { label: 'My Tickets', href: '/tasks/my-tickets', icon: 'ph:ticket-duotone' },
     { label: 'Quick Log', href: '/tasks/quick-log', icon: 'ph:plus-circle-duotone' },
@@ -127,6 +132,22 @@ export default function TaskManagerLayout({
       label: 'Analytics',
       href: '/tasks/analytics',
       icon: 'ph:presentation-chart-duotone',
+      roles: ['owner', 'admin'],
+    },
+    {
+      label: 'Breakthroughs',
+      href: '/tasks/breakthroughs',
+      icon: 'ph:star-duotone',
+    },
+    {
+      label: 'Leaves',
+      href: '/tasks/leaves',
+      icon: 'ph:calendar-duotone',
+    },
+    {
+      label: 'Admin Review',
+      href: '/tasks/admin-review',
+      icon: 'ph:shield-check-duotone',
       roles: ['owner', 'admin'],
     },
     {

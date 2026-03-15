@@ -6,12 +6,27 @@ import { CacheCore } from '@/lib/cache/core';
 import { useAuth } from '@/contexts/AuthContext';
 import { nanoid } from 'nanoid';
 
+export interface Leave {
+  id: string;
+  userId: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  user?: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
+}
+
 export type LeaveRequestWithUser = InferSelectModel<typeof leaveRequests> & {
   user?: User;
 };
 
 export function useLeaves() {
-  return useQuery<LeaveRequestWithUser[]>({
+  return useQuery<Leave[]>({
     queryKey: ['leaves'],
     queryFn: async () => {
       const res = await fetch('/api/leaves');
@@ -47,6 +62,8 @@ export function useCreateLeave() {
           userId: user.id,
           status: 'pending',
           user: user as unknown as User,
+          startDate: newLeave.date,
+          endDate: newLeave.date,
           createdAt: new Date().toISOString(),
         });
       }
@@ -81,14 +98,14 @@ export function useUpdateLeave() {
       if (!res.ok) throw new Error('Failed to update leave request');
       return res.json();
     },
-    onMutate: async (updatedLeave) => {
+    onMutate: async (updated) => {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);
 
-      CacheCore.updateInLists(queryClient, ['leaves'], {
-        id: updatedLeave.id,
-        status: updatedLeave.status,
-      } as unknown as LeaveRequestWithUser);
+      CacheCore.updateInLists<Leave>(queryClient, ['leaves'], {
+        id: updated.id,
+        status: updated.status,
+      });
 
       return { previousLeaves };
     },

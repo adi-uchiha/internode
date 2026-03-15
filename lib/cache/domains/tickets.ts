@@ -135,4 +135,28 @@ export const TicketDomain = {
     CacheCore.updateInLists(queryClient, ['tickets'], augmented);
     CacheCore.updateItem(queryClient, ['tickets', id], augmented);
   },
+
+  /**
+   * Optimistically removes a ticket from all caches.
+   * Updates analytics to reflect resource removal.
+   */
+  optimisticDelete: (queryClient: QueryClient, id: string) => {
+    // 1. Get ticket data before deletion to adjust analytics
+    const ticket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+
+    // 2. Remove from lists and detail view
+    CacheCore.removeFromLists(queryClient, ['tickets'], id);
+    queryClient.removeQueries({ queryKey: ['tickets', id] });
+
+    // 3. Adjust analytics
+    if (ticket) {
+      AnalyticsDomain.adjustTicketCounts(queryClient, {
+        total: -1,
+        inProgress: ticket.status === 'in-progress' ? -1 : 0,
+      });
+      if (ticket.loggedHours) {
+        AnalyticsDomain.adjustLoggedHours(queryClient, -ticket.loggedHours);
+      }
+    }
+  },
 };

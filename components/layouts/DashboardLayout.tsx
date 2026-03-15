@@ -409,9 +409,13 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                       )}
                     </div>
                     <div className="p-3 text-center bg-muted/10 border-t border-border">
-                      <button className="font-mono text-[11px] uppercase tracking-widest text-primary hover:text-primary/70 transition-colors">
+                      <Link
+                        href="/tasks/notifications"
+                        onClick={() => setShowNotifications(false)}
+                        className="font-mono text-[11px] uppercase tracking-widest text-primary hover:text-primary/70 transition-colors"
+                      >
                         View all
-                      </button>
+                      </Link>
                     </div>
                   </motion.div>
                 )}

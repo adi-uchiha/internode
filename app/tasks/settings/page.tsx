@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
-import { useProjects, useCreateProject, useDeleteProject } from '@/hooks/useProjects';
+import { useProjects, useDeleteProject } from '@/hooks/useProjects';
 import { useOrganization, useUpdateOrganization } from '@/hooks/useOrganization';
 import { useUpdateProfile } from '@/hooks/useUsers';
-import { useLabels, useCreateLabel, useDeleteLabel } from '@/hooks/useLabels';
+import { useLabels, useDeleteLabel } from '@/hooks/useLabels';
 import { useAuth } from '@/contexts/AuthContext';
 import { RequireRole } from '@/components/auth/RequireRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ProjectModal } from '@/components/modals/ProjectModal';
+import { LabelModal } from '@/components/modals/LabelModal';
 import {
   Table,
   TableBody,
@@ -45,11 +47,12 @@ export default function SettingsPage() {
   const { data: organizationData, isLoading: organizationLoading } = useOrganization();
   const { mutateAsync: updateOrganization } = useUpdateOrganization();
   const { mutateAsync: updateProfile } = useUpdateProfile();
-  const { mutateAsync: createProject } = useCreateProject();
   const { mutateAsync: deleteProject } = useDeleteProject();
   const { data: labels, isLoading: labelsLoading } = useLabels();
-  const { mutateAsync: createLabel } = useCreateLabel();
   const { mutateAsync: deleteLabel } = useDeleteLabel();
+
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const handleDeleteLabel = async (id: string, name: string) => {
     if (!confirm(`Remove classification "${name}" from system library?`)) return;
@@ -62,16 +65,7 @@ export default function SettingsPage() {
   };
 
   const handleCreateLabel = async () => {
-    const name = prompt('Classification Name:');
-    if (!name) return;
-    const color = prompt('Color Hex (e.g. #ff0000):', '#3b82f6');
-    if (!color) return;
-    try {
-      await createLabel({ name, color });
-      toast.success('Classification vector established');
-    } catch {
-      toast.error('Initialization failed');
-    }
+    setIsLabelModalOpen(true);
   };
 
   // Organization Identity State (Local overrides for unsaved changes)
@@ -109,14 +103,7 @@ export default function SettingsPage() {
   };
 
   const handleCreateProject = async () => {
-    const name = prompt('Project Name:');
-    if (!name) return;
-    try {
-      await createProject({ name });
-      toast.success('Project created');
-    } catch {
-      toast.error('Failed to create project');
-    }
+    setIsProjectModalOpen(true);
   };
 
   const handleDeleteProject = async (id: string, name: string) => {
@@ -537,6 +524,8 @@ export default function SettingsPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} />
+      <LabelModal isOpen={isLabelModalOpen} onClose={() => setIsLabelModalOpen(false)} />
     </div>
   );
 }

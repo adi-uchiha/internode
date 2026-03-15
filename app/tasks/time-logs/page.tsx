@@ -9,7 +9,6 @@ import { useUsers } from '@/hooks/useUsers';
 import { useTickets } from '@/hooks/useTickets';
 import { Icon } from '@iconify/react';
 import { format, startOfWeek, subDays } from 'date-fns';
-import { toast } from 'sonner';
 
 export default function TimeLogsPage() {
   const { user, orgRole } = useAuth();
@@ -45,34 +44,6 @@ export default function TimeLogsPage() {
     const avg = logs.length > 0 ? (monthHours / 30).toFixed(1) : '0';
     return { week: weekHours, month: monthHours, avg };
   }, [logs]);
-
-  const handleExportCSV = () => {
-    if (!logs?.length) {
-      toast.error('No logs available for export');
-      return;
-    }
-
-    const headers = ['Date', 'Ticket', 'Hours', 'Note', 'User'];
-    const rows = logs.map((l) => [
-      format(new Date(l.date), 'yyyy-MM-dd'),
-      l.ticketTitle,
-      l.hours.toString(),
-      l.note || '',
-      users?.find((u) => u.id === l.userId)?.name || 'Unknown',
-    ]);
-
-    const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `time-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('CSV export initiated');
-  };
 
   const heatmapData = useMemo(() => {
     const data: { date: string; hours: number }[] = [];
@@ -153,12 +124,6 @@ export default function TimeLogsPage() {
       >
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/20">
           <h3 className="font-display font-semibold">Time Log History</h3>
-          <button
-            onClick={handleExportCSV}
-            className="font-mono text-xs text-muted-foreground border border-border px-3 py-1 hover:bg-muted transition-colors"
-          >
-            [Export CSV]
-          </button>
         </div>
         <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
           <table className="w-full text-left border-collapse">

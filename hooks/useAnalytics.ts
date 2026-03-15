@@ -10,25 +10,27 @@ export interface AdminAnalyticsData {
 
 export interface TaskAnalyticsData {
   kpis: {
-    totalTickets: number;
-    completedTickets: number;
+    ticketsTotal: number;
+    completionRate: number;
+    highPriority: number;
     totalHours: number;
-    overdue: number;
-    avgVelocity: number;
-    teamHours: string;
+    activeContributors: number;
+    // legacy support icons
     inProgress: number;
+    overdue: number;
+    teamHours: string;
   };
-  burnRate: {
-    day: string;
-    actual: number;
-    estimated: number;
+  weeklyTrends: {
+    week: string;
+    closed: number;
+    created: number;
   }[];
-  projectHours: {
-    project: string;
-    actual: number;
-    estimated: number;
-    color: string;
-  }[];
+  trends?: {
+    tickets: number[];
+    hours: number[];
+    completion: number[];
+    velocity: number[];
+  };
   statusFlow: {
     week: string;
     todo: number;
@@ -36,13 +38,20 @@ export interface TaskAnalyticsData {
     inReview: number;
     done: number;
   }[];
-  trend: number[];
-  trends?: {
-    tickets: number[];
-    hours: number[];
-    completion: number[];
-    velocity: number[];
-  };
+  projects: {
+    name: string;
+    tickets: number;
+    hours: number;
+  }[];
+  heatmap: {
+    date: string;
+    count: number;
+  }[];
+  burnRate?: {
+    day: string;
+    actual: number;
+    estimated: number;
+  }[];
 }
 
 export function useAdminAnalytics() {
@@ -53,7 +62,6 @@ export function useAdminAnalytics() {
       if (!res.ok) throw new Error('Failed to fetch admin analytics');
       return res.json();
     },
-    // Keep analytics fresh but avoid spamming heavy queries
     staleTime: 5 * 60 * 1000,
   });
 }

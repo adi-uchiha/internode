@@ -241,3 +241,33 @@ export function useCreateComment() {
     },
   });
 }
+
+export function useDeleteTicket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/tickets/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete ticket');
+      return res.json();
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['tickets'] });
+      await queryClient.cancelQueries({ queryKey: ['tickets', id] });
+
+      const previousTickets = queryClient.getQueryData(['tickets']);
+      CacheManager.tickets.optimisticDelete(queryClient, id);
+
+      return { previousTickets };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['tickets'], context?.previousTickets);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
+    },
+  });
+}
