@@ -4,6 +4,7 @@ import { tickets, projects } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
+import { updateTicketSchema } from '@/lib/validations/tickets';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
@@ -12,10 +13,8 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
-  if (!orgId) throw new Error('No active organization');
-
   const ticket = await db.query.tickets.findFirst({
-    where: and(ticketQuery, eq(tickets.organizationId, orgId)),
+    where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
     with: {
       assignee: true,
       createdBy: true,
@@ -50,35 +49,34 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
 
 export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
-  const body = await request.json();
+  const json = await request.json();
+  const body = updateTicketSchema.parse(json);
 
   // Check if ID is a PK (nanoid) or a ticketId (TASK{N})
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
-  if (!orgId) throw new Error('No active organization');
-
   const existingTicket = await db.query.tickets.findFirst({
-    where: and(ticketQuery, eq(tickets.organizationId, orgId)),
+    where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
   });
 
   if (!existingTicket) {
     throw new NotFoundError('Ticket not found');
   }
 
-  const updateData: Partial<typeof tickets.$inferInsert> & { addLoggedHours?: number } = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: any = {};
   if (body.status !== undefined) updateData.status = body.status;
   if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId;
   if (body.title !== undefined) updateData.title = body.title;
   if (body.description !== undefined) updateData.description = body.description;
   if (body.priority !== undefined) updateData.priority = body.priority;
   if (body.estimatedHours !== undefined) updateData.estimatedHours = body.estimatedHours;
-  if (body.loggedHours !== undefined) updateData.loggedHours = body.loggedHours;
   if (body.labels !== undefined) updateData.labels = body.labels;
   if (body.projectIds !== undefined) updateData.projectIds = body.projectIds;
   if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
-  // Add logged hours if incrementing
+  // Aggregate logged hours if incrementing
   if (body.addLoggedHours !== undefined) {
     updateData.loggedHours = (existingTicket.loggedHours || 0) + body.addLoggedHours;
   }
@@ -92,7 +90,7 @@ export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
   const [updatedTicket] = await db
     .update(tickets)
     .set(updateData)
-    .where(and(ticketQuery, eq(tickets.organizationId, orgId)))
+    .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
     .returning();
 
   return NextResponse.json(updatedTicket);
@@ -106,11 +104,9 @@ export const DELETE = withErrorHandler(
     const isPk = id.length > 15;
     const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
-    if (!orgId) throw new Error('No active organization');
-
     const [deletedTicket] = await db
       .delete(tickets)
-      .where(and(ticketQuery, eq(tickets.organizationId, orgId)))
+      .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
       .returning();
 
     if (!deletedTicket) {

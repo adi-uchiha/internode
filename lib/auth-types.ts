@@ -1,15 +1,13 @@
 import { auth } from './auth';
 
-export type Session = {
-  user: User;
-  session: typeof auth.$Infer.Session.session;
-};
+export type Session = typeof auth.$Infer.Session;
+
+export interface NotificationSettings {
+  email: Record<string, boolean>;
+  inApp: Record<string, boolean>;
+}
 
 export type User = typeof auth.$Infer.Session.user & {
-  username?: string;
-  joinDate?: Date | string | null;
-  notificationSettings?: {
-    email: Record<string, boolean>;
-    inApp: Record<string, boolean>;
-  };
+  // Use the refined notificationSettings type
+  notificationSettings?: NotificationSettings;
 };

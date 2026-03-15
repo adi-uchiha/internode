@@ -77,7 +77,7 @@ export const auth = betterAuth({
     additionalFields: {
       username: { type: 'string', required: false },
       joinDate: { type: 'date' },
-      notificationSettings: { type: 'string' },
+      notificationSettings: { type: 'json' },
     },
   },
   emailAndPassword: {

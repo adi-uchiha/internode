@@ -456,7 +456,7 @@ const MemberDashboardContent = () => {
               Operating Node Active
             </span>
           </div>
-          <h1 className="font-display text-5xl font-bold tracking-tighter">WORKSPACE_ROOT</h1>
+          <h1 className="font-display text-5xl font-bold tracking-tighter">ORGANIZATION_ROOT</h1>
           <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest opacity-60">
             Primary environment overview & task orchestration matrix.
           </p>

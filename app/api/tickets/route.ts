@@ -4,18 +4,15 @@ import { tickets, organizations, projects } from '@/db/schema';
 import { desc, eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
-import { ApiError } from '@/lib/api-error';
+import { NotFoundError } from '@/lib/api-error';
+import { createTicketSchema } from '@/lib/validations/tickets';
 
 export const GET = withErrorHandler(async (request, { orgId }) => {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
 
-  if (!orgId) {
-    throw new ApiError('Organization ID is required', 400, 'org_id_required');
-  }
-
-  const queryConditions = [eq(tickets.organizationId, orgId)];
+  const queryConditions = [eq(tickets.organizationId, orgId!)];
   if (projectId)
     queryConditions.push(sql`${tickets.projectIds} @> ${JSON.stringify([projectId])}::jsonb`);
   if (assigneeId) queryConditions.push(eq(tickets.assigneeId, assigneeId));
@@ -58,36 +55,21 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
 });
 
 export const POST = withErrorHandler(async (request, { session, orgId }) => {
-  const body = await request.json();
-  const {
-    title,
-    description,
-    status,
-    priority,
-    projectIds: bodyProjectIds,
-    assigneeId,
-    estimatedHours,
-    dueDate,
-    labels,
-  } = body;
-
-  if (!orgId) {
-    throw new ApiError('Organization ID is required', 400, 'org_id_required');
-  }
+  const json = await request.json();
+  const body = createTicketSchema.parse(json);
 
   // Atomically increment the org's ticket counter and get the new value.
-  // Using SQL UPDATE...RETURNING so concurrent requests never produce
-  // duplicate numbers.
   const [updatedOrg] = await db
     .update(organizations)
     .set({
       ticketCounter: sql`${organizations.ticketCounter} + 1`,
-    })
-    .where(eq(organizations.id, orgId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+    .where(eq(organizations.id, orgId!))
     .returning({ ticketCounter: organizations.ticketCounter });
 
   if (!updatedOrg) {
-    throw new ApiError('Organization not found', 404, 'org_not_found');
+    throw new NotFoundError('Organization not found', 'org_not_found');
   }
 
   const sequentialTicketId = `TASK${updatedOrg.ticketCounter}`;
@@ -96,19 +78,20 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     .insert(tickets)
     .values({
       id: nanoid(),
-      organizationId: orgId,
+      organizationId: orgId!,
       ticketId: sequentialTicketId,
-      title,
-      description: description || '',
-      status: status || 'todo',
-      priority: priority || 'medium',
-      projectIds: bodyProjectIds || [],
-      assigneeId: assigneeId || null,
+      title: body.title,
+      description: body.description || '',
+      status: body.status,
+      priority: body.priority,
+      projectIds: body.projectIds,
+      assigneeId: body.assigneeId,
       createdById: session!.user.id,
-      estimatedHours: estimatedHours || 0,
-      dueDate: dueDate ? new Date(dueDate) : null,
-      labels: labels || [],
-    })
+      estimatedHours: body.estimatedHours,
+      dueDate: body.dueDate ? new Date(body.dueDate) : null,
+      labels: body.labels,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
     .returning();
 
   return NextResponse.json(newTicket, { status: 201 });

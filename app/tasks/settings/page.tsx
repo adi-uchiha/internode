@@ -40,7 +40,7 @@ export default function SettingsPage() {
       <div>
         <h2 className="font-display text-3xl font-bold tracking-tight">Organization Settings</h2>
         <p className="text-muted-foreground mt-2 font-mono text-xs uppercase tracking-widest">
-          Configure your workspace environment
+          Configure your organization environment
         </p>
       </div>
 

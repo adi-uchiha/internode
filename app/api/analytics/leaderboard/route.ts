@@ -3,13 +3,8 @@ import { db } from '@/db';
 import { tickets, users, members } from '@/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
-import { ApiError } from '@/lib/api-error';
 
 export const GET = withErrorHandler(async (_req, { orgId }) => {
-  if (!orgId) {
-    throw new ApiError('Organization ID is required', 400, 'org_id_required');
-  }
-
   // Calculate leaderboard statistics using Drizzle query builder
   const leaderboardRaw = await db
     .select({
@@ -20,8 +15,8 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
       hoursLogged: sql<number>`COALESCE(sum(${tickets.loggedHours}), 0)::float`,
     })
     .from(users)
-    .innerJoin(members, and(eq(members.userId, users.id), eq(members.organizationId, orgId)))
-    .leftJoin(tickets, and(eq(tickets.assigneeId, users.id), eq(tickets.organizationId, orgId)))
+    .innerJoin(members, and(eq(members.userId, users.id), eq(members.organizationId, orgId!)))
+    .leftJoin(tickets, and(eq(tickets.assigneeId, users.id), eq(tickets.organizationId, orgId!)))
     .groupBy(users.id, users.name, users.image)
     .orderBy(
       desc(sql`count(${tickets.id}) filter (where ${tickets.status} = 'done')`),

@@ -1,26 +1,23 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { timeLogs, tickets } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
-import { BadRequestError, NotFoundError } from '@/lib/api-error';
+import { NotFoundError } from '@/lib/api-error';
+import { logTimeSchema } from '@/lib/validations/tickets';
 
-export const POST = withErrorHandler(async (request, { params, session }) => {
+export const POST = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
-  const body = await request.json();
-  const { hours, note, isBreakthrough, date } = body;
-
-  if (!hours || hours <= 0) {
-    throw new BadRequestError('Valid hours are required');
-  }
+  const json = await request.json();
+  const body = logTimeSchema.parse(json);
 
   // Resolve ticket ID if its a short code
   const isPk = id.length > 15;
   const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
 
   const existingTicket = await db.query.tickets.findFirst({
-    where: ticketQuery,
+    where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
   });
 
   if (!existingTicket) {
@@ -31,13 +28,13 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
     .insert(timeLogs)
     .values({
       id: nanoid(),
-      organizationId: existingTicket.organizationId,
-      ticketId: existingTicket.id, // always safe PK
+      organizationId: orgId!,
+      ticketId: existingTicket.id, // always use internal PK
       userId: session!.user.id,
-      hours,
-      note: note || '',
-      date: date ? new Date(date) : new Date(),
-      isBreakthrough: isBreakthrough || false,
+      hours: body.hours,
+      note: body.note || '',
+      date: new Date(body.date),
+      isBreakthrough: body.isBreakthrough,
     })
     .returning();
 
@@ -45,7 +42,7 @@ export const POST = withErrorHandler(async (request, { params, session }) => {
   await db
     .update(tickets)
     .set({
-      loggedHours: (existingTicket.loggedHours || 0) + hours,
+      loggedHours: (existingTicket.loggedHours || 0) + body.hours,
       updatedAt: new Date(),
     })
     .where(eq(tickets.id, existingTicket.id));

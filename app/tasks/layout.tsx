@@ -1,5 +1,4 @@
 'use client';
-
 import { ReactNode, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
 import { useUserInvitations } from '@/hooks/useInvites';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
+import { useSearch } from '@/hooks/useSearch';
 
 interface TaskManagerLayoutProps {
   children: ReactNode;
@@ -22,14 +22,7 @@ export default function TaskManagerLayout({
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{
-    tickets: Array<{ id: string; title: string; ticketId: string }>;
-    projects: Array<{ id: string; name: string }>;
-  }>({
-    tickets: [],
-    projects: [],
-  });
-  const [isSearching, setIsSearching] = useState(false);
+  const { results: searchResults, isSearching } = useSearch(searchQuery, showSearch);
   const { user, session, orgRole, isLoading: authLoading } = useAuth();
 
   // ─── Organization State ──────────────────────────────────────────────────────
@@ -127,33 +120,9 @@ export default function TaskManagerLayout({
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Search logic
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults({ tickets: [], projects: [] });
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
-        }
-      } catch (err) {
-        console.error('Search failed', err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   // Close search on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowSearch(false);
     setSearchQuery('');
   }, [pathname]);
@@ -219,7 +188,7 @@ export default function TaskManagerLayout({
 
   // ─── Guard: Redirecting to Onboarding ───────────────────────────────────────
   if (isRedirectingToOnboarding) {
-    return <UnifiedLoader variant="fullscreen" message="PREPARING_WORKSPACE..." />;
+    return <UnifiedLoader variant="fullscreen" message="PREPARING_ORGANIZATION..." />;
   }
 
   // ─── Guard: On Onboarding Page (no org yet) ─────────────────────────────────

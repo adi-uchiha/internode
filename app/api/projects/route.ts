@@ -3,12 +3,11 @@ import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
+import { createProjectSchema } from '@/lib/validations/projects';
 
 export const GET = withErrorHandler(async (request, { orgId }) => {
-  if (!orgId) return NextResponse.json([]);
-
   const allProjects = await db.query.projects.findMany({
-    where: eq(projects.organizationId, orgId),
+    where: eq(projects.organizationId, orgId!),
     orderBy: [desc(projects.createdAt)],
   });
 
@@ -17,26 +16,26 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
 
 export const POST = withErrorHandler(
   async (req, { orgId }) => {
-    const data = await req.json();
-    const id = data.id || `proj_${Math.random().toString(36).slice(2, 9)}`;
+    const json = await req.json();
+    const body = createProjectSchema.parse(json);
+    const id = `proj_${Math.random().toString(36).slice(2, 9)}`;
 
-    if (!orgId) throw new Error('No active organization');
-
-    const newProject = await db
+    const [newProject] = await db
       .insert(projects)
       .values({
         id,
-        organizationId: orgId,
-        name: data.name,
-        prefix: data.prefix || data.name.slice(0, 3).toUpperCase(),
-        description: data.description || '',
-        color: data.color || '#3b82f6',
-        status: data.status || 'active',
-        startDate: data.startDate ? new Date(data.startDate) : new Date(),
-      })
+        organizationId: orgId!,
+        name: body.name,
+        prefix: body.prefix || body.name.slice(0, 3).toUpperCase(),
+        description: body.description || '',
+        color: body.color,
+        status: body.status,
+        startDate: new Date(body.startDate),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
       .returning();
 
-    return NextResponse.json(newProject[0]);
+    return NextResponse.json(newProject);
   },
   { requiredRole: 'admin' }
 );
