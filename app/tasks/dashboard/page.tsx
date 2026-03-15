@@ -404,13 +404,13 @@ const MemberDashboardContent = () => {
 
   const weeklyHours = weeklyLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
 
-  const dailyHours = [0, 0, 0, 0, 0].map((_, i) => {
+  const dailyHours = [0, 0, 0, 0, 0, 0, 0].map((_, i) => {
     const date = format(addDays(startOfCurrentWeek, i), 'yyyy-MM-dd');
     return weeklyLogs
       .filter((l) => format(new Date(l.date), 'yyyy-MM-dd') === date)
       .reduce((sum, l) => sum + (l.hours || 0), 0);
   });
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Leaderboard calculation
   const leaderboard = useMemo(() => {
@@ -432,7 +432,12 @@ const MemberDashboardContent = () => {
           efficiency: hours > 0 ? Math.min(100, Math.round(((doneTickets * 4) / hours) * 100)) : 0,
         };
       })
-      .sort((a, b) => b.ticketsDone - a.ticketsDone)
+      .sort((a, b) => {
+        if (b.ticketsDone !== a.ticketsDone) {
+          return b.ticketsDone - a.ticketsDone;
+        }
+        return parseFloat(b.hoursLogged) - parseFloat(a.hoursLogged);
+      })
       .slice(0, 5);
   }, [users, tickets]);
 
@@ -597,7 +602,7 @@ const MemberDashboardContent = () => {
                       stroke="currentColor"
                       className="text-primary"
                       strokeWidth="2.5"
-                      strokeDasharray={`${(weeklyHours / 40) * 100} 100`}
+                      strokeDasharray={`${(weeklyHours / 100) * 100} 100`}
                       strokeLinecap="butt"
                     />
                   </svg>
@@ -605,7 +610,7 @@ const MemberDashboardContent = () => {
                     <span className="font-display text-2xl font-bold">
                       {weeklyHours.toFixed(1)}h
                     </span>
-                    <span className="font-mono text-[10px] text-muted-foreground">/ 40h</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">/ 100h</span>
                   </div>
                 </div>
               </div>
