@@ -5,6 +5,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { updateTicketSchema } from '@/lib/validations/tickets';
+import { NotificationService } from '@/lib/notifications';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
@@ -47,7 +48,7 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
   return NextResponse.json({ ...ticket, projects: resolvedProjects });
 });
 
-export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
+export const PATCH = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
   const json = await request.json();
   const body = updateTicketSchema.parse(json);
@@ -92,6 +93,41 @@ export const PATCH = withErrorHandler(async (request, { params, orgId }) => {
     .set(updateData)
     .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
     .returning();
+
+  // --- Notification Triggers ---
+  if (updatedTicket) {
+    const ticketIdForService = updatedTicket.id;
+    const ticketShortId = updatedTicket.ticketId;
+    const ticketTitle = updatedTicket.title;
+
+    // 1. Assignment Notification
+    if (body.assigneeId !== undefined && body.assigneeId !== existingTicket.assigneeId) {
+      if (body.assigneeId) {
+        // Find assignee name for better notification subtitle (optional, but good for UX)
+        // For simplicity we use "someone" if we don't want to fetch user,
+        // but let's just trigger with basic info first.
+        await NotificationService.notifyAssignment({
+          organizationId: orgId!,
+          ticketId: ticketIdForService,
+          ticketTitle: ticketTitle,
+          assigneeId: body.assigneeId,
+          assignerName: session!.user.name || 'Admin',
+        });
+      }
+    }
+
+    // 2. Status Change Notification
+    if (body.status !== undefined && body.status !== existingTicket.status) {
+      await NotificationService.notifyTicketEvent({
+        organizationId: orgId!,
+        ticketId: ticketIdForService,
+        type: 'status',
+        title: 'Status Updated',
+        subtitle: `[${ticketShortId}] Moved to ${body.status.toUpperCase()}`,
+        excludeUserId: session!.user.id,
+      });
+    }
+  }
 
   return NextResponse.json(updatedTicket);
 });

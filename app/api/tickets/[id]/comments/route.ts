@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { createCommentSchema } from '@/lib/validations/tickets';
+import { NotificationService } from '@/lib/notifications';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id: ticketId } = await params;
@@ -44,6 +45,18 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       content: body.content,
     })
     .returning();
+
+  // --- Notification Trigger ---
+  if (newComment) {
+    await NotificationService.notifyTicketEvent({
+      organizationId: orgId!,
+      ticketId,
+      type: 'comment',
+      title: 'New Comment',
+      subtitle: `[${ticket.ticketId}] ${session!.user.name}: ${body.content.slice(0, 50)}${body.content.length > 50 ? '...' : ''}`,
+      excludeUserId: session!.user.id,
+    });
+  }
 
   return NextResponse.json(newComment, { status: 201 });
 });

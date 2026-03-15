@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { logTimeSchema } from '@/lib/validations/tickets';
+import { NotificationService } from '@/lib/notifications';
 
 export const POST = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
@@ -46,6 +47,18 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       updatedAt: new Date(),
     })
     .where(eq(tickets.id, existingTicket.id));
+
+  // --- Notification Trigger ---
+  if (newTimeLog) {
+    await NotificationService.notifyTicketEvent({
+      organizationId: orgId!,
+      ticketId: existingTicket.id,
+      type: 'time-logged',
+      title: 'Time Logged',
+      subtitle: `[${existingTicket.ticketId}] ${session!.user.name} logged ${body.hours}h`,
+      excludeUserId: session!.user.id,
+    });
+  }
 
   return NextResponse.json(newTimeLog, { status: 201 });
 });

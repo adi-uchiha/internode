@@ -22,6 +22,16 @@ export const auth = betterAuth({
       invitation: schema.invitations,
     },
   }),
+  databaseHooks: {
+    user: {
+      create: {
+        after: async () => {
+          // If a user is created, they might be joining an org later
+          // For now, most member logic happens in the member table
+        },
+      },
+    },
+  },
   plugins: [
     organization({
       /**
