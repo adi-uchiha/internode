@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-page-custom-font */
 import {
   Body,
   Button,
@@ -11,6 +10,7 @@ import {
   Preview,
   Section,
   Text,
+  Font,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -39,9 +39,15 @@ export function InvitationEmail({
   return (
     <Html lang="en">
       <Head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap"
+        <Font
+          fontFamily="Space Grotesk"
+          fallbackFontFamily="Helvetica"
+          webFont={{
+            url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap',
+            format: 'woff2',
+          }}
+          fontWeight={400}
+          fontStyle="normal"
         />
       </Head>
       <Preview>
