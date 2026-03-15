@@ -4,7 +4,7 @@ import { getSessionCookie } from 'better-auth/cookies';
 const authRoutes = ['/login', '/register'];
 const publicRoutes = ['/']; // Add any public routes here
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthRoute = authRoutes.includes(pathname);
@@ -45,7 +45,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - Any file with an image extension at root (icon-green.png, icon.svg, etc)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png|.*\\.svg|.*\\.ico|.*\\.jpg).*)',
   ],
 };

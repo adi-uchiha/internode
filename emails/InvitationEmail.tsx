@@ -34,11 +34,16 @@ export function InvitationEmail({
   baseUrl,
 }: InvitationEmailProps) {
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
-  const logoUrl = `${baseUrl}/icon-green.png`;
+  const logoUrl = `${baseUrl.replace(/\/$/, '')}/icon-green.png`;
 
   return (
     <Html lang="en">
       <Head>
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
         <Font
           fontFamily="Space Grotesk"
           fallbackFontFamily="Helvetica"
@@ -118,8 +123,7 @@ export default InvitationEmail;
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const fontFamily =
-  '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const fontFamily = 'Space Grotesk, Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 const main: React.CSSProperties = {
   backgroundColor: '#080808',
