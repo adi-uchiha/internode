@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { leaveRequests, members } from '@/db/schema';
+import { leaveRequests } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { BadRequestError } from '@/lib/api-error';
 
 // Get leave requests. Admins get all, members get their own.
-export const GET = withErrorHandler(async (req, { session, orgId }) => {
+export const GET = withErrorHandler(async (req, { session, orgId, orgRole }) => {
   if (!orgId) throw new Error('No active organization');
 
-  // Find the user's role in this organization
-  const member = await db.query.members.findFirst({
-    where: and(eq(members.userId, session!.user.id), eq(members.organizationId, orgId)),
-  });
-
-  const isOrgManager = member?.role === 'admin' || member?.role === 'owner';
+  const isOrgManager = orgRole === 'admin' || orgRole === 'owner';
 
   const queryArgs = {
     with: {

@@ -27,39 +27,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const user = sessionData?.user as User | null;
 
   useEffect(() => {
-    const isAuthRoute = ['/login', '/register'].includes(pathname);
-    const isPublicPath =
-      pathname === '/' ||
-      pathname === '/login' ||
-      pathname === '/register' ||
-      pathname.startsWith('/accept-invite');
-
-    if (!isLoading) {
-      if (!sessionData && !isPublicPath) {
-        // Not logged in → redirect to login
-        router.push('/login');
-      } else if (sessionData && isAuthRoute) {
-        // Already logged in but on an auth page → redirect to dashboard (or intended redirect)
-        const params = new URLSearchParams(window.location.search);
-        const redirectTo = params.get('redirect');
-        router.push(redirectTo || '/tasks/dashboard');
-      } else if (
-        sessionData &&
-        sessionData.session.activeOrganizationId &&
-        pathname === '/tasks/onboarding'
-      ) {
-        // Has an active organization but still on the onboarding page → redirect to dashboard
-        router.push('/tasks/dashboard');
-      }
-      // NOTE: The "no active org → onboarding" redirect is handled exclusively
-      // by app/tasks/layout.tsx to avoid competing redirect loops with stale session data.
-    }
+    // The "not logged in → /login" and "logged in but on auth page → /dashboard"
+    // redirects are now delegated to Middleware and the root layout to avoid
+    // competing with organizational redirects.
 
     if (error) {
       console.error('Session error:', error);
-      if (!isPublicPath) {
-        router.push('/login');
-      }
     }
   }, [sessionData, isLoading, error, pathname, router]);
 

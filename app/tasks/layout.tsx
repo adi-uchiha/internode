@@ -9,7 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
 import { useUserInvitations } from '@/hooks/useInvites';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import { FullScreenLoader } from '@/components/ui/FullScreenLoader';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface TaskManagerLayoutProps {
   children: ReactNode;
@@ -61,14 +61,26 @@ export default function TaskManagerLayout({
   const { data: searchHistory = [] } = useSearchHistory({ enabled: !!activeOrgId });
   const logSearchMutation = useLogSearch();
 
-  // ─── Onboarding Interceptor ─────────────────────────────────────────────────
+  // ─── Redirect Interceptor ──────────────────────────────────────────────────
   useEffect(() => {
     if (!isFullyLoaded) return;
-    if (!user || pathname === '/tasks/onboarding') return;
 
-    // Only redirect if they actually have ZERO organizations
-    if (hasNoOrg) {
+    // 1. Unauthenticated → /login
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    // 2. Onboarding: Org-less user → /tasks/onboarding
+    if (hasNoOrg && pathname !== '/tasks/onboarding') {
       router.replace('/tasks/onboarding');
+      return;
+    }
+
+    // 3. Reverse Onboarding: Org-ready user on onboarding page → /tasks/dashboard
+    if (!hasNoOrg && pathname === '/tasks/onboarding') {
+      router.replace('/tasks/dashboard');
+      return;
     }
   }, [user, hasNoOrg, isFullyLoaded, pathname, router]);
 
@@ -168,12 +180,12 @@ export default function TaskManagerLayout({
   // Block ALL rendering while auth/org status is resolving to prevent any
   // child component from mounting hooks that fire org-dependent API calls.
   if (!isFullyLoaded) {
-    return <FullScreenLoader message="WAKING_SYSTEM..." />;
+    return <UnifiedLoader variant="fullscreen" message="WAKING_SYSTEM..." />;
   }
 
   // ─── Guard: Redirecting to Onboarding ───────────────────────────────────────
   if (isRedirectingToOnboarding) {
-    return <FullScreenLoader message="PREPARING_WORKSPACE..." />;
+    return <UnifiedLoader variant="fullscreen" message="PREPARING_WORKSPACE..." />;
   }
 
   // ─── Guard: On Onboarding Page (no org yet) ─────────────────────────────────

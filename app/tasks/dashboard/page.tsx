@@ -20,14 +20,15 @@ import {
 
 import { useTickets, useLogTime } from '@/hooks/useTickets';
 import { useUsers } from '@/hooks/useUsers';
-import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useActivities, type ActivityWithUser } from '@/hooks/useActivities';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { WeeklyGoals } from '@/components/dashboard/WeeklyGoals';
 import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
+import { Leaderboard } from '@/components/dashboard/Leaderboard';
+import { useTaskAnalytics, useLeaderboard } from '@/hooks/useAnalytics';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 70 20" className="w-full h-5">
@@ -54,7 +55,7 @@ const AdminDashboardContent = () => {
   if (analyticsLoading || ticketsLoading || activitiesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Spinner message="LOADING_SYSTEM_DATA..." size="sm" />
+        <UnifiedLoader message="LOADING_SYSTEM_DATA..." size="sm" />
       </div>
     );
   }
@@ -387,7 +388,7 @@ const MemberDashboardContent = () => {
   const { user } = useAuth();
   const { data: tickets, isLoading: ticketsLoading } = useTickets();
   const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
-  const { data: users } = useUsers();
+  const { data: leaderboard, isLoading: leaderboardLoading } = useLeaderboard();
 
   const focusTicket = tickets?.find((t) => t.status === 'in-progress' && t.assigneeId === user?.id);
   const upcomingTickets =
@@ -411,35 +412,6 @@ const MemberDashboardContent = () => {
       .reduce((sum, l) => sum + (l.hours || 0), 0);
   });
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  // Leaderboard calculation
-  const leaderboard = useMemo(() => {
-    if (!users || !tickets) return [];
-    return users
-      .map((u) => {
-        const doneTickets = tickets.filter(
-          (t) => t.assigneeId === u.id && t.status === 'done'
-        ).length;
-        const hours = tickets
-          .filter((t) => t.assigneeId === u.id)
-          .reduce((sum, t) => sum + (t.loggedHours || 0), 0);
-        return {
-          id: u.id,
-          name: u.name,
-          image: u.image,
-          ticketsDone: doneTickets,
-          hoursLogged: hours.toFixed(1),
-          efficiency: hours > 0 ? Math.min(100, Math.round(((doneTickets * 4) / hours) * 100)) : 0,
-        };
-      })
-      .sort((a, b) => {
-        if (b.ticketsDone !== a.ticketsDone) {
-          return b.ticketsDone - a.ticketsDone;
-        }
-        return parseFloat(b.hoursLogged) - parseFloat(a.hoursLogged);
-      })
-      .slice(0, 5);
-  }, [users, tickets]);
 
   // Quick Log state
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -468,7 +440,7 @@ const MemberDashboardContent = () => {
   if (ticketsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Spinner message="LOADING_PERSONAL_ORGANIZATION..." size="sm" />
+        <UnifiedLoader message="LOADING_PERSONAL_ORGANIZATION..." size="sm" />
       </div>
     );
   }
@@ -674,76 +646,7 @@ const MemberDashboardContent = () => {
             </motion.div>
           </div>
 
-          {/* Leaderboard */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="border border-border bg-card p-6"
-          >
-            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1">
-              [LEADERBOARD]
-            </div>
-            <h3 className="font-display font-semibold text-lg mb-4">Top Contributors</h3>
-            <div className="space-y-2">
-              {leaderboard.map((entry, i) => {
-                const isYou = entry.id === user?.id;
-                const medals = ['🥇', '🥈', '🥉'];
-                return (
-                  <div
-                    key={entry.id}
-                    className={cn(
-                      'flex items-center gap-4 p-3 border',
-                      isYou ? 'bg-primary/5 border-primary/30' : 'border-border bg-muted/5'
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'font-mono text-sm w-10',
-                        i < 3 ? 'text-primary' : 'text-muted-foreground'
-                      )}
-                    >
-                      #{i + 1} {medals[i] || ''}
-                    </span>
-                    <div className="w-7 h-7 rounded-full border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                      {entry.image ? (
-                        <Image
-                          src={entry.image}
-                          alt=""
-                          width={28}
-                          height={28}
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <Icon
-                          icon="solar:user-linear"
-                          className="w-3.5 h-3.5 text-muted-foreground"
-                        />
-                      )}
-                    </div>
-                    <span className="text-sm flex-1 truncate">
-                      {isYou ? <span className="text-primary font-medium">You</span> : entry.name}
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="font-mono text-[10px] text-muted-foreground uppercase">
-                          Tickets
-                        </div>
-                        <div className="font-display font-bold text-xs">{entry.ticketsDone}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-[10px] text-muted-foreground uppercase">
-                          Hours
-                        </div>
-                        <div className="font-display font-bold text-xs">{entry.hoursLogged}h</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
+          <Leaderboard data={leaderboard} isLoading={leaderboardLoading} />
 
           {/* Personal Activity Feed */}
           <motion.div
@@ -863,7 +766,11 @@ const MemberDashboardContent = () => {
             >
               {isLogging ? (
                 <>
-                  <Spinner size="sm" message="SYNCING_VECTORS..." iconClassName="text-background" />
+                  <UnifiedLoader
+                    size="sm"
+                    message="SYNCING_VECTORS..."
+                    className="text-background"
+                  />
                 </>
               ) : (
                 'CONFIRM_LOG'

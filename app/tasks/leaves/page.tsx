@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { RequireRole } from '@/components/auth/RequireRole';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 export default function LeavesPage() {
   const { data: leaves, isLoading } = useLeaves();
@@ -75,7 +75,7 @@ export default function LeavesPage() {
       <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
           <div className="py-20 flex justify-center">
-            <Spinner message="LOADING_LEAVE_REGISTRY..." />
+            <UnifiedLoader message="LOADING_LEAVE_REGISTRY..." />
           </div>
         ) : leaves?.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-border bg-muted/5 rounded-xl">

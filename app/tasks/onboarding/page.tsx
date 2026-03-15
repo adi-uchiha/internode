@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { toast } from '@/lib/toast';
-import { Spinner } from '@/components/ui/Spinner';
-import { FullScreenLoader } from '@/components/ui/FullScreenLoader';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -217,7 +216,11 @@ export default function OnboardingPage() {
                 </div>
 
                 {invitesLoading ? (
-                  <Spinner message="SCANNING_PENDING_INVITATIONS..." className="py-4" size="sm" />
+                  <UnifiedLoader
+                    message="SCANNING_PENDING_INVITATIONS..."
+                    className="py-4"
+                    size="sm"
+                  />
                 ) : pendingInvites.length > 0 ? (
                   <div className="space-y-4">
                     <div className="p-4 border border-primary/30 bg-primary/5">
@@ -308,7 +311,7 @@ export default function OnboardingPage() {
                         disabled={acceptingId === invite.id}
                         onClick={() => handleAcceptInvite(invite.id)}
                       >
-                        {acceptingId === invite.id ? <Spinner size="sm" /> : 'Accept'}
+                        {acceptingId === invite.id ? <UnifiedLoader size="sm" /> : 'Accept'}
                       </Button>
                     </motion.div>
                   ))}
@@ -429,10 +432,10 @@ export default function OnboardingPage() {
                       disabled={isCreating || !orgName.trim() || !orgSlug.trim()}
                     >
                       {isCreating ? (
-                        <Spinner
+                        <UnifiedLoader
                           message="Initializing..."
                           size="sm"
-                          iconClassName="text-primary-foreground"
+                          className="text-primary-foreground"
                         />
                       ) : (
                         <>
@@ -447,7 +450,9 @@ export default function OnboardingPage() {
             )}
 
             {/* ── STEP: Success ──────────────────────────────────────────── */}
-            {step === 'success' && <FullScreenLoader message="INITIALIZING_CORE..." />}
+            {step === 'success' && (
+              <UnifiedLoader variant="fullscreen" message="INITIALIZING_CORE..." />
+            )}
           </div>
         </motion.div>
       </AnimatePresence>

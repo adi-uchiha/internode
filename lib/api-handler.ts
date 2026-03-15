@@ -9,6 +9,7 @@ type HandlerContext = {
   session?: Session;
   orgId?: string;
   orgRole?: import('./org-utils').OrgRole;
+  member?: unknown; // The full member record from the DB
 };
 
 type ApiHandler = (req: Request, context: HandlerContext) => Promise<Response> | Response;
@@ -72,6 +73,7 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           session: session as Session,
           orgId: session?.session.activeOrganizationId || undefined,
           orgRole: (memberData.role as import('./org-utils').OrgRole) || undefined,
+          member: memberData,
         });
       }
 

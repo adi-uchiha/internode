@@ -1,6 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 
+export interface LeaderboardEntry {
+  id: string;
+  name: string;
+  image: string | null;
+  ticketsDone: number;
+  hoursLogged: string;
+  efficiency: number;
+}
+
 export interface AdminAnalyticsData {
   isGlobal: boolean;
   logRate: string;
@@ -67,6 +76,14 @@ export function useTaskAnalytics() {
   return useQuery<TaskAnalyticsData>({
     queryKey: ['analytics', 'tasks'],
     queryFn: () => apiClient.get('/api/analytics/tasks'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useLeaderboard() {
+  return useQuery<LeaderboardEntry[]>({
+    queryKey: ['analytics', 'leaderboard'],
+    queryFn: () => apiClient.get('/api/analytics/leaderboard'),
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -58,10 +58,17 @@ export const auth = betterAuth({
             attachment: [{ data: html, alternative: true }],
           });
 
-          console.log(`[auth] Invitation email sent to ${data.email} via Gmail SMTP`);
-        } catch (err) {
-          // Never let email failures break the invitation creation flow
-          console.error('[auth] sendInvitationEmail threw:', err);
+          console.log(`[auth] Invitation email sent to ${data.email}`);
+        } catch (err: unknown) {
+          // Never let email failures break the invitation creation flow,
+          // but log it extensively for system administrators.
+          const error = err as Error;
+          console.error('[auth] CRITICAL_EMAIL_FAILURE:', {
+            email: data.email,
+            org: data.organization.slug,
+            error: error.message || String(error),
+            stack: error.stack,
+          });
         }
       },
     }),

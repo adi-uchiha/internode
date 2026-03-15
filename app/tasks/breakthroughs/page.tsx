@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 export default function BreakthroughsPage() {
   const { data: breakthroughs, isLoading } = useBreakthroughs();
@@ -54,7 +54,7 @@ export default function BreakthroughsPage() {
 
         {isLoading ? (
           <div className="col-span-full py-20 flex justify-center">
-            <Spinner message="LOADING_WALL_OF_FAME..." />
+            <UnifiedLoader message="LOADING_WALL_OF_FAME..." />
           </div>
         ) : breakthroughs?.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-border bg-muted/5 rounded-xl">

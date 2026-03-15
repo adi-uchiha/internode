@@ -15,6 +15,7 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
       done: sql<number>`count(*) filter (where ${tickets.status} = 'done')::integer`,
       highPriority: sql<number>`count(*) filter (where ${tickets.priority} = 'high')::integer`,
       inProgress: sql<number>`count(*) filter (where ${tickets.status} = 'in-progress')::integer`,
+      overdue: sql<number>`count(*) filter (where ${tickets.status} != 'done' and ${tickets.dueDate} < now())::integer`,
     })
     .from(tickets)
     .where(and(eq(tickets.organizationId, orgId), gte(tickets.createdAt, subDays(new Date(), 30))));
@@ -166,7 +167,7 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
       activeContributors: timeMetrics?.activeContributors || 0,
       // legacy support
       inProgress: ticketMetrics?.inProgress || 0,
-      overdue: 0,
+      overdue: ticketMetrics?.overdue || 0,
       teamHours: `${Math.round(timeMetrics?.totalHours || 0)}h`,
     },
     weeklyTrends: weeklyTrendsRaw.map((t) => ({

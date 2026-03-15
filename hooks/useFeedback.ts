@@ -45,12 +45,33 @@ export function useSubmitFeedback() {
       type: 'log' | 'breakthrough';
       comment: string;
     }) => apiClient.post(`/api/feedback/${id}`, { type, comment }),
-    onMutate: async () => {
+    onMutate: async ({ id, type }) => {
       await queryClient.cancelQueries({ queryKey: ['feedback'] });
-      return {};
+
+      const previousData = queryClient.getQueryData<FeedbackData>(['feedback']);
+
+      if (previousData) {
+        queryClient.setQueryData<FeedbackData>(['feedback'], {
+          logs: type === 'log' ? previousData.logs.filter((l) => l.id !== id) : previousData.logs,
+          breakthroughs:
+            type === 'breakthrough'
+              ? previousData.breakthroughs.filter((b) => b.id !== id)
+              : previousData.breakthroughs,
+        });
+      }
+
+      return { previousData };
+    },
+    onError: (err, variables, context: unknown) => {
+      if (context && typeof context === 'object' && 'previousData' in context) {
+        queryClient.setQueryData(
+          ['feedback'],
+          (context as { previousData: FeedbackData }).previousData
+        );
+      }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['feedback'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['feedback'] });
     },
   });
 }

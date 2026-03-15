@@ -10,7 +10,7 @@ import { RequireRole } from '@/components/auth/RequireRole';
 import { ProjectModal } from '@/components/modals/ProjectModal';
 import { toast } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
         <AnimatePresence mode="popLayout">
           {projectsLoading ? (
             <div className="col-span-full py-20 flex justify-center">
-              <Spinner message="SCANNING_PROJECT_REGISTRY..." />
+              <UnifiedLoader message="SCANNING_PROJECT_REGISTRY..." />
             </div>
           ) : projects?.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-border bg-muted/5">

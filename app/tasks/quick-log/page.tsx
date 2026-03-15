@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useLogTime } from '@/hooks/useTickets';
 import { useTickets } from '@/hooks/useTickets';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 export default function QuickLogPage() {
   const [note, setNote] = useState('');
@@ -168,7 +168,11 @@ export default function QuickLogPage() {
         <div className="flex justify-end gap-4">
           <Button type="submit" variant="hero" size="lg" disabled={isSubmitting || submitted}>
             {isSubmitting ? (
-              <Spinner size="sm" message="Pushing Log..." iconClassName="text-primary-foreground" />
+              <UnifiedLoader
+                size="sm"
+                message="Pushing Log..."
+                className="text-primary-foreground"
+              />
             ) : submitted ? (
               <>
                 <Icon icon="solar:check-circle-linear" className="w-4 h-4" />

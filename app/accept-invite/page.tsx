@@ -9,7 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeSwitchOrganization } from '@/lib/auth-utils';
 
@@ -237,7 +237,7 @@ function AcceptInviteContent() {
               exit={{ opacity: 0, y: -16 }}
               className="border border-border bg-card p-10 text-center space-y-4"
             >
-              <Spinner message="VERIFYING_INVITATION..." />
+              <UnifiedLoader message="VERIFYING_INVITATION..." />
             </motion.div>
           )}
 
@@ -413,10 +413,10 @@ function AcceptInviteContent() {
                   disabled={state === 'accepting'}
                 >
                   {state === 'accepting' ? (
-                    <Spinner
+                    <UnifiedLoader
                       size="sm"
                       message="Joining organization..."
-                      iconClassName="text-white"
+                      className="text-white"
                     />
                   ) : (
                     <>
@@ -464,7 +464,7 @@ function AcceptInviteContent() {
                   </p>
                 </div>
                 <div className="flex items-center justify-center py-2">
-                  <Spinner message="INITIALIZING_ORGANIZATION..." size="sm" />
+                  <UnifiedLoader message="INITIALIZING_ORGANIZATION..." size="sm" />
                 </div>
               </div>
             </motion.div>
@@ -517,7 +517,7 @@ export default function AcceptInvitePage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Spinner message="LOADING..." />
+          <UnifiedLoader message="LOADING..." />
         </div>
       }
     >

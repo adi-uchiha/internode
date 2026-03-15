@@ -75,6 +75,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   members: many(projectMembers),
   breakthroughs: many(breakthroughs),
+  tickets: many(tickets),
 }));
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
