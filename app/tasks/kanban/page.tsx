@@ -147,9 +147,9 @@ const KanbanCard = ({
       </div>
       <div className="flex items-center justify-between mt-auto pt-1">
         <div className="flex -space-x-2">
-          {ticket.assignee ? (
+          {ticket.assignee?.image ? (
             <Image
-              src={ticket.assignee.image || ''}
+              src={ticket.assignee.image}
               alt={ticket.assignee.name || 'User'}
               width={20}
               height={20}

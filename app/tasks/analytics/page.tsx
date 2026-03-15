@@ -484,9 +484,9 @@ export default function AnalyticsPage() {
             <div className="p-6 bg-muted/20 border border-border/50 space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-sm border border-border p-1 bg-card">
-                  {selectedMember && selectedUserInfo ? (
+                  {selectedMember && selectedUserInfo?.image ? (
                     <Image
-                      src={selectedUserInfo.image || ''}
+                      src={selectedUserInfo.image}
                       alt=""
                       width={64}
                       height={64}
