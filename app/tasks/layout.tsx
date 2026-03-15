@@ -22,15 +22,20 @@ export default function TaskManagerLayout({
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
   const { user, session, orgRole, isLoading: authLoading } = useAuth();
+
+  // ─── Organization State ──────────────────────────────────────────────────────
   const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
+
   const pathname = usePathname();
   const router = useRouter();
 
-  // ─── Organization State ──────────────────────────────────────────────────────
+  // Combined resolution state: System is "fully loaded" ONLY if auth is done,
+  // and we have a definitive resolution from the orgs list.
   const isFullyLoaded = !authLoading && !orgsLoading;
   const activeOrgId = session?.session.activeOrganizationId;
 
-  // A user truly has "no org" only if they have 0 organizations in the list.
+  // A user truly has "no org" ONLY if the list has been fetched and is confirmed empty.
+  // We check Array.isArray and .length strictly to avoid false positives during cache wipes.
   const hasNoOrg = isFullyLoaded && !!user && Array.isArray(orgs) && orgs.length === 0;
 
   const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';

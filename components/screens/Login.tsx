@@ -11,25 +11,31 @@ import { authClient } from '@/lib/auth-client';
 import { AUTH_FLAGS } from '@/lib/feature-flags';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 
 type FormMode = 'login' | 'signup';
 
 const Login = () => {
   const [formMode, setFormMode] = useState<FormMode>('login');
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
 
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+
   const { login, signup } = useAuth();
+  const redirectTo = redirect ? decodeURIComponent(redirect) : undefined;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const success = await login(email, password);
+    const success = await login(email, password, redirectTo);
 
     if (!success) {
       setError('Invalid email or password. Please try again.');
@@ -42,7 +48,7 @@ const Login = () => {
     setError('');
     setIsLoading(true);
 
-    const success = await signup(email, password);
+    const success = await signup(email, password, name, redirectTo);
 
     if (!success) {
       setError('Signup failed. Please try again or use a different email.');
@@ -148,7 +154,7 @@ const Login = () => {
                 try {
                   await authClient.signIn.social({
                     provider: 'github',
-                    callbackURL: '/tasks/dashboard',
+                    callbackURL: redirectTo || '/tasks/dashboard',
                   });
                 } catch (err) {
                   console.error('GitHub sign-in error:', err);
@@ -192,6 +198,27 @@ const Login = () => {
                     onSubmit={handleSubmit}
                     className="space-y-4"
                   >
+                    {formMode === 'signup' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
+                          Full Name
+                        </label>
+                        <Input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="John Doe"
+                          className="bg-background border-border font-mono mb-4"
+                          required
+                          autoComplete="name"
+                        />
+                      </motion.div>
+                    )}
+
                     <div>
                       <label className="font-mono text-xs text-muted-foreground uppercase tracking-wider block mb-2">
                         Email Address

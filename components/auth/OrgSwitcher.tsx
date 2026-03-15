@@ -16,6 +16,7 @@ import { Icon } from '@iconify/react';
 import { CreateOrgModal } from './CreateOrgModal';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { safeSwitchOrganization } from '@/lib/auth-utils';
 
 interface OrgSwitcherProps {
   collapsed?: boolean;
@@ -44,10 +45,9 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
       return;
     }
     if (!orgId || orgId === activeOrgId) return;
-    await authClient.organization.setActive({ organizationId: orgId });
-    await authClient.getSession(); // Trigger client-side nanostore update
-    queryClient.clear(); // Total cache wipe to ensure NO data leaks between organizations
-    router.refresh(); // Fully evict client router cache guaranteeing clean state for new Org
+
+    // Use the atomic, cache-safe utility
+    await safeSwitchOrganization(orgId, queryClient, router);
   };
 
   if (collapsed) {

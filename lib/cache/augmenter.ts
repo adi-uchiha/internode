@@ -13,7 +13,22 @@ export const CacheAugmenter = {
   user: (queryClient: QueryClient, userId: string | null): User | undefined => {
     if (!userId) return undefined;
     const users = queryClient.getQueryData<User[]>(['users']);
-    return users?.find((u) => u.id === userId);
+    const found = users?.find((u) => u.id === userId);
+
+    if (!found) {
+      // Hydration fallback during cache wipes/org switches.
+      // Prevents UI crashes when destructuring user details like user.name
+      return {
+        id: userId,
+        name: '...',
+        email: '',
+        role: 'member',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        emailVerified: false,
+      } as User;
+    }
+    return found;
   },
 
   /**
@@ -22,13 +37,11 @@ export const CacheAugmenter = {
   projects: (queryClient: QueryClient, projectIds: string[]): { id: string; name: string }[] => {
     if (!projectIds || projectIds.length === 0) return [];
     const allProjects = queryClient.getQueryData<Project[]>(['projects']);
-    if (!allProjects) return [];
-    return projectIds
-      .map((pid) => {
-        const project = allProjects.find((p) => p.id === pid);
-        return project ? { id: project.id, name: project.name } : null;
-      })
-      .filter((p): p is { id: string; name: string } => p !== null);
+
+    return projectIds.map((pid) => {
+      const project = allProjects?.find((p) => p.id === pid);
+      return project ? { id: project.id, name: project.name } : { id: pid, name: '...' };
+    });
   },
 
   /**

@@ -324,7 +324,7 @@ export default function ProfilePage() {
             </div>
             <div className="pt-6 border-t border-border/50">
               <button
-                onClick={logout}
+                onClick={() => logout()}
                 className="flex items-center gap-2 font-mono text-xs text-destructive hover:underline transition-all px-2"
               >
                 <Icon icon="solar:logout-linear" className="w-4 h-4" />

@@ -11,9 +11,9 @@ interface AuthContextType {
   user: User | null;
   orgRole: 'owner' | 'admin' | 'member';
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+  login: (email: string, password: string, redirectTo?: string) => Promise<boolean>;
+  signup: (email: string, password: string, name?: string, redirectTo?: string) => Promise<boolean>;
+  logout: (redirectTo?: string) => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -39,8 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Not logged in → redirect to login
         router.push('/login');
       } else if (sessionData && isAuthRoute) {
-        // Already logged in but on an auth page → redirect to dashboard
-        router.push('/tasks/dashboard');
+        // Already logged in but on an auth page → redirect to dashboard (or intended redirect)
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+        router.push(redirectTo || '/tasks/dashboard');
       } else if (
         sessionData &&
         sessionData.session.activeOrganizationId &&
@@ -61,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [sessionData, isLoading, error, pathname, router]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, redirectTo?: string): Promise<boolean> => {
     const { data: signInData, error: signInError } = await authClient.signIn.email({
       email,
       password,
@@ -71,20 +73,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    const { data: freshSession } = await authClient.getSession();
-    void freshSession;
+    // Ensure session is fresh before redirecting
+    await authClient.getSession();
 
-    router.push('/tasks/dashboard');
+    router.push(redirectTo || '/tasks/dashboard');
 
     router.refresh();
     return true;
   };
 
-  const signup = async (email: string, password: string): Promise<boolean> => {
+  const signup = async (
+    email: string,
+    password: string,
+    name?: string,
+    redirectTo?: string
+  ): Promise<boolean> => {
     const { data: signUpData, error: signUpError } = await authClient.signUp.email({
       email,
       password,
-      name: email.split('@')[0],
+      name: name || email.split('@')[0],
     });
 
     if (signUpError || !signUpData) {
@@ -92,16 +99,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    router.push('/tasks/dashboard');
+    // Ensure session is fresh
+    await authClient.getSession();
+
+    router.push(redirectTo || '/tasks/dashboard');
     router.refresh();
     return true;
   };
 
   const queryClient = useQueryClient();
-  const logout = async () => {
+  const logout = async (redirectTo?: string) => {
     await authClient.signOut();
     queryClient.clear(); // Clear all TanStack search/org/user caches
-    router.push('/login');
+    router.push(redirectTo || '/login');
     router.refresh();
   };
 

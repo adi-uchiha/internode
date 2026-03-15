@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { safeSwitchOrganization } from '@/lib/auth-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +46,7 @@ function AcceptInviteContent() {
   const [state, setState] = useState<PageState>('loading');
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const { logout } = useAuth();
 
   // Guard: once we've fetched or processed the invitation, don't re-fetch
   // even if session data changes (e.g. after queryClient.clear()).
@@ -175,24 +178,27 @@ function AcceptInviteContent() {
         return;
       }
 
-      // Explicitly set the newly joined organization as the active one
-      if (invitation?.organizationId) {
-        await authClient.organization.setActive({ organizationId: invitation.organizationId });
-      }
-
-      // Clear all query caches so the TaskManagerLayout doesn't see stale
-      // org data (empty list → onboarding flash) when we navigate.
-      queryClient.clear();
-
       toast.success(`Welcome to ${invitation?.organizationName}!`);
       setState('success');
-      // Small delay so the success animation is visible
-      setTimeout(() => router.replace('/tasks/dashboard'), 2000);
+
+      // Atomic switch to the new organization with cache safety
+      if (invitation?.organizationId) {
+        await safeSwitchOrganization(invitation.organizationId, queryClient, router, {
+          redirectTo: '/tasks/dashboard',
+        });
+      } else {
+        router.push('/tasks/dashboard');
+      }
     } catch (err) {
       console.error('[accept-invite] Accept failed:', err);
       toast.error('An unexpected error occurred. Please try again.');
       setState('ready');
     }
+  };
+
+  const handleSwitchAccount = async () => {
+    const returnUrl = encodeURIComponent(`/accept-invite?invitationId=${invitationId}`);
+    await logout(`/login?redirect=${returnUrl}`);
   };
 
   const handleSignInRedirect = () => {
@@ -372,16 +378,31 @@ function AcceptInviteContent() {
                 </div>
 
                 {/* User context notice */}
-                <div className="flex items-start gap-3 p-3 border border-border bg-muted/5">
-                  <Icon
-                    icon="solar:user-check-linear"
-                    className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0"
-                  />
-                  <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
-                    You are signed in as <strong className="text-foreground">{user?.email}</strong>.
-                    This invitation is addressed to{' '}
-                    <strong className="text-foreground">{invitation.email}</strong>.
-                  </p>
+                <div className="flex flex-col gap-3 p-4 border border-border bg-muted/5">
+                  <div className="flex items-start gap-3">
+                    <Icon
+                      icon="solar:user-check-linear"
+                      className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0"
+                    />
+                    <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
+                      You are signed in as{' '}
+                      <strong className="text-foreground">{user?.email}</strong>.
+                      {user?.email.toLowerCase() !== invitation.email.toLowerCase() && (
+                        <span className="block mt-1 text-destructive font-bold">
+                          Warning: This invitation was sent to {invitation.email}.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 font-mono text-[10px] w-fit hover:bg-destructive/10 hover:text-destructive self-end"
+                    onClick={handleSwitchAccount}
+                  >
+                    <Icon icon="solar:user-plus-linear" className="w-3 h-3 mr-1" />
+                    Sign in with a different account
+                  </Button>
                 </div>
 
                 <Button

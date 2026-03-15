@@ -83,6 +83,7 @@ export const auth = betterAuth({
       mapProfileToUser: (profile) => {
         return {
           username: profile.login,
+          name: profile.name || profile.login,
         };
       },
     },
