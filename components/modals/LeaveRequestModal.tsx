@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCreateLeave } from '@/hooks/useLeaves';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -158,17 +157,9 @@ export function LeaveRequestModal({ isOpen, onClose }: LeaveRequestModalProps) {
                     type="submit"
                     variant="hero"
                     className="flex-1 h-12 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
-                    disabled={isPending}
+                    loading={isPending}
                   >
-                    {isPending ? (
-                      <UnifiedLoader
-                        size="sm"
-                        message="Syncing..."
-                        className="text-primary-foreground"
-                      />
-                    ) : (
-                      'Submit Request'
-                    )}
+                    Submit Request
                   </Button>
                 </div>
               </form>

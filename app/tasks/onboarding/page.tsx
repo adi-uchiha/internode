@@ -314,10 +314,10 @@ export default function OnboardingPage() {
                         variant="hero"
                         size="sm"
                         className="ml-4 shrink-0 font-mono text-xs"
-                        disabled={acceptingId === invite.id}
+                        loading={acceptingId === invite.id}
                         onClick={() => handleAcceptInvite(invite.id)}
                       >
-                        {acceptingId === invite.id ? <UnifiedLoader size="sm" /> : 'Accept'}
+                        Accept
                       </Button>
                     </motion.div>
                   ))}
@@ -435,20 +435,11 @@ export default function OnboardingPage() {
                         'h-12 text-sm font-bold tracking-widest uppercase shadow-xl shadow-primary/20',
                         pendingInvites.length > 0 ? 'flex-1' : 'w-full'
                       )}
-                      disabled={isCreating || !orgName.trim() || !orgSlug.trim()}
+                      disabled={!orgName.trim() || !orgSlug.trim()}
+                      loading={isCreating}
                     >
-                      {isCreating ? (
-                        <UnifiedLoader
-                          message="Initializing..."
-                          size="sm"
-                          className="text-primary-foreground"
-                        />
-                      ) : (
-                        <>
-                          Launch Organization
-                          <Icon icon="solar:rocket-2-linear" className="w-4 h-4 ml-2" />
-                        </>
-                      )}
+                      Launch Organization
+                      <Icon icon="solar:rocket-2-linear" className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                 </form>

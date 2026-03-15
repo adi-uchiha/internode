@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { AUTH_FLAGS } from '@/lib/feature-flags';
@@ -148,7 +147,7 @@ const Login = () => {
               variant="outline"
               size="lg"
               className="w-full flex items-center justify-center gap-3 font-mono text-sm"
-              disabled={isGithubLoading}
+              loading={isGithubLoading}
               onClick={async () => {
                 setIsGithubLoading(true);
                 try {
@@ -162,19 +161,15 @@ const Login = () => {
                 }
               }}
             >
-              {isGithubLoading ? (
-                <UnifiedLoader size="sm" className="text-white" />
-              ) : (
-                <Image
-                  src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
-                  className="w-5 h-5 invert dark:invert-0"
-                  alt="GitHub"
-                  width={20}
-                  height={20}
-                  unoptimized
-                />
-              )}
-              {isGithubLoading ? 'Connecting...' : 'Continue with GitHub'}
+              <Image
+                src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
+                className="w-5 h-5 invert dark:invert-0"
+                alt="GitHub"
+                width={20}
+                height={20}
+                unoptimized
+              />
+              Continue with GitHub
             </Button>
 
             {/* Email/Password — controlled by feature flag */}
@@ -264,28 +259,15 @@ const Login = () => {
                       variant="hero"
                       size="lg"
                       className="w-full"
-                      disabled={isLoading}
+                      loading={isLoading}
                     >
-                      {isLoading ? (
-                        <>
-                          <UnifiedLoader size="sm" className="text-white" />
-                          <span className="ml-2">
-                            {formMode === 'login' ? 'Authenticating...' : 'Creating Account...'}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {formMode === 'login' ? 'Log In' : 'Create Account'}
-                          <Icon
-                            icon={
-                              formMode === 'login'
-                                ? 'solar:login-2-linear'
-                                : 'solar:user-plus-linear'
-                            }
-                            className="w-4 h-4"
-                          />
-                        </>
-                      )}
+                      {formMode === 'login' ? 'Log In' : 'Create Account'}
+                      <Icon
+                        icon={
+                          formMode === 'login' ? 'solar:login-2-linear' : 'solar:user-plus-linear'
+                        }
+                        className="w-4 h-4"
+                      />
                     </Button>
                   </motion.form>
                 </AnimatePresence>

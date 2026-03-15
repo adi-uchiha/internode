@@ -87,17 +87,11 @@ export default function InvitesPage() {
                     variant="hero"
                     size="default"
                     className="h-10 px-8"
-                    disabled={acceptingId === invite.id}
+                    loading={acceptingId === invite.id}
                     onClick={() => handleAcceptInvite(invite.id)}
                   >
-                    {acceptingId === invite.id ? (
-                      <UnifiedLoader size="sm" />
-                    ) : (
-                      <>
-                        Accept Invite
-                        <Icon icon="solar:check-circle-linear" className="w-4 h-4 ml-2" />
-                      </>
-                    )}
+                    Accept Invite
+                    <Icon icon="solar:check-circle-linear" className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </motion.div>

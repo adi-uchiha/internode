@@ -66,11 +66,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   const { data: ticket, isLoading } = useTicket(ticketUrlId);
-  const { mutateAsync: updateTicket } = useUpdateTicket();
-  const { mutateAsync: logTime } = useLogTime();
+  const { mutateAsync: updateTicket, isPending: isUpdating } = useUpdateTicket();
+  const { mutateAsync: logTime, isPending: isLogging } = useLogTime();
   const { mutateAsync: deleteTicket } = useDeleteTicket();
   const { data: commentsList } = useTicketComments(ticket?.id || '');
-  const { mutateAsync: createComment } = useCreateComment();
+  const { mutateAsync: createComment, isPending: isCommenting } = useCreateComment();
   const { data: projects } = useProjects();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -243,7 +243,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
               <Button variant="ghost" size="sm" onClick={cancelEdit} className="h-8">
                 Cancel
               </Button>
-              <Button variant="hero" size="sm" onClick={saveEdit} className="h-8">
+              <Button
+                variant="hero"
+                size="sm"
+                onClick={saveEdit}
+                className="h-8"
+                loading={isUpdating}
+              >
                 <Icon icon="solar:check-circle-linear" className="w-4 h-4 mr-1.5" />
                 Save
               </Button>
@@ -598,6 +604,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   onClick={handleAddComment}
                   disabled={!commentText.trim()}
                   className="px-6"
+                  loading={isCommenting}
                 >
                   <Icon icon="solar:plain-linear" className="w-4 h-4 mr-2" />
                   Post Comment
@@ -990,6 +997,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                   onClick={handleLogTime}
                   disabled={!logHours || parseFloat(logHours) <= 0}
                   className="flex-1"
+                  loading={isLogging}
                 >
                   Commit Log
                 </Button>

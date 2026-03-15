@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateLabel } from '@/hooks/useLabels';
 import { toast } from '@/lib/toast';
-import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface LabelModalProps {
   isOpen: boolean;
@@ -135,17 +134,9 @@ export function LabelModal({ isOpen, onClose }: LabelModalProps) {
                     type="submit"
                     variant="hero"
                     className="flex-1 h-11 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
-                    disabled={isPending}
+                    loading={isPending}
                   >
-                    {isPending ? (
-                      <UnifiedLoader
-                        size="sm"
-                        message="Syncing..."
-                        className="text-primary-foreground"
-                      />
-                    ) : (
-                      'Establish'
-                    )}
+                    Establish
                   </Button>
                 </div>
               </form>

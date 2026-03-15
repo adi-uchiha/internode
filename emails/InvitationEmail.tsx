@@ -34,29 +34,19 @@ export function InvitationEmail({
   baseUrl,
 }: InvitationEmailProps) {
   const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1);
-  const logoUrl = `${baseUrl}/icon-green.svg`;
+  const logoUrl = `${baseUrl}/icon-green.png`;
 
   return (
     <Html lang="en">
       <Head>
         <Font
           fontFamily="Space Grotesk"
-          fallbackFontFamily="Arial"
+          fallbackFontFamily="Helvetica"
           webFont={{
-            url: 'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2',
+            url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap',
             format: 'woff2',
           }}
           fontWeight={400}
-          fontStyle="normal"
-        />
-        <Font
-          fontFamily="Space Grotesk"
-          fallbackFontFamily="Arial"
-          webFont={{
-            url: 'https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2',
-            format: 'woff2',
-          }}
-          fontWeight={700}
           fontStyle="normal"
         />
       </Head>

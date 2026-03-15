@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/lib/toast';
-import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 export default function SettingsPage() {
   const { orgRole } = useAuth();
@@ -94,15 +93,9 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex justify-end pt-6 border-t border-border">
-        <Button variant="hero" onClick={handleSave} disabled={isSaving} className="min-w-[140px]">
-          {isSaving ? (
-            <UnifiedLoader size="sm" />
-          ) : (
-            <>
-              <Icon icon="solar:diskette-linear" className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
+        <Button variant="hero" onClick={handleSave} loading={isSaving} className="min-w-[140px]">
+          <Icon icon="solar:diskette-linear" className="w-4 h-4 mr-2" />
+          Save Changes
         </Button>
       </div>
     </div>

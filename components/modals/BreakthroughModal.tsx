@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateBreakthrough } from '@/hooks/useBreakthroughs';
 import { toast } from '@/lib/toast';
-import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface BreakthroughModalProps {
   isOpen: boolean;
@@ -191,17 +190,9 @@ export function BreakthroughModal({ isOpen, onClose }: BreakthroughModalProps) {
                     type="submit"
                     variant="hero"
                     className="flex-1 h-12 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
-                    disabled={isPending}
+                    loading={isPending}
                   >
-                    {isPending ? (
-                      <UnifiedLoader
-                        size="sm"
-                        message="Syncing..."
-                        className="text-primary-foreground"
-                      />
-                    ) : (
-                      'Archive Achievement'
-                    )}
+                    Archive Achievement
                   </Button>
                 </div>
               </form>

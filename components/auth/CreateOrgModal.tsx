@@ -161,10 +161,11 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
             <Button
               type="submit"
               variant="hero"
-              disabled={isLoading || !name.trim() || !slug.trim()}
+              loading={isLoading}
+              disabled={!name.trim() || !slug.trim()}
               className="h-10 px-8"
             >
-              {isLoading ? 'Creating...' : 'Create Org'}
+              Create Org
             </Button>
           </DialogFooter>
         </form>
