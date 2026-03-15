@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { TICKET_STATUSES, TICKET_PRIORITIES } from '@/db/schema/tickets';
 
 export const createTicketSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().optional(),
-  status: z.enum(['todo', 'in-progress', 'done', 'backlog']).default('todo'),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  status: z.enum(TICKET_STATUSES).default('todo'),
+  priority: z.enum(TICKET_PRIORITIES).default('medium'),
   projectIds: z.array(z.string()).optional().default([]),
   assigneeId: z.string().nullable().optional().default(null),
   estimatedHours: z.number().min(0).optional().default(0),
@@ -15,8 +16,8 @@ export const createTicketSchema = z.object({
 export const updateTicketSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  status: z.enum(['todo', 'in-progress', 'done', 'backlog']).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  status: z.enum(TICKET_STATUSES).optional(),
+  priority: z.enum(TICKET_PRIORITIES).optional(),
   projectIds: z.array(z.string()).optional(),
   assigneeId: z.string().nullable().optional(),
   estimatedHours: z.number().min(0).optional(),
