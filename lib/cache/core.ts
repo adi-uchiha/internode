@@ -29,15 +29,25 @@ export const CacheCore = {
 
   /**
    * Prepends an item to all lists matching the base key.
+   * Handles temporary IDs and partial key matching for filtered queries.
    */
   prependToLists: <T>(queryClient: QueryClient, baseKey: QueryKey, newItem: T) => {
     queryClient.setQueriesData({ queryKey: baseKey }, (old: T[] | undefined) => {
-      if (!Array.isArray(old)) return [newItem];
-      // Prevent duplicates
-      const exists = old.some(
-        (item) => (item as { id?: string }).id === (newItem as { id?: string }).id
-      );
-      if (exists && (newItem as { id?: string }).id) return old;
+      // If the cache is empty, initialize with the new item
+      if (!old) return [newItem];
+      if (!Array.isArray(old)) return old;
+
+      const newId = (newItem as { id?: string }).id;
+      const tempId = (newItem as { id?: string | 'PENDING' }).id;
+
+      // Prevent duplicates based on ID
+      const exists = old.some((item) => {
+        const itemId = (item as { id?: string }).id;
+        return itemId && (itemId === newId || itemId === tempId);
+      });
+
+      if (exists) return old;
+
       return [newItem, ...old];
     });
   },

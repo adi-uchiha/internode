@@ -136,7 +136,13 @@ export function useLogTime() {
       const previousTicket = queryClient.getQueryData(['tickets', newLog.id]);
 
       if (user) {
-        CacheManager.tickets.optimisticLogTime(queryClient, newLog.id, newLog.hours);
+        CacheManager.tickets.optimisticLogTime(
+          queryClient,
+          newLog.id,
+          newLog.hours,
+          user.id,
+          newLog.date
+        );
       }
 
       return { previousTicket };

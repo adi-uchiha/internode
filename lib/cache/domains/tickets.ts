@@ -51,7 +51,10 @@ export const TicketDomain = {
     id: string,
     updates: Partial<TicketWithRelations> & { addLoggedHours?: number }
   ) => {
-    // 1. Update in all list variations
+    // 0. Capture the old state for synergy calculations before cache is modified
+    const oldTicket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+
+    // 1. Update in all list variations (including filtered lists)
     queryClient.setQueriesData(
       { queryKey: ['tickets'] },
       (old: TicketWithRelations[] | undefined) => {
@@ -79,12 +82,8 @@ export const TicketDomain = {
     });
 
     // 3. Status flow synergy
-    if (updates.status) {
-      // Get the old status from the primary cache to compare
-      const firstTicket = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
-      if (firstTicket && firstTicket.status !== updates.status) {
-        AnalyticsDomain.moveTicketStatus(queryClient, firstTicket.status, updates.status);
-      }
+    if (updates.status && oldTicket && oldTicket.status !== updates.status) {
+      AnalyticsDomain.moveTicketStatus(queryClient, oldTicket.status, updates.status);
     }
 
     return { id, updates };
@@ -110,19 +109,25 @@ export const TicketDomain = {
 
   /**
    * Optimistically logs time to a ticket.
-   * Cross-updates the ticket state and analytics.
+   * Cross-updates the ticket state, leaderboard, and analytics.
    */
-  optimisticLogTime: (queryClient: QueryClient, ticketId: string, hours: number) => {
+  optimisticLogTime: (
+    queryClient: QueryClient,
+    ticketId: string,
+    hours: number,
+    userId: string,
+    date?: string
+  ) => {
     // 1. Update the ticket's loggedHours in all caches
     TicketDomain.optimisticUpdate(queryClient, ticketId, {
       addLoggedHours: hours,
     });
 
-    // 2. Add to global logs cache if needed
-    // CacheCore.prependToLists(queryClient, ['logs'], { ... });
+    // 2. Update analytics (burn rate and KPIs)
+    AnalyticsDomain.adjustLoggedHours(queryClient, hours, date);
 
-    // 3. Update analytics
-    AnalyticsDomain.adjustLoggedHours(queryClient, hours);
+    // 3. Update leaderboard synergy
+    AnalyticsDomain.adjustLeaderboard(queryClient, userId, hours);
   },
 
   /**
@@ -138,7 +143,21 @@ export const TicketDomain = {
       projects: CacheAugmenter.projects(queryClient, rawResponse.projectIds ?? []),
     };
 
-    CacheCore.updateInLists(queryClient, ['tickets'], augmented);
+    // Use setQueriesData to update both global and filtered lists
+    queryClient.setQueriesData(
+      { queryKey: ['tickets'] },
+      (old: TicketWithRelations[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        const exists = old.some((t) => t.id === id);
+        if (exists) {
+          return old.map((item) => (item.id === id ? augmented : item));
+        }
+        // If it's a filtered list and doesn't exist, we might not want to prepend
+        // unless we know it matches the filter. For now, keep it safe.
+        return old;
+      }
+    );
+
     CacheCore.updateItem(queryClient, ['tickets', id], augmented);
   },
 
