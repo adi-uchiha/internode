@@ -17,7 +17,7 @@ import { useUsers } from '@/hooks/useUsers';
 import { useTaskAnalytics } from '@/hooks/useAnalytics';
 import { useActivities, type ActivityWithUser } from '@/hooks/useActivities';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { WeeklyGoals } from '@/components/dashboard/WeeklyGoals';
 import { cn } from '@/lib/utils';

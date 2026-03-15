@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 const tabs = [
   { id: 'organization', label: 'Organization', icon: 'solar:buildings-linear' },

@@ -7,7 +7,7 @@ import { useLeaves, useUpdateLeave, useDeleteLeave } from '@/hooks/useLeaves';
 import { Button } from '@/components/ui/button';
 import { LeaveRequestModal } from '@/components/modals/LeaveRequestModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';

@@ -10,7 +10,7 @@ import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 

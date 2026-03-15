@@ -7,7 +7,7 @@ import { useBreakthroughs, useDeleteBreakthrough } from '@/hooks/useBreakthrough
 import { Button } from '@/components/ui/button';
 import { BreakthroughModal } from '@/components/modals/BreakthroughModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { format } from 'date-fns';
 

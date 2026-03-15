@@ -18,7 +18,7 @@ import {
 import { useProjects } from '@/hooks/useProjects';
 import { useUsers } from '@/hooks/useUsers';
 import { useCreateTicket } from '@/hooks/useTickets';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export default function NewTicketPage() {
   const router = useRouter();

@@ -8,7 +8,7 @@ import { useTickets } from '@/hooks/useTickets';
 import { Button } from '@/components/ui/button';
 import { RequireRole } from '@/components/auth/RequireRole';
 import { ProjectModal } from '@/components/modals/ProjectModal';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
 
 export default function ProjectsPage() {

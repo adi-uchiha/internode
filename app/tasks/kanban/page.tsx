@@ -7,7 +7,7 @@ import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 import { getPriorityColor, getTimeBarColor, type TicketPriority } from '@/lib/ticket-utils';
 import Image from 'next/image';

@@ -16,7 +16,7 @@ import {
 } from '@/hooks/useInvites';
 import { useTickets } from '@/hooks/useTickets';
 import { startOfWeek } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';

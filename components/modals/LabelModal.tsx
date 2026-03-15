@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateLabel } from '@/hooks/useLabels';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface LabelModalProps {
   isOpen: boolean;

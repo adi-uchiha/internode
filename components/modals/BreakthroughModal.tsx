@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateBreakthrough } from '@/hooks/useBreakthroughs';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 interface BreakthroughModalProps {
   isOpen: boolean;

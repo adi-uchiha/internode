@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export interface ApiErrorResponse {
   error: string;
@@ -21,11 +21,12 @@ export class ApiClientError extends Error {
 interface ApiOptions extends RequestInit {
   showToast?: boolean;
   toastMessage?: string;
+  toastDescription?: string;
 }
 
 export const apiClient = {
   async request<T>(url: string, options: ApiOptions = {}): Promise<T> {
-    const { showToast = true, toastMessage, ...fetchOptions } = options;
+    const { showToast = true, toastMessage, toastDescription, ...fetchOptions } = options;
 
     try {
       const response = await fetch(url, {
@@ -44,7 +45,9 @@ export const apiClient = {
         const errorCode = errorData.code || 'unknown_error';
 
         if (showToast) {
-          toast.error(toastMessage || errorMessage);
+          toast.error(toastMessage || errorMessage, {
+            description: toastDescription || `ERR_CODE: ${errorCode}`,
+          });
         }
 
         throw new ApiClientError(errorMessage, response.status, errorCode, errorData.details);
@@ -58,7 +61,9 @@ export const apiClient = {
 
       const errorMessage = error instanceof Error ? error.message : 'Network error';
       if (showToast) {
-        toast.error(toastMessage || errorMessage);
+        toast.error(toastMessage || errorMessage, {
+          description: 'NETWORK_FAILURE',
+        });
       }
 
       throw new ApiClientError(errorMessage, 0, 'network_error');

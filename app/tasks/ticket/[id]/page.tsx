@@ -43,7 +43,7 @@ import {
 } from '@/hooks/useTickets';
 import { useProjects } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import Image from 'next/image';
 
 interface EditForm {

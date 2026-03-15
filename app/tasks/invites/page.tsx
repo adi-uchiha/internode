@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export default function InvitesPage() {
   const { data: invites = [], isLoading } = useUserInvitations();

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

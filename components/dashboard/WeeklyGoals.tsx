@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 import { useGoals, useAddGoalItem, useUpdateGoalItem, useDeleteGoalItem } from '@/hooks/useGoals';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export function WeeklyGoals() {
   const [newGoal, setNewGoal] = useState('');
