@@ -140,7 +140,9 @@ export function useLogTime() {
           queryClient,
           newLog.id,
           newLog.hours,
-          user.id,
+          user as unknown as User,
+          newLog.note,
+          newLog.isBreakthrough,
           newLog.date
         );
       }

@@ -127,9 +127,16 @@ export const CacheCore = {
   /**
    * Deeply merges an update into a single item cache.
    */
-  updateItem: <T>(queryClient: QueryClient, queryKey: QueryKey, update: Partial<T>) => {
+  updateItem: <T>(
+    queryClient: QueryClient,
+    queryKey: QueryKey,
+    update: Partial<T> | ((old: T) => T)
+  ) => {
     queryClient.setQueryData(queryKey, (old: T | undefined) => {
       if (!old) return old;
+      if (typeof update === 'function') {
+        return update(old);
+      }
       return { ...old, ...update };
     });
   },

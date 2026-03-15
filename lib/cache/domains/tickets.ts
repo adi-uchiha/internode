@@ -84,11 +84,54 @@ export const TicketDomain = {
     );
 
     // 3. Update single ticket view
-    CacheCore.updateItem(queryClient, ['tickets', id], augmentedUpdates);
+    CacheCore.updateItem(queryClient, ['tickets', id], (old: TicketWithRelations | undefined) => {
+      if (!old) return old;
+      const next = { ...old, ...augmentedUpdates } as TicketWithRelations;
 
-    // 4. Synergy with Analytics
+      // Incremental hours synergy
+      if (updates.addLoggedHours) {
+        next.loggedHours = (old.loggedHours || 0) + updates.addLoggedHours;
+      }
+
+      // Optimistic log insertion
+      // @ts-expect-error - synergy property for internal cache updates
+      if (updates.addTimeLog) {
+        next.timeLogs = [
+          // @ts-expect-error - log entry type mismatch
+          updates.addTimeLog,
+          ...(old.timeLogs || []),
+        ];
+      }
+
+      return next;
+    });
+
+    // 4. Synergy with Lists (Iterate lists and apply same logic)
+    const lists = queryClient.getQueryCache().findAll({ queryKey: ['tickets'] });
+    lists.forEach((query) => {
+      if (query.queryKey.length > 1 && query.queryKey[1] === id) return; // skip detail
+
+      queryClient.setQueryData(query.queryKey, (old: TicketWithRelations[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((item) => {
+          if (item.id !== id) return item;
+          const next = { ...item, ...augmentedUpdates } as TicketWithRelations;
+          if (updates.addLoggedHours) {
+            next.loggedHours = (item.loggedHours || 0) + updates.addLoggedHours;
+          }
+          // @ts-expect-error - synergy property
+          if (updates.addTimeLog) {
+            // @ts-expect-error - log entry type mismatch
+            next.timeLogs = [updates.addTimeLog, ...(item.timeLogs || [])];
+          }
+          return next;
+        });
+      });
+    });
+
+    // 5. Status Changes & Analytics synergy
     if (oldTicket) {
-      // Status Changes
+      const nextStatus = updates.status || oldTicket.status;
       if (updates.status && oldTicket.status !== updates.status) {
         AnalyticsDomain.moveTicketStatus(queryClient, oldTicket.status, updates.status);
 
@@ -101,7 +144,7 @@ export const TicketDomain = {
       }
 
       // KPI Sync for In Progress
-      if (updates.status === 'in-progress' && oldTicket.status !== 'in-progress') {
+      if (nextStatus === 'in-progress' && oldTicket.status !== 'in-progress') {
         AnalyticsDomain.adjustTicketCounts(queryClient, { inProgress: 1 });
       } else if (
         oldTicket.status === 'in-progress' &&
@@ -146,19 +189,39 @@ export const TicketDomain = {
     queryClient: QueryClient,
     ticketId: string,
     hours: number,
-    userId: string,
+    currentUser: User,
+    note: string = 'Time logged',
+    isBreakthrough: boolean = false,
     date?: string
   ) => {
-    // 1. Update the ticket's loggedHours in all caches
+    const logDate = date || new Date().toISOString();
+
+    // 1. Create the fake log entry for the ticket detail view
+    const tempLog = {
+      id: `temp-log-${Date.now()}`,
+      userId: currentUser.id,
+      ticketId,
+      hours,
+      note,
+      isBreakthrough,
+      date: logDate,
+      user: currentUser,
+      createdAt: logDate,
+      updatedAt: logDate,
+    };
+
+    // 2. Update the ticket's loggedHours and timeLogs in all caches
     TicketDomain.optimisticUpdate(queryClient, ticketId, {
       addLoggedHours: hours,
+      // @ts-expect-error - synergy property for internal orchestration
+      addTimeLog: tempLog,
     });
 
-    // 2. Update analytics (burn rate and KPIs)
-    AnalyticsDomain.adjustLoggedHours(queryClient, hours, date);
+    // 3. Update analytics (burn rate and KPIs)
+    AnalyticsDomain.adjustLoggedHours(queryClient, hours, logDate);
 
-    // 3. Update leaderboard synergy
-    AnalyticsDomain.adjustLeaderboard(queryClient, userId, hours);
+    // 4. Update leaderboard synergy
+    AnalyticsDomain.adjustLeaderboard(queryClient, currentUser.id, hours);
   },
 
   /**
