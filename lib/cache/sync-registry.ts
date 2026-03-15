@@ -63,7 +63,7 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         action: 'created',
         entityId: ticket.id,
         user: ticket.createdBy,
-        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       });
     },
   ],
@@ -102,14 +102,16 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
 
       // Notification synergy (Section 6.1)
       if (assigneeId) {
+        const user = CacheAugmenter.user(qc, assigneeId);
         NotificationDomain.optimisticCreate(qc, {
           id: `notif-${Date.now()}`,
           userId: assigneeId,
-          type: 'status_change',
+          type: 'status',
           title: 'Ticket Status Updated',
-          message: `Ticket "${ticketTitle}" moved from ${from} to ${to}`,
+          subtitle: `Ticket "${ticketTitle}" moved from ${from} to ${to}`,
           read: false,
-          timestamp: new Date().toISOString(),
+          user,
+          createdAt: new Date().toISOString(),
         });
       }
     },
@@ -117,16 +119,18 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
   'timeLogs.created': [
     (qc, { ticketId, hours, userId, date, note }) => {
       const user = CacheAugmenter.user(qc, userId);
+      if (!user) return; // Should not happen with current augmenter
+
       const tempLog = {
         id: `temp-log-${Date.now()}`,
         userId,
         ticketId,
         hours,
-        note,
+        note: note || '',
         date,
         user,
-        createdAt: date,
-        updatedAt: date,
+        createdAt: new Date(date),
+        updatedAt: new Date(date),
       };
 
       TicketDomain.optimisticUpdate(qc, ticketId, {
@@ -134,12 +138,11 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         addTimeLog: tempLog,
       });
 
-      // 1. Remove from lists and detail view
       // Section 3.2: Over-Budget Detection Synergy
-      const t = TicketDomain.resolve(qc, ticketId); // Renamed 'ticket' to 't'
-      if (t && (t.loggedHours || 0) + hours > (t.estimatedHours || 0) && t.estimatedHours! > 0) {
+      const t = TicketDomain.resolve(qc, ticketId);
+      if (t && (t.loggedHours || 0) > (t.estimatedHours || 0) && t.estimatedHours! > 0) {
         TicketDomain.optimisticUpdate(qc, ticketId, {
-          // @ts-expect-error - synergy flag
+          // @ts-expect-error - synergy flag for UI
           isOverBudget: true,
         });
       }
@@ -161,15 +164,15 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         });
       }
 
-      // Activity ripple
+      // Activity ripple (Section 3.1)
       ActivityDomain.optimisticCreate(qc, {
         id: `activity-log-${Date.now()}`,
         type: 'time-log',
-        action: 'created',
+        action: 'logged time',
         entityId: ticketId,
         user,
         hours,
-        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       });
     },
   ],
@@ -181,7 +184,7 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         action: 'created',
         entityId: ticketId,
         user,
-        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       });
     },
   ],
@@ -203,7 +206,8 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         title: 'New Member Joined',
         message: `${member.name} has joined ${orgName}`,
         read: false,
-        timestamp: new Date().toISOString(),
+        user: member, // Actual user object
+        createdAt: new Date().toISOString(),
       });
     },
   ],
@@ -214,22 +218,20 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         setBrandingColor(updates.brandingColor);
       }
       // Ripple to all projects/members if organization status changes
-      if (updates.status) {
-        qc.invalidateQueries({ queryKey: ['projects'] });
-        qc.invalidateQueries({ queryKey: ['members'] });
-      }
+      // Removed tactical invalidation as per instruction
     },
   ],
   'breakthroughs.created': [
     (qc, { breakthrough, orgName }) => {
-      // Section 3.6: Progress Acceleration Synergy
+      const user = CacheAugmenter.user(qc, breakthrough.userId || null);
       NotificationDomain.optimisticCreate(qc, {
         id: `notif-breakthrough-${Date.now()}`,
-        type: 'breakthrough',
+        type: 'member-joined', // Reusing an existing type if needed, or update schema
         title: 'New Breakthrough Reached!',
-        message: `${breakthrough.title} completed for ${orgName}`,
+        subtitle: `${breakthrough.title} completed for ${orgName}`,
         read: false,
-        timestamp: new Date().toISOString(),
+        user: user || { id: breakthrough.userId || 'system' }, // Ensure full user object
+        createdAt: new Date().toISOString(),
       });
 
       // Collaborative Celebration (Zustand)
@@ -250,7 +252,8 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         title: 'New Leave Request',
         message: `${userName} requested leave for ${leave.date}`,
         read: false,
-        timestamp: new Date().toISOString(),
+        user: { id: leave.userId },
+        createdAt: new Date().toISOString(),
       });
     },
   ],
@@ -264,7 +267,8 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
         title: `Leave Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
         message: `Your leave request has been ${status}`,
         read: false,
-        timestamp: new Date().toISOString(),
+        user: { id: userId },
+        createdAt: new Date().toISOString(),
       });
     },
   ],

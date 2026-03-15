@@ -60,5 +60,22 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     });
   }
 
-  return NextResponse.json(newTimeLog, { status: 201 });
+  // Fetch full ticket with relations to reconcile drift (Blueprint 9.2)
+  const updatedTicket = await db.query.tickets.findFirst({
+    where: eq(tickets.id, existingTicket.id),
+    with: {
+      assignee: true,
+      createdBy: true,
+      timeLogs: {
+        with: { user: true },
+        orderBy: (logs, { desc }) => [desc(logs.date)],
+      },
+      comments: {
+        with: { user: true },
+        orderBy: (c, { desc }) => [desc(c.createdAt)],
+      },
+    },
+  });
+
+  return NextResponse.json(updatedTicket, { status: 201 });
 });

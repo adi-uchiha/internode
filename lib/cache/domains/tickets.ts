@@ -67,10 +67,25 @@ export const TicketDomain = {
     }
 
     // 2. Update in all list variations (Board, List, Projects, etc.)
-    CacheCore.updateInLists(
+    CacheCore.updateInLists<TicketWithRelations>(
       queryClient,
       ['tickets'],
-      { id, ...augmentedUpdates },
+      (item) => {
+        if (item.id !== id) return item;
+
+        const next = { ...item, ...augmentedUpdates } as TicketWithRelations;
+
+        // Incremental hours synergy inside the ticket object for all list items
+        if (updates.addLoggedHours) {
+          next.loggedHours = (item.loggedHours || 0) + updates.addLoggedHours;
+        }
+
+        if (updates.addTimeLog) {
+          next.timeLogs = [updates.addTimeLog as any, ...(item.timeLogs || [])];
+        }
+
+        return next;
+      },
       (item, filters) => {
         const f = filters as Record<string, string>;
         // Re-verify filters: If an update moves the ticket out of current view (e.g. project changed)
@@ -173,9 +188,12 @@ export const TicketDomain = {
     const id = rawResponse.id;
     const augmented = {
       ...rawResponse,
-      createdBy: CacheAugmenter.user(queryClient, rawResponse.createdById),
-      assignee: CacheAugmenter.user(queryClient, rawResponse.assigneeId),
-      projects: CacheAugmenter.projects(queryClient, rawResponse.projectIds ?? []),
+      createdBy: rawResponse.createdBy || CacheAugmenter.user(queryClient, rawResponse.createdById),
+      assignee: rawResponse.assignee || CacheAugmenter.user(queryClient, rawResponse.assigneeId),
+      projects:
+        rawResponse.projects && rawResponse.projects.length > 0
+          ? rawResponse.projects
+          : CacheAugmenter.projects(queryClient, rawResponse.projectIds ?? []),
     };
 
     // Use CacheCore.updateInLists for consistency

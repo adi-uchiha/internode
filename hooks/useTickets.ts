@@ -193,12 +193,10 @@ export function useLogTime() {
       if (data) {
         CacheManager.tickets.sync(queryClient, data);
       }
-      queryClient.invalidateQueries({ queryKey: ['logs'], refetchType: 'none' });
-      queryClient.invalidateQueries({ queryKey: ['analytics'], refetchType: 'none' });
     },
-    onSettled: (data, error, variables) => {
-      // Safety background marker
-      queryClient.invalidateQueries({ queryKey: ['tickets', variables.id], refetchType: 'none' });
+    onSettled: (data) => {
+      // Definitive sync on settlement ensures local-server consistency
+      if (data) CacheManager.tickets.sync(queryClient, data);
     },
   });
 }

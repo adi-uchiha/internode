@@ -24,15 +24,26 @@ export const CacheAugmenter = {
       });
 
       const isSystem = userId.toLowerCase() === 'system';
-      return {
+      const fallback: User = {
         id: userId,
-        name: isSystem ? 'System' : 'Unknown',
-        email: '',
+        name: isSystem ? 'System' : 'Unknown User',
+        email: isSystem ? 'system@internode.local' : '',
         role: 'member',
+        image: null,
+        username: userId,
+        emailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        emailVerified: false,
-      } as User;
+        joinDate: new Date(),
+        notificationSettings: null,
+        // Optional but helpful extensions
+        department: null,
+        status: null,
+        logStatus: null,
+        lastLogTime: null,
+        skillTags: [],
+      };
+      return fallback;
     }
     return found;
   },

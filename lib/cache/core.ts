@@ -44,11 +44,9 @@ export const CacheCore = {
   updateInLists: <T extends { id: string }>(
     queryClient: QueryClient,
     baseKey: QueryKey,
-    updatedItem: Partial<T> & { id: string },
+    updater: (Partial<T> & { id: string }) | ((item: T) => T | null),
     filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
   ) => {
-    // In v5, setQueriesData updater only received 1 arg in some environments/versions.
-    // Explicitly iterating via cache is safer and provides access to queryKey.
     const queries = queryClient.getQueryCache().findAll({ queryKey: baseKey });
 
     queries.forEach((query) => {
@@ -60,12 +58,20 @@ export const CacheCore = {
 
         return old
           .map((item) => {
-            if (item.id !== updatedItem.id) return item;
-            const merged = { ...item, ...updatedItem } as T;
+            let updated: T | null;
+
+            if (typeof updater === 'function') {
+              updated = updater(item);
+            } else {
+              if (item.id !== updater.id) return item;
+              updated = { ...item, ...updater } as T;
+            }
+
+            if (!updated) return null;
 
             // If the predicate says it no longer matches the filters for this specific query, remove it.
-            if (isFiltered && filterPredicate && !filterPredicate(merged, filters)) return null;
-            return merged;
+            if (isFiltered && filterPredicate && !filterPredicate(updated, filters)) return null;
+            return updated;
           })
           .filter((item): item is T => item !== null);
       });
