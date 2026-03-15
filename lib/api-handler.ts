@@ -96,10 +96,12 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
         );
       }
 
-      // Generic error response
+      // Handle other known error types if necessary, otherwise generic 500
+      const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+
       return NextResponse.json(
         {
-          error: 'Internal Server Error',
+          error: errorMessage,
           code: 'internal_server_error',
         },
         { status: 500 }

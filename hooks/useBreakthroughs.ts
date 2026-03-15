@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { nanoid } from 'nanoid';
 import { CacheCore } from '@/lib/cache/core';
+import { apiClient } from '@/lib/api-client';
 
 export interface User {
   id: string;
@@ -25,11 +26,7 @@ export interface Breakthrough {
 export function useBreakthroughs() {
   return useQuery<Breakthrough[]>({
     queryKey: ['breakthroughs'],
-    queryFn: async () => {
-      const res = await fetch('/api/breakthroughs');
-      if (!res.ok) throw new Error('Failed to fetch breakthroughs');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/breakthroughs'),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -39,15 +36,8 @@ export function useCreateBreakthrough() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: Partial<Breakthrough>) => {
-      const res = await fetch('/api/breakthroughs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to log breakthrough');
-      return res.json();
-    },
+    mutationFn: (data: Partial<Breakthrough>) =>
+      apiClient.post<Breakthrough>('/api/breakthroughs', data),
     onMutate: async (newBreakthrough) => {
       await queryClient.cancelQueries({ queryKey: ['breakthroughs'] });
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);
@@ -81,15 +71,8 @@ export function useUpdateBreakthrough() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: Partial<Breakthrough> & { id: string }) => {
-      const res = await fetch(`/api/breakthroughs/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to update breakthrough');
-      return res.json();
-    },
+    mutationFn: ({ id, ...data }: Partial<Breakthrough> & { id: string }) =>
+      apiClient.patch<Breakthrough>(`/api/breakthroughs/${id}`, data),
     onMutate: async (updated) => {
       await queryClient.cancelQueries({ queryKey: ['breakthroughs'] });
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);
@@ -111,13 +94,7 @@ export function useDeleteBreakthrough() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/breakthroughs/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete breakthrough');
-      return res.json();
-    },
+    mutationFn: (id: string) => apiClient.delete(`/api/breakthroughs/${id}`),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['breakthroughs'] });
       const previousBreakthroughs = queryClient.getQueryData(['breakthroughs']);

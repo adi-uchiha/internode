@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { users } from '@/db/schema';
+import { apiClient } from '@/lib/api-client';
 
 // Selecting the schema structure natively from DB mappings
 export type User = InferSelectModel<typeof users> & {
@@ -15,11 +16,7 @@ export type User = InferSelectModel<typeof users> & {
 export function useUsers() {
   return useQuery<User[]>({
     queryKey: ['users'],
-    queryFn: async () => {
-      const res = await fetch('/api/users');
-      if (!res.ok) throw new Error('Failed to fetch users');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/users'),
     staleTime: 10 * 60 * 1000, // Users list is quite stable
   });
 }
@@ -28,17 +25,7 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (profile: Partial<User>) => {
-      const res = await fetch('/api/users/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(profile),
-      });
-      if (!res.ok) throw new Error('Failed to update profile');
-      return res.json();
-    },
+    mutationFn: (profile: Partial<User>) => apiClient.patch<User>('/api/users/profile', profile),
     onMutate: async (updatedProfile) => {
       await queryClient.cancelQueries({ queryKey: ['users'] });
       const previousUsers = queryClient.getQueryData(['users']);

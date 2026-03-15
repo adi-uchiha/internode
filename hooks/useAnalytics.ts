@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 
 export interface AdminAnalyticsData {
   isGlobal: boolean;
@@ -57,11 +58,7 @@ export interface TaskAnalyticsData {
 export function useAdminAnalytics() {
   return useQuery<AdminAnalyticsData>({
     queryKey: ['analytics', 'admin'],
-    queryFn: async () => {
-      const res = await fetch('/api/analytics/admin');
-      if (!res.ok) throw new Error('Failed to fetch admin analytics');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/analytics/admin'),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -69,11 +66,7 @@ export function useAdminAnalytics() {
 export function useTaskAnalytics() {
   return useQuery<TaskAnalyticsData>({
     queryKey: ['analytics', 'tasks'],
-    queryFn: async () => {
-      const res = await fetch('/api/analytics/tasks');
-      if (!res.ok) throw new Error('Failed to fetch task analytics');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/analytics/tasks'),
     staleTime: 5 * 60 * 1000,
   });
 }

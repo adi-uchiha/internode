@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
 import { CacheCore } from '@/lib/cache/core';
 import { nanoid } from 'nanoid';
+import { apiClient } from '@/lib/api-client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,12 +145,10 @@ export function useUserInvitations() {
 export function useOrgInvitations() {
   return useQuery({
     queryKey: ['org-invitations'],
-    queryFn: async () => {
-      const res = await fetch('/api/invites');
-      if (!res.ok) throw new Error('Failed to fetch invitations');
-      const data = (await res.json()) as OrgInvitation[];
-      return data.filter((inv) => inv.status === 'pending');
-    },
+    queryFn: () =>
+      apiClient
+        .get<OrgInvitation[]>('/api/invites')
+        .then((data) => data.filter((inv) => inv.status === 'pending')),
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -5,6 +5,7 @@ import type { User } from './useUsers';
 import { CacheCore } from '@/lib/cache/core';
 import { useAuth } from '@/contexts/AuthContext';
 import { nanoid } from 'nanoid';
+import { apiClient } from '@/lib/api-client';
 
 export interface Leave {
   id: string;
@@ -28,11 +29,7 @@ export type LeaveRequestWithUser = InferSelectModel<typeof leaveRequests> & {
 export function useLeaves() {
   return useQuery<Leave[]>({
     queryKey: ['leaves'],
-    queryFn: async () => {
-      const res = await fetch('/api/leaves');
-      if (!res.ok) throw new Error('Failed to fetch leave requests');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/leaves'),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -42,15 +39,8 @@ export function useCreateLeave() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ type, date, reason }: { type: string; date: string; reason?: string }) => {
-      const res = await fetch('/api/leaves', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, date, reason }),
-      });
-      if (!res.ok) throw new Error('Failed to submit leave request');
-      return res.json();
-    },
+    mutationFn: (data: { type: string; date: string; reason?: string }) =>
+      apiClient.post<Leave>('/api/leaves', data),
     onMutate: async (newLeave) => {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);
@@ -83,21 +73,8 @@ export function useUpdateLeave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: 'pending' | 'approved' | 'rejected';
-    }) => {
-      const res = await fetch(`/api/leaves/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error('Failed to update leave request');
-      return res.json();
-    },
+    mutationFn: ({ id, status }: { id: string; status: 'pending' | 'approved' | 'rejected' }) =>
+      apiClient.patch<Leave>(`/api/leaves/${id}`, { status }),
     onMutate: async (updated) => {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);
@@ -122,13 +99,7 @@ export function useDeleteLeave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/leaves/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to cancel leave request');
-      return res.json();
-    },
+    mutationFn: (id: string) => apiClient.delete(`/api/leaves/${id}`),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['leaves'] });
       const previousLeaves = queryClient.getQueryData(['leaves']);

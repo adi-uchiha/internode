@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 
 export interface FeedbackLog {
   id: string;
@@ -26,11 +27,7 @@ export interface FeedbackData {
 export function useFeedback() {
   return useQuery<FeedbackData>({
     queryKey: ['feedback'],
-    queryFn: async () => {
-      const res = await fetch('/api/feedback');
-      if (!res.ok) throw new Error('Failed to fetch feedback');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/feedback'),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -39,7 +36,7 @@ export function useSubmitFeedback() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       type,
       comment,
@@ -47,22 +44,9 @@ export function useSubmitFeedback() {
       id: string;
       type: 'log' | 'breakthrough';
       comment: string;
-    }) => {
-      const res = await fetch(`/api/feedback/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, comment }),
-      });
-      if (!res.ok) throw new Error('Failed to submit feedback');
-      return res.json();
-    },
+    }) => apiClient.post(`/api/feedback/${id}`, { type, comment }),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['feedback'] });
-      // We don't necessarily update the feedback list optimistically here
-      // as it's a submission of a new feedback for an existing item
-      // and we don't know the full structure returned, but we can set
-      // a flag or just wait for settlement as it's a secondary feature.
-      // However, to be consistent with the user's request:
       return {};
     },
     onSettled: () => {

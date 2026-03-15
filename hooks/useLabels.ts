@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CacheCore } from '@/lib/cache/core';
 import { nanoid } from 'nanoid';
+import { apiClient } from '@/lib/api-client';
 
 export interface Label {
   id: string;
@@ -13,11 +14,7 @@ export interface Label {
 export function useLabels() {
   return useQuery<Label[]>({
     queryKey: ['labels'],
-    queryFn: async () => {
-      const res = await fetch('/api/labels');
-      if (!res.ok) throw new Error('Failed to fetch labels');
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/labels'),
     staleTime: 24 * 60 * 60 * 1000, // Labels are very static, cache for 1 day
   });
 }
@@ -25,17 +22,8 @@ export function useLabels() {
 export function useCreateLabel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (label: { name: string; color: string }) => {
-      const res = await fetch('/api/labels', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(label),
-      });
-      if (!res.ok) throw new Error('Failed to create label');
-      return res.json();
-    },
+    mutationFn: (label: { name: string; color: string }) =>
+      apiClient.post<Label>('/api/labels', label),
     onMutate: async (newLabel) => {
       await queryClient.cancelQueries({ queryKey: ['labels'] });
       const previousLabels = queryClient.getQueryData(['labels']);
@@ -61,13 +49,7 @@ export function useCreateLabel() {
 export function useDeleteLabel() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/labels?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete label');
-      return res.json();
-    },
+    mutationFn: (id: string) => apiClient.delete(`/api/labels?id=${id}`),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['labels'] });
       const previousLabels = queryClient.getQueryData(['labels']);

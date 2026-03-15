@@ -3,19 +3,14 @@ import { type InferSelectModel } from 'drizzle-orm';
 import type { projects } from '@/db/schema';
 import { CacheManager } from '@/lib/cache/manager';
 import { nanoid } from 'nanoid';
+import { apiClient } from '@/lib/api-client';
 
 export type Project = InferSelectModel<typeof projects>;
 
 export function useProjects() {
   return useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: async () => {
-      const res = await fetch('/api/projects');
-      if (!res.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      return res.json();
-    },
+    queryFn: () => apiClient.get('/api/projects'),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -24,15 +19,7 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Partial<Project>) => {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to create project');
-      return res.json();
-    },
+    mutationFn: (data: Partial<Project>) => apiClient.post<Project>('/api/projects', data),
     onMutate: async (newProject) => {
       await queryClient.cancelQueries({ queryKey: ['projects'] });
       const previousProjects = queryClient.getQueryData(['projects']);
@@ -58,13 +45,7 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete project');
-      return res.json();
-    },
+    mutationFn: (id: string) => apiClient.delete(`/api/projects/${id}`),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['projects'] });
       const previousProjects = queryClient.getQueryData(['projects']);
