@@ -9,6 +9,7 @@ import { useUsers } from '@/hooks/useUsers';
 import { useTickets } from '@/hooks/useTickets';
 import { Icon } from '@iconify/react';
 import { format, startOfWeek, subDays } from 'date-fns';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function TimeLogsPage() {
   const { user, orgRole } = useAuth();
@@ -78,9 +79,8 @@ export default function TimeLogsPage() {
 
   if (ticketsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
-        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
-        LOADING_TEMPORAL_LOGS...
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner message="LOADING_TEMPORAL_LOGS..." size="sm" />
       </div>
     );
   }

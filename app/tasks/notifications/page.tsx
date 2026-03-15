@@ -7,6 +7,7 @@ import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotificat
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function NotificationsPage() {
   const { data: notifications = [], isLoading } = useNotifications();
@@ -67,9 +68,9 @@ export default function NotificationsPage() {
 
       <div className="space-y-4">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 border border-border bg-card/50 animate-pulse" />
-          ))
+          <div className="py-20 flex justify-center">
+            <Spinner message="SYNCING_SIGNAL_HUB..." />
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-24 text-center border border-dashed border-border bg-muted/5 opacity-40">
             <Icon

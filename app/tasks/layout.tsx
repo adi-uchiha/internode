@@ -9,6 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
 import { useUserInvitations } from '@/hooks/useInvites';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { FullScreenLoader } from '@/components/ui/FullScreenLoader';
 
 interface TaskManagerLayoutProps {
   children: ReactNode;
@@ -162,39 +163,12 @@ export default function TaskManagerLayout({
   // Block ALL rendering while auth/org status is resolving to prevent any
   // child component from mounting hooks that fire org-dependent API calls.
   if (!isFullyLoaded) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
-        <Icon
-          icon="solar:round-transfer-diagonal-linear"
-          className="w-8 h-8 text-primary animate-spin mb-4"
-        />
-        <div className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
-          WAKING_SYSTEM...
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="WAKING_SYSTEM..." />;
   }
 
   // ─── Guard: Redirecting to Onboarding ───────────────────────────────────────
   if (isRedirectingToOnboarding) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center">
-        <Icon
-          icon="solar:rocket-2-bold-duotone"
-          className="w-16 h-16 text-primary mb-6 animate-pulse"
-        />
-        <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
-          Preparing Organization
-        </h2>
-        <p className="text-muted-foreground font-mono text-sm mb-8">
-          Redirecting you to setup your workspace...
-        </p>
-        <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
-          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-          REDIRECTING_TO_SETUP...
-        </div>
-      </div>
-    );
+    return <FullScreenLoader message="PREPARING_WORKSPACE..." />;
   }
 
   // ─── Guard: On Onboarding Page (no org yet) ─────────────────────────────────

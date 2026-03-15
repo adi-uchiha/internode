@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCreateLeave } from '@/hooks/useLeaves';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -159,7 +160,15 @@ export function LeaveRequestModal({ isOpen, onClose }: LeaveRequestModalProps) {
                     className="flex-1 h-12 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
                     disabled={isPending}
                   >
-                    {isPending ? 'Syncing...' : 'Submit Request'}
+                    {isPending ? (
+                      <Spinner
+                        size="sm"
+                        message="Syncing..."
+                        iconClassName="text-primary-foreground"
+                      />
+                    ) : (
+                      'Submit Request'
+                    )}
                   </Button>
                 </div>
               </form>

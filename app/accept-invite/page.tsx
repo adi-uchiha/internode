@@ -9,6 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/Spinner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -230,13 +231,7 @@ function AcceptInviteContent() {
               exit={{ opacity: 0, y: -16 }}
               className="border border-border bg-card p-10 text-center space-y-4"
             >
-              <Icon
-                icon="solar:refresh-linear"
-                className="w-10 h-10 text-primary mx-auto animate-spin"
-              />
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
-                Verifying invitation...
-              </p>
+              <Spinner message="VERIFYING_INVITATION..." />
             </motion.div>
           )}
 
@@ -397,10 +392,11 @@ function AcceptInviteContent() {
                   disabled={state === 'accepting'}
                 >
                   {state === 'accepting' ? (
-                    <>
-                      <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                      <span className="ml-2">Joining organization...</span>
-                    </>
+                    <Spinner
+                      size="sm"
+                      message="Joining organization..."
+                      iconClassName="text-white"
+                    />
                   ) : (
                     <>
                       Accept Invitation
@@ -446,9 +442,8 @@ function AcceptInviteContent() {
                     Redirecting to your dashboard...
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
-                  <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                  INITIALIZING_ORGANIZATION...
+                <div className="flex items-center justify-center py-2">
+                  <Spinner message="INITIALIZING_ORGANIZATION..." size="sm" />
                 </div>
               </div>
             </motion.div>
@@ -501,7 +496,7 @@ export default function AcceptInvitePage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Icon icon="solar:refresh-linear" className="w-8 h-8 text-primary animate-spin" />
+          <Spinner message="LOADING..." />
         </div>
       }
     >

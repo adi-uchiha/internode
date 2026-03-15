@@ -27,6 +27,7 @@ import { toast } from '@/lib/toast';
 import Image from 'next/image';
 import { WeeklyGoals } from '@/components/dashboard/WeeklyGoals';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/Spinner';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 70 20" className="w-full h-5">
@@ -52,9 +53,8 @@ const AdminDashboardContent = () => {
 
   if (analyticsLoading || ticketsLoading || activitiesLoading) {
     return (
-      <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
-        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
-        LOADING_SYSTEM_DATA...
+      <div className="flex items-center justify-center h-64">
+        <Spinner message="LOADING_SYSTEM_DATA..." size="sm" />
       </div>
     );
   }
@@ -467,9 +467,8 @@ const MemberDashboardContent = () => {
 
   if (ticketsLoading) {
     return (
-      <div className="flex items-center justify-center h-64 font-mono text-sm text-muted-foreground">
-        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
-        LOADING_PERSONAL_ORGANIZATION...
+      <div className="flex items-center justify-center h-64">
+        <Spinner message="LOADING_PERSONAL_ORGANIZATION..." size="sm" />
       </div>
     );
   }
@@ -864,8 +863,7 @@ const MemberDashboardContent = () => {
             >
               {isLogging ? (
                 <>
-                  <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin mr-2" />
-                  SYNCING_VECTORS...
+                  <Spinner size="sm" message="SYNCING_VECTORS..." iconClassName="text-background" />
                 </>
               ) : (
                 'CONFIRM_LOG'

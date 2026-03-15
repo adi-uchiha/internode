@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { toast } from '@/lib/toast';
+import { Spinner } from '@/components/ui/Spinner';
 
 import { getPriorityColor, getTimeBarColor, type TicketPriority } from '@/lib/ticket-utils';
 import Image from 'next/image';
@@ -295,9 +296,8 @@ export default function KanbanPage() {
       {/* Board Scroll Area */}
       <div ref={scrollRef} className="overflow-x-auto pb-6 -mx-2 px-2">
         {isLoading ? (
-          <div className="flex items-center justify-center p-20 text-muted-foreground gap-3">
-            <Icon icon="solar:refresh-linear" className="w-6 h-6 animate-spin" />
-            Loading Board...
+          <div className="flex items-center justify-center p-20">
+            <Spinner message="LOADING_BOARD..." />
           </div>
         ) : (
           <div className="flex gap-4 min-w-max h-[calc(100vh-220px)]">

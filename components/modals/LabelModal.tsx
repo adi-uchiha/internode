@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateLabel } from '@/hooks/useLabels';
 import { toast } from '@/lib/toast';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface LabelModalProps {
   isOpen: boolean;
@@ -136,7 +137,15 @@ export function LabelModal({ isOpen, onClose }: LabelModalProps) {
                     className="flex-1 h-11 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
                     disabled={isPending}
                   >
-                    {isPending ? 'Syncing...' : 'Establish'}
+                    {isPending ? (
+                      <Spinner
+                        size="sm"
+                        message="Syncing..."
+                        iconClassName="text-primary-foreground"
+                      />
+                    ) : (
+                      'Establish'
+                    )}
                   </Button>
                 </div>
               </form>

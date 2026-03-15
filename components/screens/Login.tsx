@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { AUTH_FLAGS } from '@/lib/feature-flags';
@@ -156,7 +157,7 @@ const Login = () => {
               }}
             >
               {isGithubLoading ? (
-                <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin" />
+                <Spinner size="sm" iconClassName="text-white" />
               ) : (
                 <Image
                   src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
@@ -240,8 +241,10 @@ const Login = () => {
                     >
                       {isLoading ? (
                         <>
-                          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                          {formMode === 'login' ? 'Authenticating...' : 'Creating Account...'}
+                          <Spinner size="sm" iconClassName="text-white" />
+                          <span className="ml-2">
+                            {formMode === 'login' ? 'Authenticating...' : 'Creating Account...'}
+                          </span>
                         </>
                       ) : (
                         <>

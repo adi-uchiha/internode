@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { toast } from '@/lib/toast';
+import { Spinner } from '@/components/ui/Spinner';
+import { FullScreenLoader } from '@/components/ui/FullScreenLoader';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -215,10 +217,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {invitesLoading ? (
-                  <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground font-mono text-xs">
-                    <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                    SCANNING_PENDING_INVITATIONS...
-                  </div>
+                  <Spinner message="SCANNING_PENDING_INVITATIONS..." className="py-4" size="sm" />
                 ) : pendingInvites.length > 0 ? (
                   <div className="space-y-4">
                     <div className="p-4 border border-primary/30 bg-primary/5">
@@ -309,11 +308,7 @@ export default function OnboardingPage() {
                         disabled={acceptingId === invite.id}
                         onClick={() => handleAcceptInvite(invite.id)}
                       >
-                        {acceptingId === invite.id ? (
-                          <Icon icon="solar:refresh-linear" className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          'Accept'
-                        )}
+                        {acceptingId === invite.id ? <Spinner size="sm" /> : 'Accept'}
                       </Button>
                     </motion.div>
                   ))}
@@ -434,10 +429,11 @@ export default function OnboardingPage() {
                       disabled={isCreating || !orgName.trim() || !orgSlug.trim()}
                     >
                       {isCreating ? (
-                        <>
-                          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                          Initializing...
-                        </>
+                        <Spinner
+                          message="Initializing..."
+                          size="sm"
+                          iconClassName="text-primary-foreground"
+                        />
                       ) : (
                         <>
                           Launch Organization
@@ -451,33 +447,7 @@ export default function OnboardingPage() {
             )}
 
             {/* ── STEP: Success ──────────────────────────────────────────── */}
-            {step === 'success' && (
-              <div className="text-center space-y-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                  className="w-24 h-24 mx-auto border-2 border-primary bg-primary/10 rounded-full flex items-center justify-center relative"
-                >
-                  <Icon icon="solar:check-circle-bold-duotone" className="w-12 h-12 text-primary" />
-                  <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse -z-10" />
-                </motion.div>
-
-                <div className="space-y-2">
-                  <h2 className="font-display text-3xl font-bold tracking-tight text-primary">
-                    Organization Ready
-                  </h2>
-                  <p className="text-muted-foreground font-mono text-sm">
-                    Your organization has been initialized. Redirecting to your dashboard...
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-center gap-2 text-muted-foreground font-mono text-xs">
-                  <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                  INITIALIZING_CORE...
-                </div>
-              </div>
-            )}
+            {step === 'success' && <FullScreenLoader message="INITIALIZING_CORE..." />}
           </div>
         </motion.div>
       </AnimatePresence>

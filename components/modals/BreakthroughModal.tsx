@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateBreakthrough } from '@/hooks/useBreakthroughs';
 import { toast } from '@/lib/toast';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface BreakthroughModalProps {
   isOpen: boolean;
@@ -192,7 +193,15 @@ export function BreakthroughModal({ isOpen, onClose }: BreakthroughModalProps) {
                     className="flex-1 h-12 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
                     disabled={isPending}
                   >
-                    {isPending ? 'Syncing...' : 'Archive Achievement'}
+                    {isPending ? (
+                      <Spinner
+                        size="sm"
+                        message="Syncing..."
+                        iconClassName="text-primary-foreground"
+                      />
+                    ) : (
+                      'Archive Achievement'
+                    )}
                   </Button>
                 </div>
               </form>

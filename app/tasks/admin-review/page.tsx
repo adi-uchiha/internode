@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/lib/toast';
 import { format } from 'date-fns';
 import { RequireRole } from '@/components/auth/RequireRole';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function AdminReviewPage() {
   const { data, isLoading } = useFeedback();
@@ -58,7 +59,9 @@ export default function AdminReviewPage() {
             </div>
 
             {isLoading ? (
-              <div className="h-40 bg-card/50 animate-pulse border border-border" />
+              <div className="py-20 flex justify-center border border-border bg-card/50">
+                <Spinner message="LOADING_PENDING_LOGS..." size="sm" />
+              </div>
             ) : data?.logs.length === 0 ? (
               <div className="py-12 text-center border border-dashed border-border bg-muted/5 opacity-50">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -122,7 +125,9 @@ export default function AdminReviewPage() {
             </div>
 
             {isLoading ? (
-              <div className="h-40 bg-card/50 animate-pulse border border-border" />
+              <div className="py-20 flex justify-center border border-border bg-card/50">
+                <Spinner message="LOADING_PENDING_HONORS..." size="sm" />
+              </div>
             ) : data?.breakthroughs.length === 0 ? (
               <div className="py-12 text-center border border-dashed border-border bg-muted/5 opacity-50">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">

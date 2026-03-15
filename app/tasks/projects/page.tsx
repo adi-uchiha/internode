@@ -10,6 +10,7 @@ import { RequireRole } from '@/components/auth/RequireRole';
 import { ProjectModal } from '@/components/modals/ProjectModal';
 import { toast } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -67,9 +68,9 @@ export default function ProjectsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
           {projectsLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 border border-border bg-card/50 animate-pulse" />
-            ))
+            <div className="col-span-full py-20 flex justify-center">
+              <Spinner message="SCANNING_PROJECT_REGISTRY..." />
+            </div>
           ) : projects?.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-border bg-muted/5">
               <Icon

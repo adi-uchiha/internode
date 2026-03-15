@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { hasOrgRole } from '@/lib/org-utils';
+import { Spinner } from '@/components/ui/Spinner';
 
 // ─── Role helpers ─────────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ function MemberActions({ member, currentOrgRole, currentUserId }: MemberActionsP
         className="p-1.5 hover:bg-muted/50 transition-colors rounded-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
       >
         {anyPending ? (
-          <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+          <Spinner size="sm" />
         ) : (
           <Icon icon="solar:menu-dots-bold" className="w-4 h-4" />
         )}
@@ -326,10 +327,7 @@ function InviteModal({ onClose }: InviteModalProps) {
               disabled={isInviting || !inviteEmail.trim()}
             >
               {isInviting ? (
-                <>
-                  <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
-                  <span className="ml-2">Sending...</span>
-                </>
+                <Spinner size="sm" message="Sending..." iconClassName="text-primary-foreground" />
               ) : (
                 <>
                   <Icon icon="solar:letter-opened-linear" className="w-4 h-4" />
@@ -352,8 +350,8 @@ function InviteModal({ onClose }: InviteModalProps) {
 
             <div className="space-y-2">
               {invitesLoading ? (
-                <div className="p-4 text-center font-mono text-[10px] text-muted-foreground animate-pulse">
-                  LOADING_INVITE_QUEUE...
+                <div className="p-4">
+                  <Spinner size="sm" message="LOADING_INVITE_QUEUE..." />
                 </div>
               ) : pendingInvites.length === 0 ? (
                 <div className="p-4 text-center font-mono text-[10px] text-muted-foreground opacity-50 italic">
@@ -430,9 +428,8 @@ export default function MembersPage() {
 
   if (membersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] font-mono text-sm text-muted-foreground">
-        <Icon icon="solar:refresh-linear" className="w-5 h-5 animate-spin mr-2" />
-        LOADING_TEAM_ROSTER...
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spinner message="LOADING_TEAM_ROSTER..." size="sm" />
       </div>
     );
   }

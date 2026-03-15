@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { useUserInvitations, useAcceptInvitation } from '@/hooks/useInvites';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function InvitesPage() {
   const { data: invites = [], isLoading } = useUserInvitations();
@@ -41,10 +42,7 @@ export default function InvitesPage() {
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border bg-muted/5">
-          <Icon icon="solar:refresh-linear" className="w-8 h-8 text-primary animate-spin mb-4" />
-          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
-            SCANNING_PENDING_REQUESTS...
-          </div>
+          <Spinner message="SCANNING_PENDING_REQUESTS..." size="lg" />
         </div>
       ) : invites.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border bg-muted/5">
@@ -93,7 +91,7 @@ export default function InvitesPage() {
                     onClick={() => handleAcceptInvite(invite.id)}
                   >
                     {acceptingId === invite.id ? (
-                      <Icon icon="solar:refresh-linear" className="w-4 h-4 animate-spin" />
+                      <Spinner size="sm" />
                     ) : (
                       <>
                         Accept Invite
