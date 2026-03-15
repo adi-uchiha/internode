@@ -25,16 +25,16 @@ This document provides a surgical, step-by-step roadmap for implementing the mul
 
 ## Phase 2: Identity & Onboarding Flow
 
-**Goal:** Implement a unified entry point and force users into a workspace context.
+**Goal:** Implement a unified entry point and force users into a organization context.
 
 - **Tasks:**
   1. **Unified Login:** Refactor `Login.tsx` to remove the Member/Admin toggle. Implement a single form that routes users based on their session state. (Ref: [Section 17.1](./multi-tenant-architecture.md#171-unified-identity-based-login))
   2. **Onboarding Interceptor:** Update the onboarding layout to detect "Orphaned Users" (no org membership) and trap them in the onboarding flow. (Ref: [Section 7.1](./multi-tenant-architecture.md#71-unified-authentication--sign-up-flow))
-  3. **Workspace Creation:** Build the "Create Your Organization" step in onboarding. (Ref: [Section 7.1 Task 5](./multi-tenant-architecture.md#71-unified-authentication--sign-up-flow))
+  3. **Organization Creation:** Build the "Create Your Organization" step in onboarding. (Ref: [Section 7.1 Task 5](./multi-tenant-architecture.md#71-unified-authentication--sign-up-flow))
   4. **Default Org Setup:** Ensure new organization owners are automatically assigned the `owner` role in the `members` table. (Ref: [Section 6.2](./multi-tenant-architecture.md#62-organization-roles-tenant-level))
 
 - **Success Criteria:**
-  - New users are forced to create a workspace.
+  - New users are forced to create a organization.
   - Verify that `proxy.ts` correctly handles session redirects.
 
 ---
@@ -72,16 +72,16 @@ This document provides a surgical, step-by-step roadmap for implementing the mul
 
 ## Phase 5: UI Refinement & Switcher
 
-**Goal:** Provide full workspace visibility and context switching.
+**Goal:** Provide full organization visibility and context switching.
 
 - **Tasks:**
   1. **Organization Switcher:** Implement `<OrgSwitcher />` in the sidebar allowing users to call `setActive()`. (Ref: [Section 17.2](./multi-tenant-architecture.md#172-organization-switcher-orgswitcher-))
-  2. **Settings Refactor:** Move workspace identity settings to update the `organizations` table instead of the global `users` table. (Ref: [Section 17.5](./multi-tenant-architecture.md#175-workspace-settings-refactoring))
+  2. **Settings Refactor:** Move organization identity settings to update the `organizations` table instead of the global `users` table. (Ref: [Section 17.5](./multi-tenant-architecture.md#175-organization-settings-refactoring))
   3. **RBAC Component:** Build the `<RequireRole />` wrapper to toggle visibility of UI elements (like "Delete Project") based on org-level roles. (Ref: [Section 17.6](./multi-tenant-architecture.md#176-role-based-visibility-ui-trim))
 
 - **Success Criteria:**
-  - Users can switch between workspaces without re-authenticating.
-  - The UI accurately reflects the user's role in the _active_ workspace.
+  - Users can switch between organizations without re-authenticating.
+  - The UI accurately reflects the user's role in the _active_ organization.
 
 ---
 

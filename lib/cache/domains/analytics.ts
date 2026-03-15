@@ -1,9 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 import { type TaskAnalyticsData, type LeaderboardEntry } from '@/hooks/useAnalytics';
+import { calculateEfficiency } from '@/lib/ticket-utils';
 
 /**
  * Domain-specific logic for Analytics cache updates.
- * Centralizes how KPIs and charts are Predicted optimistically.
+ * Centralizes how KPIs and charts are synced optimistically.
  */
 export const AnalyticsDomain = {
   /**
@@ -94,11 +95,14 @@ export const AnalyticsDomain = {
         return old
           .map((user) => {
             if (user.id !== userId) return user;
-            const currentHours = parseFloat(user.hoursLogged || '0');
+            const currentHours = parseFloat(user.hoursLogged || '0') + hours;
+            const currentTickets = user.ticketsDone + ticketsDone;
+
             return {
               ...user,
-              hoursLogged: (currentHours + hours).toString(),
-              ticketsDone: user.ticketsDone + ticketsDone,
+              hoursLogged: currentHours.toString(),
+              ticketsDone: currentTickets,
+              efficiency: calculateEfficiency(currentTickets, currentHours),
             };
           })
           .sort((a, b) => parseFloat(b.hoursLogged) - parseFloat(a.hoursLogged));
@@ -137,8 +141,8 @@ export const AnalyticsDomain = {
       const key = map(status);
       if (!key) return old;
 
-      const typedWeekEntry = weekEntry as unknown as Record<string, number>;
-      typedWeekEntry[key] = Math.max(0, (typedWeekEntry[key] || 0) + delta);
+      const weekEntryWithKey = weekEntry as unknown as Record<string, number>;
+      weekEntryWithKey[key] = Math.max(0, (weekEntryWithKey[key] || 0) + delta);
       nextStatusFlow[currentWeekIndex] = weekEntry;
 
       return { ...old, statusFlow: nextStatusFlow };

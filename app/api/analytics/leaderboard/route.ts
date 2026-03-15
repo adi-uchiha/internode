@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { tickets, users, members } from '@/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
+import { calculateEfficiency } from '@/lib/ticket-utils';
 
 export const GET = withErrorHandler(async (_req, { orgId }) => {
   // Calculate leaderboard statistics using Drizzle query builder
@@ -27,10 +28,7 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
   const leaderboard = leaderboardRaw.map((entry) => ({
     ...entry,
     hoursLogged: entry.hoursLogged.toFixed(1),
-    efficiency:
-      entry.hoursLogged > 0
-        ? Math.min(100, Math.round(((entry.ticketsDone * 4) / entry.hoursLogged) * 100))
-        : 0,
+    efficiency: calculateEfficiency(entry.ticketsDone, entry.hoursLogged),
   }));
 
   return NextResponse.json(leaderboard);

@@ -32,13 +32,15 @@ export const TicketDomain = {
       updatedAt: new Date(),
     } as TicketWithRelations;
 
-    // 1. Update ticket lists with filter synergy
-    CacheCore.prependToLists(
-      queryClient,
-      ['tickets'],
-      augmentedTicket,
-      () => !rawTicket.projectIds || rawTicket.projectIds.length === 0 // Basic filter logic
-    );
+    // 1. Update ticket lists with smart filter synergy
+    CacheCore.prependToLists(queryClient, ['tickets'], augmentedTicket, (item, filters) => {
+      const f = filters as Record<string, string>;
+      // Match project filter
+      if (f.projectId && !(item.projectIds || []).includes(f.projectId)) return false;
+      // Match assignee filter
+      if (f.assigneeId && item.assigneeId !== f.assigneeId) return false;
+      return true;
+    });
 
     // 2. Update analytics counters
     AnalyticsDomain.adjustStatusFlow(queryClient, augmentedTicket.status, 1);
@@ -68,11 +70,18 @@ export const TicketDomain = {
     }
 
     // 2. Update in all list variations with filter awareness
-    CacheCore.updateInLists(queryClient, ['tickets'], { id, ...augmentedUpdates }, () => {
-      // Example filter: if list is filtered by project, check if ticket still belongs
-      // This is dynamic based on how useTickets hooks are called
-      return true;
-    });
+    CacheCore.updateInLists(
+      queryClient,
+      ['tickets'],
+      { id, ...augmentedUpdates },
+      (item, filters) => {
+        const f = filters as Record<string, string>;
+        // Dynamically re-verify filters after update
+        if (f.projectId && !(item.projectIds || []).includes(f.projectId)) return false;
+        if (f.assigneeId && item.assigneeId !== f.assigneeId) return false;
+        return true;
+      }
+    );
 
     // 3. Update single ticket view
     CacheCore.updateItem(queryClient, ['tickets', id], augmentedUpdates);
@@ -116,11 +125,16 @@ export const TicketDomain = {
     currentUser: User
   ) => {
     const augmentedComment = {
+      id: (rawComment.id as string) || `temp-${Date.now()}`,
       ...rawComment,
       user: currentUser,
     };
 
-    CacheCore.prependToLists(queryClient, ['comments', ticketId], augmentedComment);
+    CacheCore.prependToLists(
+      queryClient,
+      ['comments', ticketId],
+      augmentedComment as unknown as { id: string }
+    );
     return augmentedComment;
   },
 

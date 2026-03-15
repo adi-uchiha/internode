@@ -79,9 +79,12 @@ export default function OnboardingPage() {
       toast.success('Welcome! You have joined the organization.');
       setStep('success');
 
-      // Total cache wipe so useSession, useListOrganizations,
-      // and useActiveMember in the parent layout refetch fresh data for the NEW context.
-      queryClient.clear();
+      // Surgical invalidation so we don't wipe unrelated state (theme, session, etc.)
+      // but ensure all organization-dependent data is refetched.
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
 
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);
     } catch (err: unknown) {
@@ -131,9 +134,12 @@ export default function OnboardingPage() {
       await authClient.organization.setActive({ organizationId: data.id });
       await authClient.getSession(); // Force update client session store
 
-      // Total cache wipe so useSession, useListOrganizations,
-      // and useActiveMember in the parent layout refetch fresh data.
-      queryClient.clear();
+      // Surgical invalidation of org-dependent keys
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['organization'] }); // better-auth org keys
 
       setStep('success');
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);

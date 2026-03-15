@@ -5,40 +5,61 @@ import { QueryClient, QueryKey } from '@tanstack/react-query';
  */
 export const CacheCore = {
   /**
-   * Identifies if a query key matches a base key, even with filters/params.
+   * Identifies if a query key matches a base key, including deep object comparison for filters.
    */
   isMatch: (key: QueryKey, baseKey: QueryKey) => {
     if (!Array.isArray(key) || !Array.isArray(baseKey)) return false;
-    return baseKey.every((item, index) => key[index] === item);
+    if (key.length < baseKey.length) return false;
+
+    // Check base parts
+    for (let i = 0; i < baseKey.length; i++) {
+      const basePart = baseKey[i];
+      const keyPart = key[i];
+
+      if (typeof basePart === 'object' && basePart !== null) {
+        if (JSON.stringify(basePart) !== JSON.stringify(keyPart)) return false;
+      } else if (basePart !== keyPart) {
+        return false;
+      }
+    }
+    return true;
+  },
+
+  /**
+   * Extracts filter parameters from a query key (usually the last element if it's an object).
+   */
+  getFilters: (queryKey: QueryKey): Record<string, unknown> => {
+    const lastPart = queryKey[queryKey.length - 1];
+    return typeof lastPart === 'object' && lastPart !== null
+      ? (lastPart as Record<string, unknown>)
+      : {};
   },
 
   /**
    * Updates an item in all queries matching the base key.
-   * Useful for list views (like "all tickets") where the item might appear.
-   * @param filter Optional predicate to determine if item belongs in a filtered list.
+   * Automatically handles filtering logic based on the query key's parameters.
    */
   updateInLists: <T extends { id: string }>(
     queryClient: QueryClient,
     baseKey: QueryKey,
     updatedItem: Partial<T> & { id: string },
-    filter?: (item: T) => boolean
+    filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
   ) => {
     queryClient.setQueriesData(
       { queryKey: baseKey },
       (old: T[] | undefined, queryKey: QueryKey) => {
         if (!Array.isArray(old)) return old;
 
-        // If it's a filtered list (queryKey.length > baseKey.length) and we have a filter,
-        // decide if the item still belongs or should be removed.
-        const isFiltered = queryKey.length > baseKey.length;
+        const filters = CacheCore.getFilters(queryKey);
+        const isFiltered = Object.keys(filters).length > 0;
 
         return old
           .map((item) => {
             if (item.id !== updatedItem.id) return item;
-            const merged = { ...item, ...updatedItem };
+            const merged = { ...item, ...updatedItem } as T;
 
-            // If the filter says it no longer matches, we'll mark it for removal (null)
-            if (isFiltered && filter && !filter(merged)) return null;
+            // If the predicate says it no longer matches the filters for this specific query, remove it.
+            if (isFiltered && filterPredicate && !filterPredicate(merged, filters)) return null;
             return merged;
           })
           .filter((item): item is T => item !== null);
@@ -48,34 +69,31 @@ export const CacheCore = {
 
   /**
    * Prepends an item to all lists matching the base key.
-   * Handles temporary IDs and partial key matching for filtered queries.
+   * Automatically handles filtering logic based on the query key's parameters.
    */
-  prependToLists: <T>(
+  prependToLists: <T extends { id: string }>(
     queryClient: QueryClient,
     baseKey: QueryKey,
     newItem: T,
-    filter?: (item: T) => boolean
+    filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
   ) => {
     queryClient.setQueriesData(
       { queryKey: baseKey },
       (old: T[] | undefined, queryKey: QueryKey) => {
-        // If the cache is empty, initialize with the new item if it matches filters
-        const isFiltered = queryKey.length > baseKey.length;
-        if (isFiltered && filter && !filter(newItem)) return old;
+        const filters = CacheCore.getFilters(queryKey);
+        const isFiltered = Object.keys(filters).length > 0;
+
+        // If it's a filtered list, decide if the item belongs
+        if (isFiltered && filterPredicate && !filterPredicate(newItem, filters)) return old;
 
         if (!old) return [newItem];
         if (!Array.isArray(old)) return old;
 
-        const newId = (newItem as { id?: string }).id;
-        const tempId = (newItem as { id?: string | 'PENDING' }).id;
+        const newId = newItem.id;
 
-        // Prevent duplicates based on ID
-        const exists = old.some((item) => {
-          const itemId = (item as { id?: string }).id;
-          return itemId && (itemId === newId || itemId === tempId);
-        });
-
-        if (exists) return old;
+        // Prevent duplicates
+        if (newId && old.some((item) => (item as unknown as { id: string }).id === newId))
+          return old;
 
         return [newItem, ...old];
       }

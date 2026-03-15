@@ -2,6 +2,9 @@ import { pgTable, text, timestamp, real, jsonb, boolean } from 'drizzle-orm/pg-c
 import { users } from './users';
 import { organizations } from './organizations';
 
+export const TICKET_STATUSES = ['todo', 'in-progress', 'in-review', 'done', 'unplanned'] as const;
+export const TICKET_PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
+
 export const tickets = pgTable('tickets', {
   id: text('id').primaryKey(),
   organizationId: text('organization_id')

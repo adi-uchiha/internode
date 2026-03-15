@@ -24,6 +24,6 @@ Generate a high-fidelity landing page design for a developer-focused technical p
 **Key Visual Components:**
 
 - **Hero Section:** A split-screen design. Left side: large headline and value proposition. Right side: An isometric, abstract wireframe diagram illustrating data flow, architecture nodes, or technical processes—not realistic illustrations.
-- **Code as Content:** Treat code snippets as primary visual elements. Display them in dark terminal-style windows with distinct syntax highlighting, looking like active workspaces.
+- **Code as Content:** Treat code snippets as primary visual elements. Display them in dark terminal-style windows with distinct syntax highlighting, looking like active organizations.
 - **UI Details:** Add subtle background textures like faint dot-matrix patterns or micro-grid lines in empty spaces. Use thin "laser" border glows on active input fields or high-priority containers.
 - **Buttons:** Primary call-to-action (CTA) buttons should be solid geometric blocks. Secondary buttons should be "ghost" styles (transparent background with a thin border) or simple text links with a monospaced arrow `->`.

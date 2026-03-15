@@ -46,8 +46,8 @@ organizationDomain: text('organization_domain').default('internhub-hq'),
 1. **No True Data Isolation:** The core definition of SaaS multi-tenancy is data isolation. Currently, if two users from different organizations create tickets or projects, there is no structural boundary preventing one organizational user from querying another organization's data. Everything relies on implicit or missing `WHERE` clauses.
 2. **No Organization Entity:** There is no centralized `organizations` table. This means we cannot store organization-wide settings such as billing plans, custom branding (logos, colors), SSO specific settings, or external integrations (like Jira or GitHub webhooks).
 3. **Mismatched Invitation Logic:** The `invites` table lacks an `organizationId`. An invite simply contains an email, a role, and the `invitedById`. This assumes a globally shared environment. When a user accepts an invite, it is not robustly tying them to the inviter's organization.
-4. **Manual Admin Creation:** System administrators currently must be created manually in the database. Furthermore, there is no concept of an "Organization Owner" who can manage their specific workspace autonomously.
-5. **No Support for Multiple Workspaces:** A user is strictly bound to the text fields on their user record. In a modern SaaS, a user (e.g., an external contractor or consultant) might need to belong to multiple organizations and switch contexts seamlessly.
+4. **Manual Admin Creation:** System administrators currently must be created manually in the database. Furthermore, there is no concept of an "Organization Owner" who can manage their specific organization autonomously.
+5. **No Support for Multiple Organizations:** A user is strictly bound to the text fields on their user record. In a modern SaaS, a user (e.g., an external contractor or consultant) might need to belong to multiple organizations and switch contexts seamlessly.
 
 ---
 
@@ -102,7 +102,7 @@ We must categorize all database tables into two distinct buckets to understand w
    - `leaves`: Needs `organizationId`.
    - `labels`: Needs `organizationId`.
    - `activities`: Needs `organizationId` (Prevent leak of actions across orgs if user is in multiple).
-   - `notifications`: Needs `organizationId` (To filter targeted notifications per active workspace).
+   - `notifications`: Needs `organizationId` (To filter targeted notifications per active organization).
    - `timeLogs`: Needs `organizationId`.
    - `comments`: Needs `organizationId`.
    - `projectMembers`: Needs `organizationId` or strict validation logic against parent project.
@@ -292,7 +292,7 @@ export const auth = betterAuth({
 
 ### 5.2 Understanding Active Organization Management
 
-When a user logs in, the authentication framework needs to know _which_ workspace they are currently viewing. `better-auth` attaches `activeOrganizationId` to the session.
+When a user logs in, the authentication framework needs to know _which_ organization they are currently viewing. `better-auth` attaches `activeOrganizationId` to the session.
 
 - **Server-Side Fetch:**
   ```typescript
@@ -385,8 +385,8 @@ The multi-tenant architecture demands a simplification of the initial entry poin
 2. **Initial State (Orphaned User):** Upon successful signup, the user is authenticated in the system (`sessions` table), but they have zero rows in the `members` mapping table. They belong to _no organization_.
 3. **The Onboarding Interceptor:** The Next.js middleware (or layout logic) detects an authenticated session with a `null` or empty `activeOrganizationId`. The user is immediately redirected and forcibly trapped in the `/onboarding` layout.
 4. **User Choice Matrix during Onboarding:**
-   - **Scenario A:** The user received an email invite prior to making an account. The system recognizes their email, and prompts: _"You have pending invites to Stark Industries. [Accept] or [Create New Workspace]"_.
-   - **Scenario B:** The user is a raw new registration. The system prompts: _"Create your Organization Workspace"_.
+   - **Scenario A:** The user received an email invite prior to making an account. The system recognizes their email, and prompts: _"You have pending invites to Stark Industries. [Accept] or [Create New Organization]"_.
+   - **Scenario B:** The user is a raw new registration. The system prompts: _"Create your Organization Organization"_.
 5. **Organization Creation:** The user submits an organization name (e.g., "Acme Corp"). We call `authClient.organization.create({ name: 'Acme Corp', slug: 'acme-corp' })`.
 6. **Automatic Promotion:** `better-auth` creates the `organizations` row AND automatically creates a `members` row setting this user as the `owner` of "Acme Corp".
 7. **Redirection:** The user's active context is set to "Acme Corp", and they are admitted to the main dashboard.
@@ -416,7 +416,7 @@ export async function getTicketsForDashboard() {
 
 ## 8. Invitation & Onboarding Flow
 
-B2B multi-tenancy thrives on network effects—bringing team members into existing workspaces effortlessly and securely.
+B2B multi-tenancy thrives on network effects—bringing team members into existing organizations effortlessly and securely.
 
 ### 8.1 Generating the Invite & Email Dispatch Mechanism
 
@@ -461,15 +461,15 @@ B2B multi-tenancy thrives on network effects—bringing team members into existi
 
 ### 8.3 Flow 2: Invitee Already Exists in System (Cross-Organization Membership)
 
-This is a critical facet of B2B SaaS. A user (`freelancer@dev.com`) might already own their own workspace (`Freelancer LLC`) or be a member of another company.
+This is a critical facet of B2B SaaS. A user (`freelancer@dev.com`) might already own their own organization (`Freelancer LLC`) or be a member of another company.
 
 1. User clicks the invite link in their email.
 2. They log into their existing account (or are already logged in).
-3. We present an Accept Invite confirmation screen: _"Stark Industries has invited you to join their workspace. You are currently logged in as freelancer@dev.com."_
+3. We present an Accept Invite confirmation screen: _"Stark Industries has invited you to join their organization. You are currently logged in as freelancer@dev.com."_
 4. Upon clicking "Accept", the system invokes `acceptInvite({ token })`.
 5. A new `members` record is generated bridging `user.id` and `stark-industries-org.id`.
 6. **Cross-Tenant State Management:** The user now exists in the `members` array for TWO distinct organizations. Both organizations remain completely cryptographically and logically isolated from one another.
-7. The active session org is programmatically swapped to `Stark Industries` so they immediately see the workspace they just accepted. They can use the `<OrgSwitcher />` to navigate back to `Freelancer LLC` at any time without logging out.
+7. The active session org is programmatically swapped to `Stark Industries` so they immediately see the organization they just accepted. They can use the `<OrgSwitcher />` to navigate back to `Freelancer LLC` at any time without logging out.
 
 ### 8.4 Revoking & Expiry Policies
 
@@ -714,7 +714,7 @@ Based on the current audit of the codebase, the following UI components and logi
 
 - **Status:** Incorrect Implementation (`Login.tsx`).
 - **Issue:** The current login screen uses a manual toggle between "Member" and "Admin".
-- **Requirement:** A single, unified login form. The system should authenticate the user's identity first, then determine if they are a Global Admin (redirect to System Dash) or an Organization Member (redirect to active workspace).
+- **Requirement:** A single, unified login form. The system should authenticate the user's identity first, then determine if they are a Global Admin (redirect to System Dash) or an Organization Member (redirect to active organization).
 
 ### 17.2 Organization Switcher (`<OrgSwitcher />`)
 
@@ -726,7 +726,7 @@ Based on the current audit of the codebase, the following UI components and logi
 
 - **Status:** Basic/Placeholder (`app/tasks/onboarding/page.tsx`).
 - **Issue:** The current onboarding only handles notification settings. It lacks the critical "Scenario B" (Create Organization) and "Scenario A" (Accept Pending Invite) logic.
-- **Requirement:** Refactor the onboarding flow to force users into a workspace creation or selection state before granting access to the main dashboard.
+- **Requirement:** Refactor the onboarding flow to force users into a organization creation or selection state before granting access to the main dashboard.
 
 ### 17.4 Team Management & Invitations
 
@@ -737,11 +737,11 @@ Based on the current audit of the codebase, the following UI components and logi
   - Update the "Members" view to fetch from the new `members` mapping table.
   - Ensure the "Pending Invites" list correctly reflects cryptographically signed tokens from `better-auth`.
 
-### 17.5 Workspace Settings Refactoring
+### 17.5 Organization Settings Refactoring
 
 - **Status:** Legacy Implementation (`SettingsPage.tsx`).
 - **Issue:** Settings currently update `organizationName` and `organizationDomain` on the flat `users` table.
-- **Requirement:** Refactor the "Workspace Identity" tab to update the `organizations` table for the `activeOrganizationId`.
+- **Requirement:** Refactor the "Organization Identity" tab to update the `organizations` table for the `activeOrganizationId`.
 
 ### 17.7 Accept Invite Confirmation Screen
 

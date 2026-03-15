@@ -40,3 +40,11 @@ export const getTimeBarColor = (logged: number, estimated: number) => {
   if (pct > 80) return 'bg-amber-500';
   return 'bg-primary';
 };
+export const calculateEfficiency = (ticketsDone: number, hoursLogged: number | string) => {
+  const hours = typeof hoursLogged === 'string' ? parseFloat(hoursLogged) : hoursLogged;
+  if (!hours || hours === 0) return 0;
+  // Formula: ((ticketsDone * PRODUCTIVITY_FACTOR) / hoursLogged) * 100
+  // Note: For now we default to 4 if constants aren't imported or we hardcode to match plan.
+  // Ideally this would import ANALYTICS from lib/constants but avoid circular dep for utils.
+  return Math.round(((ticketsDone * 4) / hours) * 100);
+};

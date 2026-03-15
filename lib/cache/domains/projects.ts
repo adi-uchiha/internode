@@ -7,7 +7,10 @@ import { type Project } from '@/hooks/useProjects';
  */
 export const ProjectDomain = {
   optimisticCreate: (queryClient: QueryClient, rawProject: Partial<Project>) => {
-    CacheCore.prependToLists(queryClient, ['projects'], rawProject);
+    CacheCore.prependToLists(queryClient, ['projects'], {
+      id: rawProject.id || `temp-${Date.now()}`,
+      ...rawProject,
+    } as Project);
   },
 
   optimisticDelete: (queryClient: QueryClient, id: string) => {
