@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateProject } from '@/hooks/useProjects';
 import { toast } from '@/lib/toast';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -139,10 +139,10 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
                     disabled={isPending}
                   >
                     {isPending ? (
-                      <Spinner
+                      <UnifiedLoader
                         size="sm"
                         message="Syncing..."
-                        iconClassName="text-primary-foreground"
+                        className="text-primary-foreground"
                       />
                     ) : (
                       'Initialize'

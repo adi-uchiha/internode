@@ -3,13 +3,15 @@ import { headers } from 'next/headers';
 import { auth } from './auth';
 import { Session } from './auth-types';
 import { ApiError, ValidationError } from './api-error';
+import { members } from '@/db/schema';
+import { type InferSelectModel } from 'drizzle-orm';
 
 type HandlerContext = {
   params: Promise<Record<string, string>>;
   session?: Session;
   orgId?: string;
   orgRole?: import('./org-utils').OrgRole;
-  member?: unknown; // The full member record from the DB
+  member?: InferSelectModel<typeof members>;
 };
 
 type ApiHandler = (req: Request, context: HandlerContext) => Promise<Response> | Response;
@@ -73,7 +75,7 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           session: session as Session,
           orgId: session?.session.activeOrganizationId || undefined,
           orgRole: (memberData.role as import('./org-utils').OrgRole) || undefined,
-          member: memberData,
+          member: memberData as InferSelectModel<typeof members>,
         });
       }
 

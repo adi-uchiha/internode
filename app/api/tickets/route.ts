@@ -4,13 +4,16 @@ import { tickets, organizations, projects } from '@/db/schema';
 import { desc, eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
+import { ApiError } from '@/lib/api-error';
 
 export const GET = withErrorHandler(async (request, { orgId }) => {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
 
-  if (!orgId) return NextResponse.json([]);
+  if (!orgId) {
+    throw new ApiError('Organization ID is required', 400, 'org_id_required');
+  }
 
   const queryConditions = [eq(tickets.organizationId, orgId)];
   if (projectId)
@@ -68,7 +71,9 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     labels,
   } = body;
 
-  if (!orgId) throw new Error('No active organization');
+  if (!orgId) {
+    throw new ApiError('Organization ID is required', 400, 'org_id_required');
+  }
 
   // Atomically increment the org's ticket counter and get the new value.
   // Using SQL UPDATE...RETURNING so concurrent requests never produce
@@ -81,7 +86,9 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     .where(eq(organizations.id, orgId))
     .returning({ ticketCounter: organizations.ticketCounter });
 
-  if (!updatedOrg) throw new Error('Organization not found');
+  if (!updatedOrg) {
+    throw new ApiError('Organization not found', 404, 'org_not_found');
+  }
 
   const sequentialTicketId = `TASK${updatedOrg.ticketCounter}`;
 

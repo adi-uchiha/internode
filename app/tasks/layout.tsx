@@ -21,6 +21,15 @@ export default function TaskManagerLayout({
   title: initialTitle,
 }: TaskManagerLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{
+    tickets: Array<{ id: string; title: string; ticketId: string }>;
+    projects: Array<{ id: string; name: string }>;
+  }>({
+    tickets: [],
+    projects: [],
+  });
+  const [isSearching, setIsSearching] = useState(false);
   const { user, session, orgRole, isLoading: authLoading } = useAuth();
 
   // ─── Organization State ──────────────────────────────────────────────────────
@@ -118,10 +127,35 @@ export default function TaskManagerLayout({
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Search logic
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults({ tickets: [], projects: [] });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error('Search failed', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Close search on navigation
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowSearch(false);
+    setSearchQuery('');
   }, [pathname]);
 
   const { data: userInvites = [] } = useUserInvitations();
@@ -220,47 +254,106 @@ export default function TaskManagerLayout({
                 <Icon icon="solar:magnifer-linear" className="w-5 h-5 text-muted-foreground" />
                 <input
                   autoFocus
-                  placeholder="&gt; Search tickets, members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="&gt; Search tickets, projects..."
                   className="flex-1 bg-transparent font-mono text-sm text-foreground placeholder:text-muted-foreground outline-none"
                 />
                 <span className="font-mono text-[10px] text-muted-foreground">⌘K to close</span>
               </div>
               <div className="p-4">
-                <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
-                  RECENT
+                <div className="max-h-[300px] overflow-y-auto">
+                  {searchQuery ? (
+                    <>
+                      <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
+                        {isSearching ? 'SEARCHING...' : 'SEARCH RESULTS'}
+                      </div>
+                      {searchResults.tickets.length === 0 &&
+                      searchResults.projects.length === 0 &&
+                      !isSearching ? (
+                        <div className="p-4 text-center text-muted-foreground font-mono text-[10px] italic">
+                          No results matching "{searchQuery}"
+                        </div>
+                      ) : (
+                        <>
+                          {searchResults.tickets.map((ticket) => (
+                            <div
+                              key={ticket.id}
+                              className="flex items-center gap-3 p-2 hover:bg-muted/30 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setShowSearch(false);
+                                router.push(`/tasks/ticket/${ticket.id}`);
+                              }}
+                            >
+                              <Icon
+                                icon="solar:document-text-linear"
+                                className="w-4 h-4 text-primary"
+                              />
+                              <span className="text-sm flex-1">{ticket.title}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                                {ticket.ticketId}
+                              </span>
+                            </div>
+                          ))}
+                          {searchResults.projects.map((project) => (
+                            <div
+                              key={project.id}
+                              className="flex items-center gap-3 p-2 hover:bg-muted/30 cursor-pointer transition-colors"
+                              onClick={() => {
+                                setShowSearch(false);
+                                router.push(`/tasks/projects?id=${project.id}`);
+                              }}
+                            >
+                              <Icon icon="solar:folder-linear" className="w-4 h-4 text-amber-400" />
+                              <span className="text-sm flex-1">{project.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                                Project
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
+                        RECENT
+                      </div>
+                      {searchHistory.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground font-mono text-[10px] italic">
+                          No recent items.
+                        </div>
+                      ) : (
+                        searchHistory.map((item, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 p-2 hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setShowSearch(false);
+                              logSearchMutation.mutate(item);
+                              router.push(`/tasks/${item.entityType}/${item.entityId}`);
+                            }}
+                          >
+                            <Icon
+                              icon={
+                                item.entityType === 'ticket'
+                                  ? 'solar:document-text-linear'
+                                  : item.entityType === 'member'
+                                    ? 'solar:user-linear'
+                                    : 'solar:folder-linear'
+                              }
+                              className="w-4 h-4 text-muted-foreground"
+                            />
+                            <span className="text-sm flex-1">{item.title}</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                              {item.subtitle || item.entityType}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </>
+                  )}
                 </div>
-                {searchHistory.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground font-mono text-[10px] italic">
-                    No recent items.
-                  </div>
-                ) : (
-                  searchHistory.map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-2 hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => {
-                        setShowSearch(false);
-                        logSearchMutation.mutate(item);
-                        router.push(`/tasks/${item.entityType}/${item.entityId}`);
-                      }}
-                    >
-                      <Icon
-                        icon={
-                          item.entityType === 'ticket'
-                            ? 'solar:document-text-linear'
-                            : item.entityType === 'member'
-                              ? 'solar:user-linear'
-                              : 'solar:folder-linear'
-                        }
-                        className="w-4 h-4 text-muted-foreground"
-                      />
-                      <span className="text-sm flex-1">{item.title}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                        {item.subtitle || item.entityType}
-                      </span>
-                    </div>
-                  ))
-                )}
                 <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-4 mb-3">
                   QUICK ACTIONS
                 </div>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateLabel } from '@/hooks/useLabels';
 import { toast } from '@/lib/toast';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface LabelModalProps {
   isOpen: boolean;
@@ -138,10 +138,10 @@ export function LabelModal({ isOpen, onClose }: LabelModalProps) {
                     disabled={isPending}
                   >
                     {isPending ? (
-                      <Spinner
+                      <UnifiedLoader
                         size="sm"
                         message="Syncing..."
-                        iconClassName="text-primary-foreground"
+                        className="text-primary-foreground"
                       />
                     ) : (
                       'Establish'

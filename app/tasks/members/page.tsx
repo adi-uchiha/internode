@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,17 +14,19 @@ import {
   type OrgMember,
   type OrgRole,
 } from '@/hooks/useInvites';
-import { useTickets } from '@/hooks/useTickets';
-import { startOfWeek } from 'date-fns';
 import { toast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
-import { hasOrgRole } from '@/lib/org-utils';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import { hasOrgRole } from '@/lib/org-utils';
 
-// ─── Role helpers ─────────────────────────────────────────────────────────────
+interface EnrichedMember extends OrgMember {
+  activeTickets: number;
+  hoursThisWeek: number;
+  efficiency: number;
+}
 
 const ROLE_CONFIG: Record<OrgRole, { label: string; className: string; icon: string }> = {
   owner: {
@@ -400,33 +402,48 @@ export default function MembersPage() {
   const activeOrgId = session?.session.activeOrganizationId;
 
   const { data: orgMembers, isLoading: membersLoading } = useOrgMembers();
-  const { data: tickets } = useTickets();
+  const [metrics, setMetrics] = useState<
+    Array<{
+      id: string;
+      activeTickets: number;
+      hoursThisWeek: number;
+      efficiency: number;
+    }>
+  >([]);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMetrics() {
+      try {
+        const res = await fetch('/api/organization/metrics');
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch metrics', err);
+      } finally {
+        setMetricsLoading(false);
+      }
+    }
+    fetchMetrics();
+  }, []);
 
   const canInvite = hasOrgRole(currentOrgRole, 'admin');
 
-  // Enrich members with computed metrics
+  // Map metrics back to member records
   const enrichedMembers = useMemo(() => {
-    if (!orgMembers) return [];
-    const now = new Date();
-    const startWeek = startOfWeek(now, { weekStartsOn: 1 });
+    if (!orgMembers || metrics.length === 0) return [];
+    return metrics
+      .map((m) => {
+        const originalMember = orgMembers.find((om) => om.userId === m.id);
+        if (!originalMember) return null;
+        return { ...originalMember, ...m } as EnrichedMember;
+      })
+      .filter((m): m is EnrichedMember => m !== null);
+  }, [orgMembers, metrics]);
 
-    return orgMembers.map((member) => {
-      const activeTickets =
-        tickets?.filter((t) => t.assigneeId === member.userId && t.status !== 'done').length ?? 0;
-
-      const hoursThisWeek =
-        tickets
-          ?.flatMap((t) => t.timeLogs || [])
-          .filter((l) => l.userId === member.userId && new Date(l.date) >= startWeek)
-          .reduce((sum, l) => sum + (l.hours || 0), 0) ?? 0;
-
-      const efficiency = Math.min(100, Math.round((hoursThisWeek / 40) * 100));
-
-      return { ...member, activeTickets, hoursThisWeek, efficiency };
-    });
-  }, [orgMembers, tickets]);
-
-  if (membersLoading) {
+  if (membersLoading || metricsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <UnifiedLoader message="LOADING_TEAM_ROSTER..." size="sm" />
@@ -490,7 +507,7 @@ export default function MembersPage() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="w-13 h-13 rounded-full border border-border group-hover:border-primary/50 transition-colors overflow-hidden bg-muted flex items-center justify-center">
-                    {member.user.image ? (
+                    {member.user?.image ? (
                       <Image
                         src={member.user.image}
                         alt={member.user.name || ''}
@@ -508,7 +525,7 @@ export default function MembersPage() {
                 </div>
                 <div>
                   <h3 className="font-display font-semibold text-base leading-tight">
-                    {member.user.name || 'Anonymous User'}
+                    {member.user?.name || 'Anonymous User'}
                     {member.userId === currentUser?.id && (
                       <span className="ml-2 font-mono text-[9px] text-muted-foreground opacity-60">
                         (you)
@@ -516,7 +533,7 @@ export default function MembersPage() {
                     )}
                   </h3>
                   <p className="font-mono text-[10px] text-muted-foreground break-all">
-                    {member.user.email}
+                    {member.user?.email}
                   </p>
                 </div>
               </div>
@@ -583,7 +600,7 @@ export default function MembersPage() {
 
             <div className="border-t border-border/50 pt-4 mt-4">
               <div className="font-mono text-[9px] text-muted-foreground opacity-40 uppercase tracking-widest">
-                Member since {new Date(member.createdAt).toLocaleDateString()}
+                Member since {new Date(member.createdAt ?? 0).toLocaleDateString()}
               </div>
             </div>
           </motion.div>

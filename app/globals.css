@@ -313,6 +313,13 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 140 100% 50%;
+
+    /* Standardized Z-Index Scale */
+    --z-base: 0;
+    --z-nav: 50;
+    --z-overlay: 100;
+    --z-modal: 200;
+    --z-toast: 300;
   }
 
   * {

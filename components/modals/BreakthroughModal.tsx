@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateBreakthrough } from '@/hooks/useBreakthroughs';
 import { toast } from '@/lib/toast';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 
 interface BreakthroughModalProps {
   isOpen: boolean;
@@ -194,10 +194,10 @@ export function BreakthroughModal({ isOpen, onClose }: BreakthroughModalProps) {
                     disabled={isPending}
                   >
                     {isPending ? (
-                      <Spinner
+                      <UnifiedLoader
                         size="sm"
                         message="Syncing..."
-                        iconClassName="text-primary-foreground"
+                        className="text-primary-foreground"
                       />
                     ) : (
                       'Archive Achievement'

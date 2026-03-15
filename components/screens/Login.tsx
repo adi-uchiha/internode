@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/Spinner';
+import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { authClient } from '@/lib/auth-client';
 import { AUTH_FLAGS } from '@/lib/feature-flags';
@@ -163,7 +163,7 @@ const Login = () => {
               }}
             >
               {isGithubLoading ? (
-                <Spinner size="sm" iconClassName="text-white" />
+                <UnifiedLoader size="sm" className="text-white" />
               ) : (
                 <Image
                   src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg"
@@ -268,7 +268,7 @@ const Login = () => {
                     >
                       {isLoading ? (
                         <>
-                          <Spinner size="sm" iconClassName="text-white" />
+                          <UnifiedLoader size="sm" className="text-white" />
                           <span className="ml-2">
                             {formMode === 'login' ? 'Authenticating...' : 'Creating Account...'}
                           </span>

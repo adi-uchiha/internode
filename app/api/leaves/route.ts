@@ -4,11 +4,13 @@ import { leaveRequests } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
-import { BadRequestError } from '@/lib/api-error';
+import { ApiError, BadRequestError } from '@/lib/api-error';
 
 // Get leave requests. Admins get all, members get their own.
 export const GET = withErrorHandler(async (req, { session, orgId, orgRole }) => {
-  if (!orgId) throw new Error('No active organization');
+  if (!orgId) {
+    throw new ApiError('Organization ID is required', 400, 'org_id_required');
+  }
 
   const isOrgManager = orgRole === 'admin' || orgRole === 'owner';
 
@@ -36,7 +38,9 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     throw new BadRequestError('Type and Date are required');
   }
 
-  if (!orgId) throw new Error('No active organization');
+  if (!orgId) {
+    throw new ApiError('Organization ID is required', 400, 'org_id_required');
+  }
 
   const [newLeave] = await db
     .insert(leaveRequests)
