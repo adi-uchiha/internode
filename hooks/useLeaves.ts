@@ -11,8 +11,7 @@ export interface Leave {
   id: string;
   userId: string;
   type: string;
-  startDate: string;
-  endDate: string;
+  date: string;
   reason: string | null;
   status: 'pending' | 'approved' | 'rejected';
   user?: {
@@ -52,8 +51,7 @@ export function useCreateLeave() {
           userId: user.id,
           status: 'pending',
           user: user as unknown as User,
-          startDate: newLeave.date,
-          endDate: newLeave.date,
+          date: newLeave.date,
           createdAt: new Date().toISOString(),
         });
       }

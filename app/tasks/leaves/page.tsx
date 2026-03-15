@@ -143,7 +143,7 @@ export default function LeavesPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Icon icon="solar:calendar-linear" className="w-3 h-3" />
-                    {format(new Date(leaf.startDate), 'MMM dd, yyyy')}
+                    {format(new Date(leaf.date), 'MMM dd, yyyy')}
                   </span>
                 </div>
               </div>
