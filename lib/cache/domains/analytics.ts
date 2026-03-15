@@ -123,13 +123,14 @@ export const AnalyticsDomain = {
    */
   adjustStatusFlow: (queryClient: QueryClient, status: string, delta: number) => {
     AnalyticsDomain.updateTasks(queryClient, (old) => {
-      if (!old.statusFlow || old.statusFlow.length === 0) return old;
+      if (!Array.isArray(old.statusFlow) || old.statusFlow.length === 0) return old;
 
       const currentWeekIndex = old.statusFlow.length - 1;
       const nextStatusFlow = [...old.statusFlow];
-      const weekEntry = { ...nextStatusFlow[currentWeekIndex] };
+      const weekEntry = { ...(nextStatusFlow[currentWeekIndex] || {}) };
 
       const map = (s: string) => {
+        if (!s) return null;
         const normalized = s.toLowerCase().replace('_', '-');
         if (normalized === 'todo') return 'todo' as const;
         if (normalized === 'in-progress') return 'inProgress' as const;
@@ -143,7 +144,7 @@ export const AnalyticsDomain = {
 
       const weekEntryWithKey = weekEntry as unknown as Record<string, number>;
       weekEntryWithKey[key] = Math.max(0, (weekEntryWithKey[key] || 0) + delta);
-      nextStatusFlow[currentWeekIndex] = weekEntry;
+      nextStatusFlow[currentWeekIndex] = weekEntry as TaskAnalyticsData['statusFlow'][number];
 
       return { ...old, statusFlow: nextStatusFlow };
     });

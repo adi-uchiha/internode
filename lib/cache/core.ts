@@ -26,10 +26,12 @@ export const CacheCore = {
   },
 
   /**
-   * Extracts filter parameters from a query key (usually the last element if it's an object).
+   * Extracts filter parameters from a query key array.
    */
-  getFilters: (queryKey: QueryKey): Record<string, unknown> => {
-    const lastPart = queryKey[queryKey.length - 1];
+  getFilters: (key: QueryKey): Record<string, unknown> => {
+    if (!Array.isArray(key)) return {};
+
+    const lastPart = key[key.length - 1];
     return typeof lastPart === 'object' && lastPart !== null
       ? (lastPart as Record<string, unknown>)
       : {};
@@ -45,12 +47,15 @@ export const CacheCore = {
     updatedItem: Partial<T> & { id: string },
     filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
   ) => {
-    queryClient.setQueriesData(
-      { queryKey: baseKey },
-      (old: T[] | undefined, queryKey: QueryKey) => {
+    // In v5, setQueriesData updater only received 1 arg in some environments/versions.
+    // Explicitly iterating via cache is safer and provides access to queryKey.
+    const queries = queryClient.getQueryCache().findAll({ queryKey: baseKey });
+
+    queries.forEach((query) => {
+      queryClient.setQueryData(query.queryKey, (old: T[] | undefined) => {
         if (!Array.isArray(old)) return old;
 
-        const filters = CacheCore.getFilters(queryKey);
+        const filters = CacheCore.getFilters(query.queryKey);
         const isFiltered = Object.keys(filters).length > 0;
 
         return old
@@ -63,8 +68,8 @@ export const CacheCore = {
             return merged;
           })
           .filter((item): item is T => item !== null);
-      }
-    );
+      });
+    });
   },
 
   /**
@@ -77,10 +82,11 @@ export const CacheCore = {
     newItem: T,
     filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
   ) => {
-    queryClient.setQueriesData(
-      { queryKey: baseKey },
-      (old: T[] | undefined, queryKey: QueryKey) => {
-        const filters = CacheCore.getFilters(queryKey);
+    const queries = queryClient.getQueryCache().findAll({ queryKey: baseKey });
+
+    queries.forEach((query) => {
+      queryClient.setQueryData(query.queryKey, (old: T[] | undefined) => {
+        const filters = CacheCore.getFilters(query.queryKey);
         const isFiltered = Object.keys(filters).length > 0;
 
         // If it's a filtered list, decide if the item belongs
@@ -96,8 +102,8 @@ export const CacheCore = {
           return old;
 
         return [newItem, ...old];
-      }
-    );
+      });
+    });
   },
 
   /**
@@ -108,9 +114,13 @@ export const CacheCore = {
     baseKey: QueryKey,
     id: string
   ) => {
-    queryClient.setQueriesData({ queryKey: baseKey }, (old: T[] | undefined) => {
-      if (!Array.isArray(old)) return old;
-      return old.filter((item) => item.id !== id);
+    const queries = queryClient.getQueryCache().findAll({ queryKey: baseKey });
+
+    queries.forEach((query) => {
+      queryClient.setQueryData(query.queryKey, (old: T[] | undefined) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((item) => item.id !== id);
+      });
     });
   },
 
