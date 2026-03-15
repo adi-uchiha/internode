@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
@@ -57,15 +57,10 @@ export const Navigation = () => {
 };
 
 const AuthButtons = () => {
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useIsMounted();
   const { data: session, isPending } = authClient.useSession();
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  if (!mounted || isPending) {
+  if (!isMounted || isPending) {
     return <div className="w-24 h-9 animate-pulse bg-muted/20" />;
   }
 

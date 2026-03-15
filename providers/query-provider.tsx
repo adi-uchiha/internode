@@ -40,8 +40,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Section 9.1: Cross-Tab Synchronization
     const unsubscribe = broadcastQueryClient({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient: queryClient as any,
+      queryClient: queryClient as unknown as Parameters<
+        typeof broadcastQueryClient
+      >[0]['queryClient'],
       broadcastChannel: 'internode-cache-sync',
     });
     return () => unsubscribe();

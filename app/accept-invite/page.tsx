@@ -64,25 +64,20 @@ function AcceptInviteContent() {
     // queryClient.clear() from triggering a re-fetch on the now-accepted invite.
     if (hasFetchedRef.current) return;
 
-    if (!invitationId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setErrorMessage(
-        'No invitation ID provided in the link. Please use the full invite link from your email.'
-      );
-
-      setState('error');
-      return;
-    }
-
-    if (!user) {
-      // Not logged in — defer to "unauthenticated" state
-
-      setState('unauthenticated');
-      return;
-    }
-
-    // User is logged in — fetch the invitation
     const fetchInvitation = async () => {
+      if (!invitationId) {
+        setErrorMessage(
+          'No invitation ID provided in the link. Please use the full invite link from your email.'
+        );
+        setState('error');
+        return;
+      }
+
+      if (!user) {
+        // Not logged in — defer to "unauthenticated" state
+        setState('unauthenticated');
+        return;
+      }
       try {
         const { data, error } = await (
           authClient.organization.getInvitation as (opts: {

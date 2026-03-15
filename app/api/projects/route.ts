@@ -31,8 +31,7 @@ export const POST = withErrorHandler(
         color: body.color,
         status: body.status,
         startDate: new Date(body.startDate),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+      })
       .returning();
 
     return NextResponse.json(newProject);

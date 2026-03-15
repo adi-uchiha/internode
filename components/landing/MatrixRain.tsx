@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 import { motion } from 'framer-motion';
 
 interface Column {
@@ -12,20 +13,28 @@ interface Column {
 export const MatrixRain = () => {
   const [columns, setColumns] = useState<Column[]>([]);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initializing columns on mount
-    setColumns(
-      Array.from({ length: 20 }, (_, i) => ({
-        id: i,
-        x: (i / 20) * 100,
-        delay: Math.random() * 5,
-        duration: 8 + Math.random() * 10,
-        chars: Array.from({ length: 20 }, () => String.fromCharCode(0x30a0 + Math.random() * 96)),
-      }))
-    );
-  }, []);
+  const isMounted = useIsMounted();
 
-  if (columns.length === 0)
+  useEffect(() => {
+    if (isMounted) {
+      const timer = setTimeout(() => {
+        setColumns(
+          Array.from({ length: 20 }, (_, i) => ({
+            id: i,
+            x: (i / 20) * 100,
+            delay: Math.random() * 5,
+            duration: 8 + Math.random() * 10,
+            chars: Array.from({ length: 20 }, () =>
+              String.fromCharCode(0x30a0 + Math.random() * 96)
+            ),
+          }))
+        );
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isMounted]);
+
+  if (!isMounted || columns.length === 0)
     return <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]" />;
 
   return (

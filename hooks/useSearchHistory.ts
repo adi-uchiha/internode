@@ -1,14 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CacheManager } from '@/lib/cache/manager';
+import { type InferSelectModel } from 'drizzle-orm';
+import { type searchHistory } from '@/db/schema';
 
-export interface RecentSearch {
-  id: string;
-  entityType: 'ticket' | 'member' | 'project';
-  entityId: string;
-  title: string;
-  subtitle?: string;
-  lastAccessedAt: string;
-}
+export type RecentSearch = InferSelectModel<typeof searchHistory>;
 
 export function useSearchHistory(options?: { enabled?: boolean }) {
   return useQuery({
@@ -42,10 +37,13 @@ export function useLogSearch() {
       const previous = queryClient.getQueryData(['searchHistory']);
 
       CacheManager.search.addHistory(queryClient, {
+        organizationId: 'PENDING',
+        userId: 'PENDING',
+        subtitle: null,
         ...newItem,
         id: `temp-${Date.now()}`,
-        lastAccessedAt: new Date().toISOString(),
-      });
+        lastAccessedAt: new Date(),
+      } as RecentSearch);
 
       return { previous };
     },

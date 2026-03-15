@@ -11,7 +11,7 @@ export const projects = pgTable('projects', {
   prefix: text('prefix').notNull(),
   description: text('description'),
   color: text('color'),
-  status: text('status', { enum: ['active', 'completed', 'paused'] })
+  status: text('status', { enum: ['active', 'completed', 'paused', 'archived'] })
     .notNull()
     .default('active'),
   startDate: timestamp('start_date').notNull(),

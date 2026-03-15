@@ -108,6 +108,7 @@ export function useUpdateTicket() {
           to: updatedTicket.status,
           assigneeId: previousTicket.assigneeId,
           ticketTitle: previousTicket.title,
+          orgId: previousTicket.organizationId,
         });
       }
 
@@ -225,7 +226,11 @@ export function useCreateComment() {
         CacheManager.tickets.optimisticCreateComment(
           queryClient,
           newComment.ticketId,
-          { ...newComment, id: 'temp-' + nanoid(), createdAt: new Date().toISOString() },
+          {
+            ...newComment,
+            id: 'temp-' + nanoid(),
+            createdAt: new Date(),
+          },
           user as unknown as User
         );
       }

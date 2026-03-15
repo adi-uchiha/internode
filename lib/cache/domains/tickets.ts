@@ -1,14 +1,17 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { QueryClient } from '@tanstack/react-query';
 import { CacheCore } from '../core';
 import { CacheAugmenter } from '../augmenter';
 import { AnalyticsDomain } from './analytics';
-import { type TicketWithRelations } from '@/hooks/useTickets';
+import {
+  type TicketWithRelations,
+  type TimeLogWithUser,
+  type CommentWithUser,
+} from '@/hooks/useTickets';
 import { type User } from '@/hooks/useUsers';
 
 export type TicketUpdatePayload = Partial<TicketWithRelations> & {
   addLoggedHours?: number;
-  addTimeLog?: unknown;
+  addTimeLog?: TimeLogWithUser;
 };
 
 /**
@@ -81,7 +84,7 @@ export const TicketDomain = {
         }
 
         if (updates.addTimeLog) {
-          next.timeLogs = [updates.addTimeLog as any, ...(item.timeLogs || [])];
+          next.timeLogs = [updates.addTimeLog, ...(item.timeLogs || [])];
         }
 
         return next;
@@ -106,7 +109,7 @@ export const TicketDomain = {
       }
 
       if (updates.addTimeLog) {
-        next.timeLogs = [updates.addTimeLog as any, ...(old.timeLogs || [])];
+        next.timeLogs = [updates.addTimeLog, ...(old.timeLogs || [])];
       }
 
       return next;
@@ -121,20 +124,22 @@ export const TicketDomain = {
   optimisticCreateComment: (
     queryClient: QueryClient,
     ticketId: string,
-    rawComment: Record<string, unknown>, // Comment model plus local extras
+    rawComment: Partial<CommentWithUser>, // Comment model plus local extras
     currentUser: User
   ) => {
     const augmentedComment = {
-      id: (rawComment.id as string) || `temp-${Date.now()}`,
+      id: rawComment.id || `temp-${Date.now()}`,
+      organizationId: currentUser.organizationId || '',
+      userId: currentUser.id,
+      ticketId,
+      content: '',
       ...rawComment,
       user: currentUser,
-    };
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as CommentWithUser;
 
-    CacheCore.prependToLists(
-      queryClient,
-      ['comments', ticketId],
-      augmentedComment as unknown as { id: string }
-    );
+    CacheCore.prependToLists(queryClient, ['comments', ticketId], augmentedComment);
     return augmentedComment;
   },
 
@@ -154,17 +159,18 @@ export const TicketDomain = {
     const logDate = date || new Date().toISOString();
 
     // 1. Create the fake log entry for the ticket detail view
-    const tempLog = {
+    const tempLog: TimeLogWithUser = {
       id: `temp-log-${Date.now()}`,
+      organizationId: currentUser.organizationId || '',
       userId: currentUser.id,
       ticketId,
       hours,
       note,
       isBreakthrough,
-      date: logDate,
+      adminComment: null,
+      date: date ? new Date(date) : new Date(),
       user: currentUser,
-      createdAt: logDate,
-      updatedAt: logDate,
+      createdAt: new Date(),
     };
 
     // 2. Update the ticket's loggedHours and timeLogs in all caches

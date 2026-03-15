@@ -14,7 +14,17 @@ export const activities = pgTable('activities', {
   action: text('action').notNull(),
   ticketId: text('ticket_id').references(() => tickets.id, { onDelete: 'set null' }),
   ticketTitle: text('ticket_title'),
-  type: text('type', { enum: ['created', 'status', 'time-log', 'completed', 'comment'] }).notNull(),
+  type: text('type', {
+    enum: [
+      'created',
+      'status',
+      'time-log',
+      'completed',
+      'comment',
+      'breakthrough',
+      'leave-requested',
+    ],
+  }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -27,7 +37,17 @@ export const notifications = pgTable('notifications', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['assigned', 'overdue', 'status', 'time-logged', 'comment', 'member-joined'],
+    enum: [
+      'assigned',
+      'overdue',
+      'status',
+      'time-logged',
+      'comment',
+      'member-joined',
+      'leave-requested',
+      'leave-status',
+      'breakthrough',
+    ],
   }).notNull(),
   title: text('title').notNull(),
   subtitle: text('subtitle'),

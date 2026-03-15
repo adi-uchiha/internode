@@ -63,8 +63,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     .update(organizations)
     .set({
       ticketCounter: sql`${organizations.ticketCounter} + 1`,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    })
     .where(eq(organizations.id, orgId!))
     .returning({ ticketCounter: organizations.ticketCounter });
 
@@ -90,8 +89,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
       estimatedHours: body.estimatedHours,
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
       labels: body.labels,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    })
     .returning();
 
   return NextResponse.json(newTicket, { status: 201 });

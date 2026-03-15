@@ -104,8 +104,7 @@ export const CacheCore = {
         const newId = newItem.id;
 
         // Prevent duplicates
-        if (newId && old.some((item) => (item as unknown as { id: string }).id === newId))
-          return old;
+        if (newId && old.some((item) => item.id === newId)) return old;
 
         return [newItem, ...old];
       });

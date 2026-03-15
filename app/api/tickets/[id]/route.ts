@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tickets, projects } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, type InferSelectModel } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { updateTicketSchema } from '@/lib/validations/tickets';
@@ -65,8 +65,7 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     throw new NotFoundError('Ticket not found');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateData: any = {};
+  const updateData: Partial<InferSelectModel<typeof tickets>> & { loggedHours?: number } = {};
   if (body.status !== undefined) updateData.status = body.status;
   if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId;
   if (body.title !== undefined) updateData.title = body.title;

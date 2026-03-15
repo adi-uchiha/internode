@@ -11,15 +11,13 @@ export const UserDomain = {
    * Optimistically updates a user's heatmap or stats.
    * Section 3.8 Contribution Heatmap Increment
    */
-  adjustStats: (queryClient: QueryClient, userId: string, statsDelta: Record<string, number>) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    CacheCore.updateInLists<User>(queryClient, ['users'], { id: userId, ...statsDelta } as any);
+  adjustStats: (queryClient: QueryClient, userId: string, statsDelta: Partial<User>) => {
+    CacheCore.updateInLists<User>(queryClient, ['users'], { id: userId, ...statsDelta });
 
     // Also update single user cache if it exists
     queryClient.setQueryData(['users', userId], (old: User | undefined) => {
       if (!old) return old;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { ...old, ...statsDelta } as any;
+      return { ...old, ...statsDelta };
     });
   },
 
@@ -39,9 +37,8 @@ export const UserDomain = {
     CacheCore.updateInLists<User>(queryClient, ['users'], {
       id: userId,
       image: newImageUrl,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
-    CacheCore.updateItem(queryClient, ['users', userId], { image: newImageUrl });
+    });
+    CacheCore.updateItem<User>(queryClient, ['users', userId], { image: newImageUrl });
   },
 
   /**

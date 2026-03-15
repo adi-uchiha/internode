@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { notifications } from '@/db/schema';
+import { type User } from './useUsers';
 import { apiClient } from '@/lib/api-client';
 import { CacheManager } from '@/lib/cache/manager';
 
-export type Notification = InferSelectModel<typeof notifications>;
+export type Notification = InferSelectModel<typeof notifications> & {
+  user?: User;
+};
 
 export function useNotifications(options?: { enabled?: boolean }) {
   return useQuery<Notification[]>({

@@ -122,9 +122,11 @@ export default function TaskManagerLayout({
 
   // Close search on navigation
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowSearch(false);
-    setSearchQuery('');
+    const timer = setTimeout(() => {
+      setShowSearch(false);
+      setSearchQuery('');
+    }, 0);
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   const { data: userInvites = [] } = useUserInvitations();

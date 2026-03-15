@@ -40,8 +40,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
       date: new Date(body.date),
       reason: body.reason || '',
       status: 'pending',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+    })
     .returning();
 
   return NextResponse.json(newLeave, { status: 201 });

@@ -1,6 +1,7 @@
 'use client';
 
-import { use, useState, useMemo, useEffect } from 'react';
+import { use, useState, useMemo } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,9 +82,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [commentText, setCommentText] = useState('');
 
   const [now] = useState(() => new Date());
-  const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
-  useEffect(() => setMounted(true), []);
+  const isMounted = useIsMounted();
 
   const isOverdue = useMemo(() => {
     if (!ticket) return false;
@@ -797,11 +796,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     <div
                       className={cn(
                         'text-sm font-mono',
-                        isOverdue && mounted ? 'text-destructive font-bold' : 'text-foreground'
+                        isOverdue && isMounted ? 'text-destructive font-bold' : 'text-foreground'
                       )}
                     >
                       {ticket.dueDate
-                        ? mounted
+                        ? isMounted
                           ? new Date(ticket.dueDate).toLocaleDateString()
                           : 'LOADING...'
                         : '∞ UNSCHEDULED'}

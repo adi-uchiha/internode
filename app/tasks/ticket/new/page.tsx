@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { useRouter } from 'next/navigation';
@@ -38,15 +39,13 @@ export default function NewTicketPage() {
   const { data: users } = useUsers();
   const { mutateAsync: createTicket, isPending: isCreating } = useCreateTicket();
 
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useIsMounted();
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- safe hydration guard
-    setMounted(true);
-    if (!isAdmin && user) {
+    if (isMounted && !isAdmin && user) {
       toast.error('Unauthorized access');
       router.push('/tasks/dashboard');
     }
-  }, [isAdmin, user, router]);
+  }, [isAdmin, user, router, isMounted]);
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -80,7 +79,7 @@ export default function NewTicketPage() {
     }
   };
 
-  if (!mounted) return null;
+  if (!isMounted) return null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

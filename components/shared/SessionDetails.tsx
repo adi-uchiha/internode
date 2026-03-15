@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import { jetBrainsMono } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { Session } from '@/lib/auth-types';
-import { useState, useEffect } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 
 interface SessionDetailsProps {
   session: Session | null;
@@ -78,12 +78,7 @@ const Section = ({
 );
 
 export const SessionDetails = ({ session }: SessionDetailsProps) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
+  const isMounted = useIsMounted();
 
   if (!session) return null;
 
@@ -93,26 +88,36 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
     <div className="space-y-12">
       {/* Identity & Core Info */}
       <Section title="Identity & Security" icon="solar:shield-user-linear">
-        <DetailItem label="User ID" value={user.id} icon="solar:id-card-linear" mounted={mounted} />
+        <DetailItem
+          label="User ID"
+          value={user.id}
+          icon="solar:id-card-linear"
+          mounted={isMounted}
+        />
         <DetailItem
           label="Username"
           value={user.username}
           icon="solar:mention-square-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
-        <DetailItem label="Email" value={user.email} icon="solar:letter-linear" mounted={mounted} />
+        <DetailItem
+          label="Email"
+          value={user.email}
+          icon="solar:letter-linear"
+          mounted={isMounted}
+        />
         <DetailItem
           label="Email Verified"
           value={user.emailVerified ? 'TRUE' : 'FALSE'}
           icon="solar:check-read-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Active Organization ID"
           value={sessionInfo.activeOrganizationId}
           icon="solar:buildings-linear"
           className="border-primary/30 bg-primary/5"
-          mounted={mounted}
+          mounted={isMounted}
         />
       </Section>
 
@@ -122,19 +127,19 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           label="Join Date"
           value={user.joinDate}
           icon="solar:calendar-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Created At"
           value={user.createdAt}
           icon="solar:calendar-add-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Updated At"
           value={user.updatedAt}
           icon="solar:refresh-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
       </Section>
 
@@ -144,7 +149,7 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           label="Notification Settings"
           value={user.notificationSettings}
           icon="solar:bell-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
       </Section>
 
@@ -154,45 +159,45 @@ export const SessionDetails = ({ session }: SessionDetailsProps) => {
           label="Session ID"
           value={sessionInfo.id}
           icon="solar:id-card-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="IP Address"
           value={sessionInfo.ipAddress}
           icon="solar:map-point-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="User Agent"
           value={sessionInfo.userAgent}
           icon="solar:monitor-linear"
           className="md:col-span-2"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Token"
           value={sessionInfo.token}
           icon="solar:lock-password-linear"
           className="md:col-span-3"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Expires At"
           value={sessionInfo.expiresAt}
           icon="solar:clock-circle-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Created At"
           value={sessionInfo.createdAt}
           icon="solar:calendar-add-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
         <DetailItem
           label="Updated At"
           value={sessionInfo.updatedAt}
           icon="solar:refresh-linear"
-          mounted={mounted}
+          mounted={isMounted}
         />
       </Section>
     </div>

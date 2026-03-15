@@ -78,7 +78,7 @@ export const CacheAugmenter = {
     id: string
   ): T | undefined => {
     const data = queryClient.getQueryData<T[]>(key);
-    const found = data?.find((item: { id: string }) => item.id === id);
+    const found = data?.find((item: T) => item.id === id);
 
     if (!found) {
       queryClient.prefetchQuery({

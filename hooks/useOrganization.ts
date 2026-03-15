@@ -6,6 +6,7 @@ export interface OrganizationDetails {
   organizationName: string;
   organizationSlug: string;
   organizationDomain: string;
+  brandingColor?: string;
 }
 
 /**

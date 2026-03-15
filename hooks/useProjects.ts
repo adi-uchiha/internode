@@ -5,7 +5,9 @@ import { CacheManager } from '@/lib/cache/manager';
 import { nanoid } from 'nanoid';
 import { apiClient } from '@/lib/api-client';
 
-export type Project = InferSelectModel<typeof projects>;
+export type Project = InferSelectModel<typeof projects> & {
+  totalRuntime?: number;
+};
 
 export function useProjects() {
   return useQuery<Project[]>({

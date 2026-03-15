@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useIsMounted } from '@/hooks/use-mounted';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
@@ -56,11 +57,11 @@ const columns: {
 const KanbanCard = ({
   ticket,
   onClick,
-  mounted = false,
+  isMounted,
 }: {
   ticket: TicketWithRelations;
   onClick: () => void;
-  mounted?: boolean;
+  isMounted?: boolean;
 }) => {
   const pct =
     ticket.estimatedHours && ticket.estimatedHours > 0
@@ -161,7 +162,7 @@ const KanbanCard = ({
             </div>
           )}
         </div>
-        {ticket.dueDate && mounted && (
+        {ticket.dueDate && isMounted && (
           <span
             className={cn(
               'font-mono text-[9px]',
@@ -191,13 +192,8 @@ export default function KanbanPage() {
 
   const [filter, setFilter] = useState({ priority: 'all', project: 'all', search: '' });
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useIsMounted();
   const scrollRef = useHorizontalScroll<HTMLDivElement>();
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
 
   const tickets = ticketsResponse || [];
 
@@ -339,7 +335,7 @@ export default function KanbanPage() {
                           key={ticket.id}
                           ticket={ticket}
                           onClick={() => router.push(`/tasks/ticket/${ticket.id}`)}
-                          mounted={mounted}
+                          isMounted={isMounted}
                         />
                       ))}
                     </AnimatePresence>
