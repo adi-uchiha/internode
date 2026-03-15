@@ -29,14 +29,15 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
     .groupBy(users.id, users.name, users.image, members.role, members.department, members.status)
     .orderBy(sql`sum(${tickets.loggedHours}) DESC`);
 
-  const formattedMetrics = memberMetrics.map((m) => ({
-    ...m,
-    efficiency:
-      m.hoursLogged > 0
-        ? Math.min(100, Math.round(((m.ticketsDone * 4) / m.hoursLogged) * 100))
-        : 0,
-    hoursLogged: m.hoursLogged.toFixed(1),
-  }));
+  const formattedMetrics = memberMetrics.map((m) => {
+    const totalHours = m.hoursLogged || 0;
+    return {
+      ...m,
+      efficiency:
+        totalHours > 0 ? Math.min(100, Math.round(((m.ticketsDone * 4) / totalHours) * 100)) : 0,
+      hoursThisWeek: totalHours, // Frontend expects this name as a number
+    };
+  });
 
   return NextResponse.json(formattedMetrics);
 });

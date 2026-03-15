@@ -561,7 +561,7 @@ export default function MembersPage() {
                   Hours (week)
                 </span>
                 <span className="font-mono text-sm font-bold text-foreground">
-                  {member.hoursThisWeek.toFixed(1)}h
+                  {(member.hoursThisWeek ?? 0).toFixed(1)}h
                 </span>
               </div>
               <div className="flex items-center justify-between">
