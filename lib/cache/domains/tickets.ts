@@ -60,13 +60,30 @@ export const TicketDomain = {
    * Focuses strictly on ticket entity state. Synergies are handled by the Registry.
    */
   optimisticUpdate: (queryClient: QueryClient, id: string, updates: TicketUpdatePayload) => {
+    // Get existing ticket to preserve rich relations if they haven't changed
+    const existing = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+
     // 1. Prepare augmented update (hydrate IDs if changed)
     const augmentedUpdates = { ...updates } as Partial<TicketWithRelations>;
+
     if (updates.assigneeId !== undefined) {
-      augmentedUpdates.assignee = CacheAugmenter.user(queryClient, updates.assigneeId);
+      if (existing?.assigneeId === updates.assigneeId && existing.assignee) {
+        augmentedUpdates.assignee = existing.assignee;
+      } else {
+        augmentedUpdates.assignee = CacheAugmenter.user(queryClient, updates.assigneeId);
+      }
     }
+
     if (updates.projectIds !== undefined) {
-      augmentedUpdates.projects = CacheAugmenter.projects(queryClient, updates.projectIds);
+      // Small optimization: If project IDs are same, keep existing objects
+      const existingProjectIds = (existing?.projectIds || []).sort().join(',');
+      const newProjectIds = (updates.projectIds || []).sort().join(',');
+
+      if (existingProjectIds === newProjectIds && existing?.projects) {
+        augmentedUpdates.projects = existing.projects;
+      } else {
+        augmentedUpdates.projects = CacheAugmenter.projects(queryClient, updates.projectIds);
+      }
     }
 
     // 2. Update in all list variations (Board, List, Projects, etc.)
@@ -192,10 +209,18 @@ export const TicketDomain = {
    */
   sync: (queryClient: QueryClient, rawResponse: TicketWithRelations) => {
     const id = rawResponse.id;
+    const existing = queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+
     const augmented = {
       ...rawResponse,
-      createdBy: rawResponse.createdBy || CacheAugmenter.user(queryClient, rawResponse.createdById),
-      assignee: rawResponse.assignee || CacheAugmenter.user(queryClient, rawResponse.assigneeId),
+      createdBy:
+        rawResponse.createdBy ||
+        (existing?.createdById === rawResponse.createdById ? existing.createdBy : undefined) ||
+        CacheAugmenter.user(queryClient, rawResponse.createdById),
+      assignee:
+        rawResponse.assignee ||
+        (existing?.assigneeId === rawResponse.assigneeId ? existing.assignee : undefined) ||
+        CacheAugmenter.user(queryClient, rawResponse.assigneeId),
       projects:
         rawResponse.projects && rawResponse.projects.length > 0
           ? rawResponse.projects
@@ -224,5 +249,25 @@ export const TicketDomain = {
    */
   resolve: (queryClient: QueryClient, id: string): TicketWithRelations | undefined => {
     return queryClient.getQueryData<TicketWithRelations>(['tickets', id]);
+  },
+
+  /**
+   * Cross-entity ripple: Updates all cached tickets when a user's profile changes.
+   * Ensures UI fidelity for assigned/created tickets (Blueprint Section 3.7/9.4).
+   */
+  rippleUserUpdate: (queryClient: QueryClient, userId: string, updates: Partial<User>) => {
+    CacheCore.updateInLists<TicketWithRelations>(queryClient, ['tickets'], (ticket) => {
+      let changed = false;
+      const next = { ...ticket };
+      if (ticket.assigneeId === userId && ticket.assignee) {
+        next.assignee = { ...ticket.assignee, ...updates };
+        changed = true;
+      }
+      if (ticket.createdById === userId && ticket.createdBy) {
+        next.createdBy = { ...ticket.createdBy, ...updates };
+        changed = true;
+      }
+      return changed ? next : ticket;
+    });
   },
 };

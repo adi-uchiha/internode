@@ -35,7 +35,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     throw new NotFoundError('Ticket not found');
   }
 
-  const [newComment] = await db
+  const [newCommentRaw] = await db
     .insert(comments)
     .values({
       id: nanoid(),
@@ -46,8 +46,16 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     })
     .returning();
 
+  // Fetch full comment with user to reconcile cache
+  const fullComment = await db.query.comments.findFirst({
+    where: eq(comments.id, newCommentRaw.id),
+    with: {
+      user: true,
+    },
+  });
+
   // --- Notification Trigger ---
-  if (newComment) {
+  if (fullComment) {
     await NotificationService.notifyTicketEvent({
       organizationId: orgId!,
       ticketId,
@@ -58,5 +66,5 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     });
   }
 
-  return NextResponse.json(newComment, { status: 201 });
+  return NextResponse.json(fullComment, { status: 201 });
 });

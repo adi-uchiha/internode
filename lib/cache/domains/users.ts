@@ -2,6 +2,9 @@ import { QueryClient } from '@tanstack/react-query';
 import { CacheCore } from '../core';
 import { type User } from '@/hooks/useUsers';
 import { useUIStore } from '../../store/ui-store';
+import { TicketDomain } from './tickets';
+import { ActivityDomain } from './activities';
+import { NotificationDomain } from './notifications';
 
 /**
  * Domain logic for User cache synchronization.
@@ -19,6 +22,11 @@ export const UserDomain = {
       if (!old) return old;
       return { ...old, ...statsDelta };
     });
+
+    // Ripple effect to all related entities
+    TicketDomain.rippleUserUpdate(queryClient, userId, statsDelta);
+    ActivityDomain.rippleUserUpdate(queryClient, userId, statsDelta);
+    NotificationDomain.rippleUserUpdate(queryClient, userId, statsDelta);
   },
 
   /**
@@ -27,6 +35,11 @@ export const UserDomain = {
   sync: (queryClient: QueryClient, data: User) => {
     CacheCore.updateInLists(queryClient, ['users'], data);
     queryClient.setQueryData(['users', data.id], data);
+
+    // Ripple effect to all related entities
+    TicketDomain.rippleUserUpdate(queryClient, data.id, data);
+    ActivityDomain.rippleUserUpdate(queryClient, data.id, data);
+    NotificationDomain.rippleUserUpdate(queryClient, data.id, data);
   },
 
   /**
@@ -39,6 +52,12 @@ export const UserDomain = {
       image: newImageUrl,
     });
     CacheCore.updateItem<User>(queryClient, ['users', userId], { image: newImageUrl });
+
+    // Ripple effect to all related entities
+    const updates = { image: newImageUrl };
+    TicketDomain.rippleUserUpdate(queryClient, userId, updates);
+    ActivityDomain.rippleUserUpdate(queryClient, userId, updates);
+    NotificationDomain.rippleUserUpdate(queryClient, userId, updates);
   },
 
   /**

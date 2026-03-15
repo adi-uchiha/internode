@@ -87,24 +87,21 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
 
   updateData.updatedAt = new Date();
 
-  const [updatedTicket] = await db
+  const [updatedTicketRaw] = await db
     .update(tickets)
     .set(updateData)
     .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
     .returning();
 
   // --- Notification Triggers ---
-  if (updatedTicket) {
-    const ticketIdForService = updatedTicket.id;
-    const ticketShortId = updatedTicket.ticketId;
-    const ticketTitle = updatedTicket.title;
+  if (updatedTicketRaw) {
+    const ticketIdForService = updatedTicketRaw.id;
+    const ticketShortId = updatedTicketRaw.ticketId;
+    const ticketTitle = updatedTicketRaw.title;
 
     // 1. Assignment Notification
     if (body.assigneeId !== undefined && body.assigneeId !== existingTicket.assigneeId) {
       if (body.assigneeId) {
-        // Find assignee name for better notification subtitle (optional, but good for UX)
-        // For simplicity we use "someone" if we don't want to fetch user,
-        // but let's just trigger with basic info first.
         await NotificationService.notifyAssignment({
           organizationId: orgId!,
           ticketId: ticketIdForService,
@@ -128,7 +125,41 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     }
   }
 
-  return NextResponse.json(updatedTicket);
+  // Fetch full ticket with relations to reconcile cache (Blueprint 9.2)
+  const fullTicket = await db.query.tickets.findFirst({
+    where: eq(tickets.id, updatedTicketRaw.id),
+    with: {
+      assignee: true,
+      createdBy: true,
+      timeLogs: {
+        with: {
+          user: true,
+        },
+        orderBy: (logs, { desc }) => [desc(logs.date)],
+      },
+      comments: {
+        with: {
+          user: true,
+        },
+        orderBy: (c, { desc }) => [desc(c.createdAt)],
+      },
+    },
+  });
+
+  // Resolve project names from projectIds (matches GET /tickets logic)
+  const ticketProjectIds = fullTicket?.projectIds || [];
+  let resolvedProjects: { id: string; name: string }[] = [];
+  if (ticketProjectIds.length > 0) {
+    const projectRows = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(inArray(projects.id, ticketProjectIds));
+    resolvedProjects = ticketProjectIds
+      .map((pid) => projectRows.find((p) => p.id === pid))
+      .filter((p): p is { id: string; name: string } => !!p);
+  }
+
+  return NextResponse.json({ ...fullTicket, projects: resolvedProjects });
 });
 
 export const DELETE = withErrorHandler(

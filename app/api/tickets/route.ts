@@ -73,7 +73,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
 
   const sequentialTicketId = `TASK${updatedOrg.ticketCounter}`;
 
-  const [newTicket] = await db
+  const [newTicketRaw] = await db
     .insert(tickets)
     .values({
       id: nanoid(),
@@ -92,5 +92,32 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     })
     .returning();
 
-  return NextResponse.json(newTicket, { status: 201 });
+  // Fetch full ticket with relations to reconcile cache (Blueprint 10)
+  const fullTicket = await db.query.tickets.findFirst({
+    where: eq(tickets.id, newTicketRaw.id),
+    with: {
+      assignee: true,
+      createdBy: true,
+      timeLogs: {
+        with: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  // Resolve project names from projectIds (matches GET /tickets logic)
+  const ticketProjectIds = fullTicket?.projectIds || [];
+  let resolvedProjects: { id: string; name: string }[] = [];
+  if (ticketProjectIds.length > 0) {
+    const projectRows = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(inArray(projects.id, ticketProjectIds));
+    resolvedProjects = ticketProjectIds
+      .map((pid) => projectRows.find((p) => p.id === pid))
+      .filter((p): p is { id: string; name: string } => !!p);
+  }
+
+  return NextResponse.json({ ...fullTicket, projects: resolvedProjects }, { status: 201 });
 });

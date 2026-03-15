@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { CacheCore } from '../core';
 import { type Notification } from '@/hooks/useNotifications';
+import { type User } from '@/hooks/useUsers';
 
 /**
  * Domain logic for Notification cache synchronization.
@@ -28,5 +29,17 @@ export const NotificationDomain = {
    */
   sync: (queryClient: QueryClient, data: Notification) => {
     CacheCore.updateInLists(queryClient, ['notifications'], data);
+  },
+
+  /**
+   * Ripple effect for user updates.
+   */
+  rippleUserUpdate: (queryClient: QueryClient, userId: string, updates: Partial<User>) => {
+    CacheCore.updateInLists<Notification>(queryClient, ['notifications'], (notif) => {
+      if (notif.userId === userId && notif.user) {
+        return { ...notif, user: { ...notif.user, ...updates } };
+      }
+      return notif;
+    });
   },
 };
