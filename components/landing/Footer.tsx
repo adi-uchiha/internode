@@ -52,6 +52,14 @@ export const Footer = () => {
                   Pricing
                 </a>
               </li>
+              <li>
+                <a
+                  href="/compare/internode-vs-jira"
+                  className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  Internode vs Jira
+                </a>
+              </li>
             </ul>
           </div>
 

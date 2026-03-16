@@ -14,6 +14,11 @@ export const SEO_KEYWORDS = [
   'high-performance engineering teams',
   'replace Jira for engineering',
   'developer experience platform',
+  'engineering velocity metrics',
+  'agile without the bloat',
+  'developer-centric project management',
+  'modern kanban for engineers',
+  'software delivery platform',
 ];
 
 export const SEO_DESCRIPTION =

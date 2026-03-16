@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 
 const teamMembers = [
   { id: 'A', status: 'active', angle: -60, delay: 0 },
-  { id: 'B', status: 'blocked', angle: 0, delay: 0.2 },
+  { id: 'B', status: 'active', angle: 0, delay: 0.2 },
   { id: 'C', status: 'active', angle: 60, delay: 0.4 },
 ];
 
@@ -173,10 +173,10 @@ export const OrbitalDiagram = () => {
                   opacity: [0, 0.9, 0.9, 0],
                 }}
                 transition={{
-                  duration: 2.1,
+                  duration: 3.0,
                   delay: beam.delay + 1.2,
                   repeat: Infinity,
-                  repeatDelay: 1.6,
+                  repeatDelay: 0.1,
                   ease: 'easeInOut',
                 }}
               />
@@ -195,10 +195,10 @@ export const OrbitalDiagram = () => {
                   opacity: [0, 1, 1, 0],
                 }}
                 transition={{
-                  duration: 2.1,
+                  duration: 3.0,
                   delay: beam.delay + 1.2,
                   repeat: Infinity,
-                  repeatDelay: 1.6,
+                  repeatDelay: 0.1,
                   ease: 'easeInOut',
                 }}
               />
