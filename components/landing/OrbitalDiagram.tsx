@@ -57,9 +57,12 @@ export const OrbitalDiagram = () => {
 
           // Smooth curve into the HUD
           const midY = startY + (endY - startY) * 0.55;
-          const c1X = startX;
+          // Add a slight horizontal 'bend' for vertical paths (like block B) to ensure
+          // horizontal gradients are visible and the path has a valid bounding box.
+          const bend = Math.abs(startX - endX) < 1 ? 15 : 0;
+          const c1X = startX + bend;
           const c1Y = midY;
-          const c2X = endX + (startX - endX) * 0.15;
+          const c2X = endX + (startX - endX) * 0.15 + bend * 0.5;
           const c2Y = midY;
 
           return {
@@ -158,50 +161,55 @@ export const OrbitalDiagram = () => {
                 transition={{ duration: 1.1, delay: beam.delay + 0.4 }}
               />
 
-              {/* Glow layer (thin) */}
-              <motion.path
-                d={beam.d}
-                fill="none"
-                stroke={`url(#${gradientId})`}
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                filter={`url(#${filterId})`}
-                initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
-                animate={{
-                  pathLength: [0, 0.12, 0.12, 0],
-                  pathOffset: [0, 0, 0.88, 1],
-                  opacity: [0, 0.9, 0.9, 0],
-                }}
-                transition={{
-                  duration: 3.0,
-                  delay: beam.delay + 1.2,
-                  repeat: Infinity,
-                  repeatDelay: 0.1,
-                  ease: 'easeInOut',
-                }}
-              />
+              {/* Multiple pulses per path for high frequency */}
+              {[0, 1, 2].map((i) => (
+                <g key={`${beam.id}-pulse-${i}`}>
+                  {/* Glow layer */}
+                  <motion.path
+                    d={beam.d}
+                    fill="none"
+                    stroke={`url(#${gradientId})`}
+                    strokeWidth="2.25"
+                    strokeLinecap="round"
+                    filter={`url(#${filterId})`}
+                    initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
+                    animate={{
+                      pathLength: [0, 0.15, 0.15, 0],
+                      pathOffset: [0, 0, 0.85, 1],
+                      opacity: [0, 0.9, 0.9, 0],
+                    }}
+                    transition={{
+                      duration: 4.0, // Slower
+                      delay: beam.delay + 1.2 + i * 1.33, // Staggered
+                      repeat: Infinity,
+                      repeatDelay: 0, // Continuous
+                      ease: 'linear',
+                    }}
+                  />
 
-              {/* Core layer (thinner) */}
-              <motion.path
-                d={beam.d}
-                fill="none"
-                stroke={`url(#${gradientId})`}
-                strokeWidth="1.25"
-                strokeLinecap="round"
-                initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
-                animate={{
-                  pathLength: [0, 0.12, 0.12, 0],
-                  pathOffset: [0, 0, 0.88, 1],
-                  opacity: [0, 1, 1, 0],
-                }}
-                transition={{
-                  duration: 3.0,
-                  delay: beam.delay + 1.2,
-                  repeat: Infinity,
-                  repeatDelay: 0.1,
-                  ease: 'easeInOut',
-                }}
-              />
+                  {/* Core layer */}
+                  <motion.path
+                    d={beam.d}
+                    fill="none"
+                    stroke={`url(#${gradientId})`}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
+                    animate={{
+                      pathLength: [0, 0.15, 0.15, 0],
+                      pathOffset: [0, 0, 0.85, 1],
+                      opacity: [0, 1, 1, 0],
+                    }}
+                    transition={{
+                      duration: 4.0,
+                      delay: beam.delay + 1.2 + i * 1.33,
+                      repeat: Infinity,
+                      repeatDelay: 0,
+                      ease: 'linear',
+                    }}
+                  />
+                </g>
+              ))}
             </g>
           );
         })}
