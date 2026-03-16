@@ -1,8 +1,6 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
+import { FadeIn, StaggerContainer, StaggerItem } from './Animations';
 
 const plans = [
   {
@@ -10,7 +8,7 @@ const plans = [
     tagline: 'For small teams',
     price: 'Free',
     period: '',
-    features: ['Up to 5 interns', 'Daily logging', 'Basic analytics', 'Email support'],
+    features: ['Up to 5 developers', 'Daily logging', 'Basic analytics', 'Email support'],
     cta: 'Get Started',
     featured: false,
   },
@@ -20,7 +18,7 @@ const plans = [
     price: '$29',
     period: '/month',
     features: [
-      'Up to 25 interns',
+      'Up to 25 members',
       'Advanced analytics',
       'AI weekly summaries',
       'Slack integration',
@@ -35,7 +33,7 @@ const plans = [
     price: '$149',
     period: '/month',
     features: [
-      'Unlimited interns',
+      'Unlimited projects',
       'Custom integrations',
       'SSO & SAML',
       'Dedicated account manager',
@@ -55,13 +53,7 @@ export const PricingSection = () => {
 
       <div className="container mx-auto px-6">
         {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-20"
-        >
+        <FadeIn direction="up" className="text-center mb-20">
           <span className="inline-block font-mono text-xs uppercase tracking-widest text-primary mb-4 px-3 py-1 border border-primary/30 bg-primary/5">
             [PRICING]
           </span>
@@ -71,17 +63,13 @@ export const PricingSection = () => {
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Start free, scale as you grow
           </p>
-        </motion.div>
+        </FadeIn>
 
         {/* Pricing cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {plans.map((plan, i) => (
-            <motion.div
+        <StaggerContainer className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {plans.map((plan) => (
+            <StaggerItem
               key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
               className={`
                 relative p-6 border bg-card
                 ${
@@ -125,9 +113,9 @@ export const PricingSection = () => {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );

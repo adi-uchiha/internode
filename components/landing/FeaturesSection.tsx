@@ -1,8 +1,3 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { useInView } from 'framer-motion';
-import { useRef } from 'react';
 import { HUDFeature } from './features/HUDFeature';
 import { LoggingFeature } from './features/LoggingFeature';
 import { AnalyticsFeature } from './features/AnalyticsFeature';
@@ -10,29 +5,9 @@ import { FeedbackFeature } from './features/FeedbackFeature';
 import { SkillsFeature } from './features/SkillsFeature';
 import { ReportsFeature } from './features/ReportsFeature';
 import { TaskManagerFeature } from './features/TaskManagerFeature';
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-  },
-};
+import { FadeIn, StaggerContainer, StaggerItem } from './Animations';
 
 export const FeaturesSection = () => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
-
   return (
     <section id="features" className="relative py-32 overflow-hidden">
       {/* Background */}
@@ -40,13 +15,7 @@ export const FeaturesSection = () => {
 
       <div className="container mx-auto px-6">
         {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-20"
-        >
+        <FadeIn direction="up" className="text-center mb-20">
           <span className="inline-block font-mono text-xs uppercase tracking-widest text-primary mb-4 px-3 py-1 border border-primary/30 bg-primary/5">
             [FEATURE_SET]
           </span>
@@ -54,54 +23,48 @@ export const FeaturesSection = () => {
             Built for <span className="text-primary">engineering</span> velocity
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            A developer-first approach to intern management. Real-time data, actionable insights,
-            zero overhead.
+            A developer-first approach to engineering management. Real-time data, actionable
+            insights, zero overhead.
           </p>
-        </motion.div>
+        </FadeIn>
 
         {/* Bento Grid */}
-        <motion.div
-          ref={ref}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Large card - HUD */}
-          <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-2">
+          <StaggerItem className="md:col-span-2 lg:col-span-2">
             <HUDFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Tall card - Daily Logging */}
-          <motion.div variants={itemVariants} className="md:row-span-2">
+          <StaggerItem className="md:row-span-2">
             <LoggingFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Regular card - Analytics */}
-          <motion.div variants={itemVariants}>
+          <StaggerItem>
             <AnalyticsFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Regular card - Feedback */}
-          <motion.div variants={itemVariants}>
+          <StaggerItem>
             <FeedbackFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Wide card - Skills */}
-          <motion.div variants={itemVariants} className="md:col-span-2">
+          <StaggerItem className="md:col-span-2">
             <SkillsFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Regular card - Reports */}
-          <motion.div variants={itemVariants}>
+          <StaggerItem>
             <ReportsFeature />
-          </motion.div>
+          </StaggerItem>
 
           {/* Wide card - Task Manager */}
-          <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-3">
+          <StaggerItem className="md:col-span-2 lg:col-span-3">
             <TaskManagerFeature />
-          </motion.div>
-        </motion.div>
+          </StaggerItem>
+        </StaggerContainer>
       </div>
     </section>
   );

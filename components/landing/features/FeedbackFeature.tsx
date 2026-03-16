@@ -41,7 +41,7 @@ export const FeedbackFeature = () => {
         >
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-full bg-muted border border-border" />
-            <span className="font-mono text-xs text-foreground">Intern</span>
+            <span className="font-mono text-xs text-foreground">Engineer</span>
             <span className="font-mono text-[10px] text-muted-foreground">12:41</span>
           </div>
           <p className="font-mono text-xs text-muted-foreground">

@@ -1,8 +1,6 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
+import { FadeIn } from './Animations';
 
 export const CTASection = () => {
   return (
@@ -17,32 +15,25 @@ export const CTASection = () => {
       />
 
       <div className="container mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
-        >
+        <FadeIn direction="up" className="max-w-3xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-primary mb-6">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             System Ready
           </span>
 
-          <h2 className="font-display text-4xl md:text-6xl font-light text-foreground mb-6 leading-tight">
-            Ready to engineer
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-light text-foreground mb-8 leading-tight">
+            Ready to architect
             <br />
-            <span className="text-primary italic">better internships?</span>
+            <span className="text-primary italic">engineering excellence?</span>
           </h2>
 
-          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto">
-            Join engineering teams that have transformed their intern programs with real-time
-            visibility and data-driven mentorship.
+          <p className="text-muted-foreground text-lg mb-12 max-w-xl mx-auto leading-relaxed">
+            Join engineering teams that have transformed their delivery cycles with real-time
+            velocity tracking and automated insights.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="hero" size="lg" className="group">
-              <Icon icon="solar:play-bold" className="w-4 h-4" />
+            <Button variant="hero" size="lg" className="group h-14 px-10 text-lg">
               <span>Initialize Internode</span>
             </Button>
             <Button variant="hero-outline" size="lg" className="group">
@@ -53,7 +44,7 @@ export const CTASection = () => {
               />
             </Button>
           </div>
-        </motion.div>
+        </FadeIn>
       </div>
     </section>
   );

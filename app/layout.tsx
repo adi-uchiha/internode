@@ -11,14 +11,36 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Internode | Engineering-Grade Project Management',
   description:
-    'Internode is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability.',
+    'Internode is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability. Architect your velocity.',
+  keywords: [
+    'project management',
+    'engineering teams',
+    'software development',
+    'velocity',
+    'agile',
+    'kanban',
+    'real-time visibility',
+    'developer tools',
+  ],
+  authors: [{ name: 'Internode Team' }],
+  creator: 'Internode',
+  publisher: 'Internode',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   metadataBase: process.env.VERCEL_URL
     ? new URL(`https://${process.env.VERCEL_URL}`)
     : new URL('http://localhost:3000'),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'Internode',
     description: 'Engineering-Grade Project Management Platform',
     siteName: 'Internode',
+    url: 'https://internode.app',
     images: [
       {
         url: '/og-image.png',
@@ -35,6 +57,18 @@ export const metadata: Metadata = {
     title: 'Internode',
     description: 'Engineering-Grade Project Management Platform',
     images: ['/og-image.png'],
+    creator: '@internode',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

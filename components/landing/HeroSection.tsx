@@ -1,10 +1,8 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { OrbitalDiagram } from './OrbitalDiagram';
 import { MatrixRain } from './MatrixRain';
+import { FadeIn } from './Animations';
 
 export const HeroSection = () => {
   return (
@@ -34,51 +32,34 @@ export const HeroSection = () => {
           {/* Left content */}
           <div className="relative z-10">
             {/* Status tag */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-flex items-center gap-2 mb-8"
-            >
+            <FadeIn direction="right" delay={0.2} className="inline-flex items-center gap-2 mb-8">
               <div className="status-dot" />
               <span className="font-mono text-xs uppercase tracking-widest text-primary">
                 System Operational
               </span>
-            </motion.div>
+            </FadeIn>
 
-            {/* Main headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="font-display text-5xl md:text-6xl lg:text-7xl font-light leading-[1.1] mb-6"
-            >
-              <span className="text-primary italic">Engineer</span>
-              <span className="text-primary italic"> your</span>
-              <br />
-              <span className="text-primary italic">interns&apos;</span>
-              <br />
-              <span className="text-foreground font-medium">growth trajectory.</span>
-            </motion.h1>
+            <FadeIn direction="up" delay={0.3}>
+              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-light leading-[1.1] mb-6">
+                <span className="text-primary italic">Architect</span>
+                <span className="text-primary italic"> your</span>
+                <br />
+                <span className="text-primary italic">team&apos;s</span>
+                <br />
+                <span className="text-foreground font-medium">engineering velocity.</span>
+              </h1>
+            </FadeIn>
 
             {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-muted-foreground text-lg md:text-xl max-w-lg mb-10 leading-relaxed"
-            >
-              Real-time visibility into your engineering interns. Transform internships from
-              black-box experiences into transparent, growth-oriented journeys.
-            </motion.p>
+            <FadeIn direction="up" delay={0.5}>
+              <p className="text-muted-foreground text-lg md:text-xl max-w-lg mb-10 leading-relaxed">
+                Real-time visibility into your engineering squads. Transform distributed work from
+                black-box experiences into transparent, growth-oriented delivery engines.
+              </p>
+            </FadeIn>
 
             {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-wrap gap-4"
-            >
+            <FadeIn direction="up" delay={0.7} className="flex flex-wrap gap-4">
               <Button variant="hero" size="lg" className="group">
                 <Icon icon="solar:play-bold" className="w-4 h-4" />
                 <span>Initialize</span>
@@ -90,15 +71,10 @@ export const HeroSection = () => {
                   className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
                 />
               </Button>
-            </motion.div>
+            </FadeIn>
 
             {/* Metrics bar */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 1 }}
-              className="mt-16 pt-8 border-t border-border"
-            >
+            <FadeIn delay={1} className="mt-16 pt-8 border-t border-border">
               <div className="flex items-center gap-8 font-mono text-xs text-muted-foreground">
                 <span>01</span>
                 <div className="flex-1 h-px bg-border" />
@@ -110,26 +86,23 @@ export const HeroSection = () => {
                 <div className="flex-1 h-px bg-border" />
                 <span>05</span>
               </div>
-            </motion.div>
+            </FadeIn>
           </div>
 
           {/* Right content - Orbital Diagram */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative lg:h-[600px] flex items-center justify-center"
+          <FadeIn
+            delay={0.4}
+            className="relative lg:h-[600px] flex items-center justify-center scale-90 md:scale-100"
           >
             <OrbitalDiagram />
-          </motion.div>
+          </FadeIn>
         </div>
       </div>
 
       {/* Bottom trust bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.2 }}
+      <FadeIn
+        direction="up"
+        delay={1.2}
         className="absolute bottom-0 left-0 right-0 border-t border-border bg-background/50 backdrop-blur-sm"
       >
         <div className="container mx-auto px-6 py-4">
@@ -162,7 +135,7 @@ export const HeroSection = () => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </FadeIn>
     </section>
   );
 };

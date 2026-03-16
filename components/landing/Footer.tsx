@@ -1,25 +1,5 @@
 import { Icon } from '@iconify/react';
 
-const footerLinks = {
-  product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Changelog', href: '#' },
-    { label: 'Documentation', href: '#' },
-  ],
-  company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Contact', href: '#' },
-  ],
-  legal: [
-    { label: 'Privacy', href: '#' },
-    { label: 'Terms', href: '#' },
-    { label: 'Security', href: '#' },
-  ],
-};
-
 export const Footer = () => {
   return (
     <footer className="border-t border-border bg-background">
@@ -27,78 +7,122 @@ export const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <a href="#" className="flex items-center gap-3 mb-4">
-              <Icon icon="solar:graph-new-bold" className="w-6 h-6 text-primary" />
-              <span className="font-display font-semibold text-lg text-foreground">INTERNODE</span>
-            </a>
-            <p className="font-mono text-xs text-muted-foreground leading-relaxed max-w-xs">
-              Engineering management infrastructure for the next generation of interns.
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative w-6 h-6 border-2 border-foreground flex items-center justify-center transition-all duration-300 group-hover:border-primary group-hover:drop-shadow-[0_0_10px_hsl(var(--primary))]">
+                <div className="w-2 h-2 bg-foreground" />
+              </div>
+              <span className="font-display font-semibold text-lg text-foreground tracking-tight">
+                INTERNODE
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+              Engineering management infrastructure for the next generation of high-performance
+              teams. Architect your velocity.
             </p>
           </div>
 
-          {/* Product */}
+          {/* Links */}
           <div>
-            <h4 className="font-mono text-xs uppercase tracking-wider text-foreground mb-4">
+            <h4 className="font-display text-sm font-medium text-foreground mb-6 uppercase tracking-wider">
               Product
             </h4>
-            <ul className="space-y-2">
-              {footerLinks.product.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+            <ul className="space-y-4">
+              <li>
+                <a
+                  href="#features"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#how-it-works"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Workflow
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#pricing"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Pricing
+                </a>
+              </li>
             </ul>
           </div>
 
-          {/* Company */}
           <div>
-            <h4 className="font-mono text-xs uppercase tracking-wider text-foreground mb-4">
-              Company
+            <h4 className="font-display text-sm font-medium text-foreground mb-6 uppercase tracking-wider">
+              Resources
             </h4>
-            <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+            <ul className="space-y-4">
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Documentation
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  API Reference
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  System Status
+                </a>
+              </li>
             </ul>
           </div>
 
-          {/* Legal */}
           <div>
-            <h4 className="font-mono text-xs uppercase tracking-wider text-foreground mb-4">
+            <h4 className="font-display text-sm font-medium text-foreground mb-6 uppercase tracking-wider">
               Legal
             </h4>
-            <ul className="space-y-2">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+            <ul className="space-y-4">
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Privacy
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Terms
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Security
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="font-mono text-xs text-muted-foreground">
-            © 2025 Internode. All rights reserved.
-          </span>
+        <div className="mt-20 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+            © {new Date().getFullYear()} INTERNODE. All rights reserved.
+          </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
               <Icon icon="mdi:github" className="w-5 h-5" />

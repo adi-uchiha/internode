@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useIsMounted } from '@/hooks/use-mounted';
 import { motion } from 'framer-motion';

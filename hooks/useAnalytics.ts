@@ -14,7 +14,7 @@ export interface AdminAnalyticsData {
   isGlobal: boolean;
   logRate: string;
   avgResolveTime: string;
-  activeInterns: string;
+  activeEngineers: string;
   totalHours: string;
 }
 

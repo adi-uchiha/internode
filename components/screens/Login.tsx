@@ -86,8 +86,8 @@ const Login = () => {
             </h1>
 
             <p className="text-muted-foreground text-lg max-w-md mb-8">
-              A real-time HUD for tracking intern progress, providing mentorship, and building
-              engineering excellence.
+              A real-time HUD for tracking engineering progress, optimizing velocity, and building
+              high-performance teams.
             </p>
 
             {/* Stats */}

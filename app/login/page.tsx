@@ -1,8 +1,13 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Login from '@/components/screens/Login';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
+
+export const metadata: Metadata = {
+  title: 'Login | Internode',
+  description:
+    'Authenticate to access your Internode organization and manage your engineering velocity.',
+};
 
 export default function LoginPage() {
   return (

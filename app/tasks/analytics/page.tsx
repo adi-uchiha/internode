@@ -96,8 +96,10 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex gap-4 border-l border-border pl-6 h-12 items-center">
           <div className="text-right">
-            <p className="font-mono text-[10px] text-muted-foreground uppercase">Network Load</p>
-            <p className="font-mono text-sm font-bold">OPTIMAL_2.4ms</p>
+            <div className="font-mono text-[9px] text-muted-foreground/30 flex items-center gap-2">
+              <span className="w-1 h-1 bg-muted-foreground/20 rounded-full" />
+              IDENTIFIER: Internode_v2.4.1
+            </div>
           </div>
           <div className="w-px h-8 bg-border/50" />
           <div className="text-right">

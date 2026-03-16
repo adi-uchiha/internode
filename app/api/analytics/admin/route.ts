@@ -15,12 +15,12 @@ export const GET = withErrorHandler(
     const timeLogFilter = eq(timeLogs.organizationId, orgId);
     const ticketFilter = eq(tickets.organizationId, orgId);
 
-    // 1. Total Active Interns
-    const activeInternsRes = await db
+    // 1. Total Active Engineers
+    const activeEngineersRes = await db
       .select({ count: sql<number>`count(*)::integer` })
       .from(members)
       .where(and(orgFilter, eq(members.status, 'active')));
-    const activeInternsCount = activeInternsRes[0]?.count || 0;
+    const activeEngineersCount = activeEngineersRes[0]?.count || 0;
 
     // 2. Total Hours Logged
     const totalHoursRes = await db
@@ -36,10 +36,10 @@ export const GET = withErrorHandler(
       .where(timeLogFilter);
     const logsCount = logsCountRes[0]?.count || 0;
 
-    // Assuming 10 expected logs per intern over some period for a rough gauge
+    // Assuming 10 expected logs per engineer over some period for a rough gauge
     const logRate =
-      activeInternsCount > 0
-        ? Math.min(Math.round((logsCount / (activeInternsCount * 10)) * 100), 100)
+      activeEngineersCount > 0
+        ? Math.min(Math.round((logsCount / (activeEngineersCount * 10)) * 100), 100)
         : 0;
 
     // 4. Avg Resolve Time
@@ -65,7 +65,7 @@ export const GET = withErrorHandler(
     return NextResponse.json({
       logRate: `${logRate}%`,
       avgResolveTime,
-      activeInterns: activeInternsCount.toString(),
+      activeEngineers: activeEngineersCount.toString(),
       totalHours: Math.round(totalHours).toLocaleString(),
     });
   },

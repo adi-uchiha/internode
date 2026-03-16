@@ -21,7 +21,7 @@ export const HUDFeature = () => {
             Heads-Up Display
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Real-time status of all active interns at a glance
+            Real-time status of all active engineers at a glance
           </p>
         </div>
         <div className="flex items-center gap-2">
