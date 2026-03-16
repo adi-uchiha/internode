@@ -7,11 +7,13 @@ import { CTASection } from '@/components/landing/CTASection';
 import { Footer } from '@/components/landing/Footer';
 import { JsonLd } from '@/components/seo/JsonLd';
 
+import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
+
 export default function Home() {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'Internode',
+    name: NEXT_PUBLIC_APP_NAME,
     operatingSystem: 'Web',
     applicationCategory: 'BusinessApplication',
     offers: {
@@ -19,8 +21,7 @@ export default function Home() {
       price: '0',
       priceCurrency: 'USD',
     },
-    description:
-      'High-performance project management platform designed for engineering teams who demand precision, speed, and reliability.',
+    description: `${NEXT_PUBLIC_APP_NAME} is high-performance project management platform designed for engineering teams who demand precision, speed, and reliability.`,
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: '4.9',
@@ -31,13 +32,13 @@ export default function Home() {
   const orgData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Internode',
-    url: 'https://internode.app',
-    logo: 'https://internode.app/icon.svg',
+    name: NEXT_PUBLIC_APP_NAME,
+    url: 'https://internode.vercel.app',
+    logo: 'https://internode.vercel.app/icon.svg',
     sameAs: [
-      'https://twitter.com/internode',
+      `https://twitter.com/${NEXT_PUBLIC_APP_NAME.toLowerCase()}`,
       'https://github.com/adi-uchiha/internode',
-      'https://linkedin.com/company/internode',
+      `https://linkedin.com/company/${NEXT_PUBLIC_APP_NAME.toLowerCase()}`,
     ],
   };
 

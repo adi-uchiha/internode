@@ -19,6 +19,7 @@ function requireEnv(key: string): string {
 export const BETTER_AUTH_SECRET = requireEnv('BETTER_AUTH_SECRET');
 export const BETTER_AUTH_URL = requireEnv('BETTER_AUTH_URL');
 export const NEXT_PUBLIC_APP_URL = requireEnv('NEXT_PUBLIC_APP_URL');
+export const NEXT_PUBLIC_APP_NAME = requireEnv('NEXT_PUBLIC_APP_NAME');
 
 // ─── Database ────────────────────────────────────────────────────────────────
 export const DATABASE_URL = requireEnv('DATABASE_URL');

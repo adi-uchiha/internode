@@ -6,6 +6,8 @@
         "DATABASE_URL",
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_APP_NAME",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
         "SMTP_USER",

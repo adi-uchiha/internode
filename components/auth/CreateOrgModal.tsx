@@ -122,7 +122,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
               </label>
               <div className="flex items-center">
                 <div className="h-11 px-3 flex items-center bg-muted/50 border border-border border-r-0 text-[10px] font-mono text-muted-foreground">
-                  internode.app/
+                  internode.vercel.app/
                 </div>
                 <Input
                   value={slug}

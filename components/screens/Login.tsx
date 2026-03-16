@@ -11,6 +11,7 @@ import { AUTH_FLAGS } from '@/lib/feature-flags';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
+import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
 
 type FormMode = 'login' | 'signup';
 
@@ -74,7 +75,7 @@ const Login = () => {
               <div className="w-10 h-10 border-2 border-primary flex items-center justify-center">
                 <div className="w-4 h-4 bg-primary" />
               </div>
-              <span className="font-display font-bold text-2xl">INTERNODE</span>
+              <span className="font-display font-bold text-2xl">{NEXT_PUBLIC_APP_NAME}</span>
             </div>
 
             <h1 className="text-5xl font-display font-bold mb-6 leading-tight">
@@ -126,7 +127,7 @@ const Login = () => {
             <div className="w-8 h-8 border-2 border-primary flex items-center justify-center">
               <div className="w-3 h-3 bg-primary" />
             </div>
-            <span className="font-display font-bold text-xl">INTERNODE</span>
+            <span className="font-display font-bold text-xl">{NEXT_PUBLIC_APP_NAME}</span>
           </div>
 
           {/* Header */}

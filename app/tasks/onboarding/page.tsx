@@ -382,7 +382,7 @@ export default function OnboardingPage() {
                     </label>
                     <div className="flex items-center border border-border bg-background overflow-hidden">
                       <span className="px-3 py-2 font-mono text-xs text-muted-foreground bg-muted/30 border-r border-border shrink-0">
-                        internode.app/
+                        internode.vercel.app/
                       </span>
                       <input
                         value={orgSlug}

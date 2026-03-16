@@ -8,6 +8,8 @@ const navItems = [
   { label: 'Pricing', href: '#pricing' },
 ];
 
+import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
+
 export const Navigation = () => {
   return (
     <FadeIn
@@ -21,8 +23,8 @@ export const Navigation = () => {
             <div className="relative w-7 h-7 border-2 border-foreground flex items-center justify-center transition-all duration-300 group-hover:border-primary group-hover:drop-shadow-[0_0_10px_hsl(var(--primary))]">
               <div className="w-2.5 h-2.5 bg-foreground transition-colors duration-300 group-hover:bg-primary" />
             </div>
-            <span className="font-display font-semibold text-xl tracking-tight text-foreground">
-              INTERNODE
+            <span className="font-display font-semibold text-xl tracking-tight text-foreground uppercase">
+              {NEXT_PUBLIC_APP_NAME}
             </span>
           </Link>
 

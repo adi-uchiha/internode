@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
 
 export const Footer = () => {
   return (
@@ -11,8 +12,8 @@ export const Footer = () => {
               <div className="relative w-6 h-6 border-2 border-foreground flex items-center justify-center transition-all duration-300 group-hover:border-primary group-hover:drop-shadow-[0_0_10px_hsl(var(--primary))]">
                 <div className="w-2 h-2 bg-foreground" />
               </div>
-              <span className="font-display font-semibold text-lg text-foreground tracking-tight">
-                INTERNODE
+              <span className="font-display font-semibold text-lg text-foreground tracking-tight uppercase">
+                {NEXT_PUBLIC_APP_NAME}
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
@@ -121,7 +122,7 @@ export const Footer = () => {
 
         <div className="mt-20 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
-            © {new Date().getFullYear()} INTERNODE. All rights reserved.
+            © {new Date().getFullYear()} {NEXT_PUBLIC_APP_NAME}. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">

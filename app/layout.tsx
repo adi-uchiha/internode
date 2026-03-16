@@ -8,10 +8,11 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 import { SmoothScroll } from '@/components/smooth-scroll';
 import { cn } from '@/lib/utils';
 
+import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
+
 export const metadata: Metadata = {
-  title: 'Internode | Engineering-Grade Project Management',
-  description:
-    'Internode is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability. Architect your velocity.',
+  title: `${NEXT_PUBLIC_APP_NAME} | Engineering-Grade Project Management`,
+  description: `${NEXT_PUBLIC_APP_NAME} is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability. Architect your velocity.`,
   keywords: [
     'project management',
     'engineering teams',
@@ -22,31 +23,32 @@ export const metadata: Metadata = {
     'real-time visibility',
     'developer tools',
   ],
-  authors: [{ name: 'Internode Team' }],
-  creator: 'Internode',
-  publisher: 'Internode',
+  authors: [{ name: `${NEXT_PUBLIC_APP_NAME} Team` }],
+  creator: NEXT_PUBLIC_APP_NAME,
+  publisher: NEXT_PUBLIC_APP_NAME,
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: process.env.VERCEL_URL
-    ? new URL(`https://${process.env.VERCEL_URL}`)
-    : new URL('http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Internode',
+    title: NEXT_PUBLIC_APP_NAME,
     description: 'Engineering-Grade Project Management Platform',
-    siteName: 'Internode',
-    url: 'https://internode.app',
+    siteName: NEXT_PUBLIC_APP_NAME,
+    url: 'https://internode.vercel.app',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Internode - High Performance Project Management',
+        alt: `${NEXT_PUBLIC_APP_NAME} - High Performance Project Management`,
       },
     ],
     locale: 'en_US',
@@ -54,10 +56,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Internode',
+    title: NEXT_PUBLIC_APP_NAME,
     description: 'Engineering-Grade Project Management Platform',
     images: ['/og-image.png'],
-    creator: '@internode',
+    creator: `@${NEXT_PUBLIC_APP_NAME.toLowerCase()}`,
   },
   robots: {
     index: true,
@@ -69,6 +71,9 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+  verification: {
+    google: 'kIcnD-AIBS4aaN6LeVB0fj4Afyp-B8gTZFSnv2wBXnw',
   },
 };
 
