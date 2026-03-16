@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { type InferSelectModel } from 'drizzle-orm';
 import type { tickets, comments, timeLogs } from '@/db/schema';
 import type { User } from './useUsers';
@@ -33,12 +34,22 @@ export function useTickets(params?: { projectId?: string; assigneeId?: string })
 }
 
 export function useTicket(id: string) {
-  return useQuery<TicketWithRelations>({
+  const queryClient = useQueryClient();
+  const query = useQuery<TicketWithRelations>({
     queryKey: ['tickets', id],
     queryFn: () => apiClient.get(`/api/tickets/${id}`),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (query.data && query.data.id !== id) {
+      // If we fetched by short ID, sync the data to the PK cache key as well
+      queryClient.setQueryData(['tickets', query.data.id], query.data);
+    }
+  }, [query.data, id, queryClient]);
+
+  return query;
 }
 
 export function useCreateTicket() {

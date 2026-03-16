@@ -46,7 +46,7 @@ export const PATCH = withErrorHandler(async (req, { params, session, orgId, orgR
   const [updated] = await db
     .update(breakthroughs)
     .set(updateData)
-    .where(eq(breakthroughs.id, id))
+    .where(and(eq(breakthroughs.id, id), eq(breakthroughs.organizationId, orgId)))
     .returning();
 
   return NextResponse.json(updated);
@@ -72,7 +72,9 @@ export const DELETE = withErrorHandler(async (req, { params, session, orgId, org
     throw new ForbiddenError();
   }
 
-  await db.delete(breakthroughs).where(eq(breakthroughs.id, id));
+  await db
+    .delete(breakthroughs)
+    .where(and(eq(breakthroughs.id, id), eq(breakthroughs.organizationId, orgId)));
 
   return NextResponse.json({ success: true });
 });

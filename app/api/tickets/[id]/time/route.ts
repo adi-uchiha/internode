@@ -46,7 +46,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       loggedHours: (existingTicket.loggedHours || 0) + body.hours,
       updatedAt: new Date(),
     })
-    .where(eq(tickets.id, existingTicket.id));
+    .where(and(eq(tickets.id, existingTicket.id), eq(tickets.organizationId, orgId!)));
 
   // --- Notification Trigger ---
   if (newTimeLog) {
@@ -62,7 +62,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
 
   // Fetch full ticket with relations to reconcile drift (Blueprint 9.2)
   const updatedTicket = await db.query.tickets.findFirst({
-    where: eq(tickets.id, existingTicket.id),
+    where: and(eq(tickets.id, existingTicket.id), eq(tickets.organizationId, orgId!)),
     with: {
       assignee: true,
       createdBy: true,

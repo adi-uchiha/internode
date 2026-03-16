@@ -5,11 +5,10 @@ import { eq, and } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { ForbiddenError, NotFoundError } from '@/lib/api-error';
 
-export const PATCH = withErrorHandler(async (request, { params, session }) => {
+export const PATCH = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
   const body = await request.json();
 
-  const orgId = session!.session.activeOrganizationId;
   if (!orgId) throw new Error('No active organization');
 
   // Find membership
@@ -63,7 +62,7 @@ export const PATCH = withErrorHandler(async (request, { params, session }) => {
             loggedHours: (ticket.loggedHours || 0) + diff,
             updatedAt: new Date(),
           })
-          .where(eq(tickets.id, existingLog.ticketId));
+          .where(and(eq(tickets.id, existingLog.ticketId), eq(tickets.organizationId, orgId!)));
       }
     }
   }

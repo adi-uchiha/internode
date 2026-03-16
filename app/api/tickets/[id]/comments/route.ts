@@ -9,10 +9,22 @@ import { createCommentSchema } from '@/lib/validations/tickets';
 import { NotificationService } from '@/lib/notifications';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
-  const { id: ticketId } = await params;
+  const { id: urlId } = await params;
+  if (!orgId) return NextResponse.json([]);
+
+  // Resolve ticket ID if its a short code
+  const isPk = urlId.length > 15;
+  const ticketQuery = isPk ? eq(tickets.id, urlId) : eq(tickets.ticketId, urlId);
+
+  const ticket = await db.query.tickets.findFirst({
+    where: and(ticketQuery, eq(tickets.organizationId, orgId)),
+    columns: { id: true },
+  });
+
+  if (!ticket) return NextResponse.json([]);
 
   const ticketComments = await db.query.comments.findMany({
-    where: and(eq(comments.ticketId, ticketId), eq(comments.organizationId, orgId!)),
+    where: and(eq(comments.ticketId, ticket.id), eq(comments.organizationId, orgId)),
     with: {
       user: true,
     },
@@ -27,8 +39,12 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
   const json = await request.json();
   const body = createCommentSchema.parse(json);
 
+  // Resolve ticket ID if its a short code
+  const isPk = ticketId.length > 15;
+  const ticketQuery = isPk ? eq(tickets.id, ticketId) : eq(tickets.ticketId, ticketId);
+
   const ticket = await db.query.tickets.findFirst({
-    where: and(eq(tickets.id, ticketId), eq(tickets.organizationId, orgId!)),
+    where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
   });
 
   if (!ticket) {
@@ -40,7 +56,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     .values({
       id: nanoid(),
       organizationId: orgId!,
-      ticketId,
+      ticketId: ticket.id, // always use internal PK
       userId: session!.user.id,
       content: body.content,
     })
@@ -48,7 +64,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
 
   // Fetch full comment with user to reconcile cache
   const fullComment = await db.query.comments.findFirst({
-    where: eq(comments.id, newCommentRaw.id),
+    where: and(eq(comments.id, newCommentRaw.id), eq(comments.organizationId, orgId!)),
     with: {
       user: true,
     },

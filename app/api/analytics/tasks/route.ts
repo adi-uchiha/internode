@@ -83,17 +83,21 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
     .from(projects)
     .where(eq(projects.organizationId, orgId));
 
-  const ticketsRaw = await db
-    .select({
-      projectIds: tickets.projectIds,
+  // Optimize Project Distribution calculation
+  const projectDistribution = await Promise.all(
+    projectStatsRaw.map(async (p) => {
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.organizationId, orgId!),
+            sql`${tickets.projectIds} @> jsonb_build_array(${p.id})`
+          )
+        );
+      return { name: p.name, tickets: Number(count), hours: 0 };
     })
-    .from(tickets)
-    .where(eq(tickets.organizationId, orgId));
-
-  const projectDistribution = projectStatsRaw.map((p) => {
-    const count = ticketsRaw.filter((t) => (t.projectIds as string[]).includes(p.id)).length;
-    return { name: p.name, tickets: count, hours: 0 };
-  });
+  );
 
   // 5. Daily Activity (Heatmap Data)
   const heatmapRaw = await db

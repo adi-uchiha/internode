@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import { notifications, tickets } from '@/db/schema';
 import { nanoid } from 'nanoid';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export type NotificationType =
   | 'assigned'
@@ -68,7 +68,7 @@ export class NotificationService {
     const { organizationId, ticketId, type, title, subtitle, excludeUserId } = params;
 
     const ticket = await db.query.tickets.findFirst({
-      where: eq(tickets.id, ticketId),
+      where: and(eq(tickets.id, ticketId), eq(tickets.organizationId, organizationId)),
     });
 
     if (!ticket) return;

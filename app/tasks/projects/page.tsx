@@ -108,7 +108,7 @@ export default function ProjectsPage() {
                           className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors"
                         />
                       </div>
-                      <RequireRole role="admin">
+                      <RequireRole role="owner">
                         <button
                           onClick={() => handleDeleteProject(project.id, project.name)}
                           className="text-muted-foreground hover:text-destructive p-1 transition-colors opacity-0 group-hover:opacity-100"

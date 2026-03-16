@@ -10,9 +10,9 @@ import { NotificationService } from '@/lib/notifications';
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
 
-  // Check if ID is a PK (nanoid, >15 chars) or a ticketId (like TASK1, TASK42)
-  const isPk = id.length > 15;
-  const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
+  // Check if ID is a PK or a ticketId (like VELO-1, TEST-42)
+  const isPk = !id.includes('-');
+  const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id.toUpperCase());
 
   const ticket = await db.query.tickets.findFirst({
     where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
@@ -39,7 +39,7 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
     const projectRows = await db
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(inArray(projects.id, ticketProjectIds));
+      .where(and(inArray(projects.id, ticketProjectIds), eq(projects.organizationId, orgId!)));
     resolvedProjects = ticketProjectIds
       .map((pid) => projectRows.find((p) => p.id === pid))
       .filter((p): p is { id: string; name: string } => !!p);
@@ -53,9 +53,9 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
   const json = await request.json();
   const body = updateTicketSchema.parse(json);
 
-  // Check if ID is a PK (nanoid) or a ticketId (TASK{N})
-  const isPk = id.length > 15;
-  const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
+  // Check if ID is a PK or a ticketId (like VELO-1, TEST-42)
+  const isPk = !id.includes('-');
+  const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id.toUpperCase());
 
   const existingTicket = await db.query.tickets.findFirst({
     where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
@@ -127,7 +127,7 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
 
   // Fetch full ticket with relations to reconcile cache (Blueprint 9.2)
   const fullTicket = await db.query.tickets.findFirst({
-    where: eq(tickets.id, updatedTicketRaw.id),
+    where: and(eq(tickets.id, updatedTicketRaw.id), eq(tickets.organizationId, orgId!)),
     with: {
       assignee: true,
       createdBy: true,
@@ -153,7 +153,7 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     const projectRows = await db
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(inArray(projects.id, ticketProjectIds));
+      .where(and(inArray(projects.id, ticketProjectIds), eq(projects.organizationId, orgId!)));
     resolvedProjects = ticketProjectIds
       .map((pid) => projectRows.find((p) => p.id === pid))
       .filter((p): p is { id: string; name: string } => !!p);
@@ -166,9 +166,9 @@ export const DELETE = withErrorHandler(
   async (request, { params, orgId }) => {
     const { id } = await params;
 
-    // Check if ID is a PK (nanoid) or a ticketId (TASK{N})
-    const isPk = id.length > 15;
-    const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id);
+    // Check if ID is a PK or a ticketId (like VELO-1, TEST-42)
+    const isPk = !id.includes('-');
+    const ticketQuery = isPk ? eq(tickets.id, id) : eq(tickets.ticketId, id.toUpperCase());
 
     const [deletedTicket] = await db
       .delete(tickets)

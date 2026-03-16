@@ -276,7 +276,7 @@ const AdminDashboardContent = () => {
               Core Activity Stream
             </h3>
             <div className="flex gap-4 font-mono text-[10px] uppercase">
-              {['all', 'tickets', 'time-log', 'members'].map((f) => (
+              {['all', 'tickets', 'time-log', 'comments'].map((f) => (
                 <button
                   key={f}
                   onClick={() => setActivityFilter(f)}
@@ -293,9 +293,14 @@ const AdminDashboardContent = () => {
           </div>
           <div className="space-y-4">
             {activities
-              ?.filter(
-                (a: ActivityWithUser) => activityFilter === 'all' || a.type === activityFilter
-              )
+              ?.filter((a: ActivityWithUser) => {
+                if (activityFilter === 'all') return true;
+                if (activityFilter === 'tickets')
+                  return a.type === 'created' || a.type === 'status';
+                if (activityFilter === 'time-log') return a.type === 'time-log';
+                if (activityFilter === 'comments') return a.type === 'comment';
+                return a.type === activityFilter;
+              })
               .map((activity: ActivityWithUser) => {
                 const member = users?.find((u) => u.id === activity.userId);
                 return (

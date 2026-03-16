@@ -52,11 +52,24 @@ export const GET = withErrorHandler(async (req, { session, orgId }) => {
 });
 
 // Add a new goal item to a specific weekly goal
-export const POST = withErrorHandler(async (request) => {
+export const POST = withErrorHandler(async (request, { session, orgId }) => {
   const { weeklyGoalId, text } = await request.json();
 
   if (!weeklyGoalId || !text) {
     throw new BadRequestError('Missing required fields');
+  }
+
+  // Security: Ensure the goal container belongs to the requester
+  const goalContainer = await db.query.weeklyGoals.findFirst({
+    where: and(
+      eq(weeklyGoals.id, weeklyGoalId),
+      eq(weeklyGoals.userId, session!.user.id),
+      eq(weeklyGoals.organizationId, orgId!)
+    ),
+  });
+
+  if (!goalContainer) {
+    throw new BadRequestError('Invalid goal container access');
   }
 
   const [newItem] = await db

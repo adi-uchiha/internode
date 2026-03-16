@@ -13,5 +13,5 @@ export const DELETE = withErrorHandler(
     await db.delete(projects).where(and(eq(projects.id, id), eq(projects.organizationId, orgId)));
     return NextResponse.json({ success: true });
   },
-  { requiredRole: 'admin' }
+  { requiredRole: 'owner' }
 );
