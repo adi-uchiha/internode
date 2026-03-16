@@ -365,11 +365,15 @@ export const OrbitalDiagram = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-primary" />
-            <span className="font-mono text-[9px] text-muted-foreground">3 Active</span>
+            <span className="font-mono text-[9px] text-muted-foreground">
+              {teamMembers.filter((m) => m.status === 'active').length} Active
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-yellow-500" />
-            <span className="font-mono text-[9px] text-muted-foreground">1 Blocked</span>
+            <span className="font-mono text-[9px] text-muted-foreground">
+              {teamMembers.filter((m) => m.status === 'blocked').length} Blocked
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-muted" />
