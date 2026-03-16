@@ -156,21 +156,28 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
   const handleLogTime = async () => {
     if (!logHours || parseFloat(logHours) <= 0) return;
+    const hoursToLog = parseFloat(logHours);
+
     try {
-      await logTime({
+      // Fire and forget for the component layer - useLogTime handles the optimistic update
+      logTime({
         id: ticket.id,
-        hours: parseFloat(logHours),
+        hours: hoursToLog,
         note: logNote || 'Time logged',
         isBreakthrough: logBreakthrough,
         date: new Date().toISOString(),
+      }).catch((err) => {
+        console.error('Failed to log time in background:', err);
       });
+
+      // Immediate UI reset
       setShowLogTime(false);
       setLogHours('');
       setLogNote('');
       setLogBreakthrough(false);
-      toast.success(`Logged ${logHours}h successfully`);
+      toast.success(`Logged ${hoursToLog}h successfully`);
     } catch {
-      toast.error('Failed to log time');
+      toast.error('Failed to initiate time log');
     }
   };
 

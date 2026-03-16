@@ -1,9 +1,7 @@
-'use client';
-
 import * as React from 'react';
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva } from 'class-variance-authority';
-import { Icon } from '@iconify/react';
+import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -70,15 +68,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <ButtonPrimitive
         ref={ref}
         disabled={loading || disabled}
-        className={cn(buttonVariants({ variant, size, className }), 'relative')}
+        className={cn(buttonVariants({ variant, size, className }), 'relative overflow-hidden')}
         {...props}
       >
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Icon icon="lucide:loader-2" className="animate-spin size-4" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Loader2 className="size-4 animate-spin" />
           </div>
         )}
-        <span className={cn('flex items-center justify-center gap-2', loading && 'invisible')}>
+        <span
+          className={cn(
+            'flex items-center justify-center gap-2 transition-opacity duration-200',
+            loading ? 'opacity-0' : 'opacity-100'
+          )}
+        >
           {children}
         </span>
       </ButtonPrimitive>

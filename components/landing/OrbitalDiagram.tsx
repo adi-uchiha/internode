@@ -167,8 +167,8 @@ export const OrbitalDiagram = () => {
                   filter={`url(#${filterId})`}
                   initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
                   animate={{
-                    pathLength: [0, 0.08, 0.08, 0],
-                    pathOffset: [0, 0, 0.92, 1],
+                    pathLength: [0, 0.12, 0.12, 0],
+                    pathOffset: [0, 0, 0.88, 1],
                     opacity: [0, 0.8, 0.8, 0],
                   }}
                   transition={{
@@ -185,7 +185,7 @@ export const OrbitalDiagram = () => {
       </svg>
 
       {/* Team member nodes at top */}
-      <div className="absolute top-[8%] left-1/2 -translate-x-1/2 flex items-end gap-16">
+      <div className="absolute top-[2%] left-1/2 -translate-x-1/2 flex items-end gap-16">
         {teamMembers.map((member, index) => (
           <motion.div
             key={member.id}
