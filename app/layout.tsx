@@ -9,25 +9,12 @@ import { SmoothScroll } from '@/components/smooth-scroll';
 import { cn } from '@/lib/utils';
 
 import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
+import { SEO_KEYWORDS, SEO_DESCRIPTION, SEO_TITLE } from '@/lib/seo-constants';
 
 export const metadata: Metadata = {
-  title: `${NEXT_PUBLIC_APP_NAME} | Engineering-Grade Project Management`,
-  description: `${NEXT_PUBLIC_APP_NAME} is the high-performance project management platform designed for engineering teams who are tired of Jira's bloat. Architect your velocity with precision, speed, and real-time visibility.`,
-  keywords: [
-    'project management',
-    'engineering teams',
-    'software development',
-    'velocity',
-    'agile',
-    'kanban',
-    'real-time visibility',
-    'developer tools',
-    'Jira alternative',
-    'Linear alternative',
-    'Next-gen project management',
-    'software engineering HUD',
-    'Fast agile tool',
-  ],
+  title: `${NEXT_PUBLIC_APP_NAME} | ${SEO_TITLE}`,
+  description: SEO_DESCRIPTION,
+  keywords: SEO_KEYWORDS,
   authors: [{ name: `${NEXT_PUBLIC_APP_NAME} Team` }],
   creator: NEXT_PUBLIC_APP_NAME,
   publisher: NEXT_PUBLIC_APP_NAME,

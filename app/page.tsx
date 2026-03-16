@@ -8,6 +8,7 @@ import { Footer } from '@/components/landing/Footer';
 import { JsonLd } from '@/components/seo/JsonLd';
 
 import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
+import { SEO_DESCRIPTION } from '@/lib/seo-constants';
 
 export default function Home() {
   const structuredData = {
@@ -21,7 +22,7 @@ export default function Home() {
       price: '0',
       priceCurrency: 'USD',
     },
-    description: `${NEXT_PUBLIC_APP_NAME} is high-performance project management platform designed for engineering teams who demand precision, speed, and reliability.`,
+    description: SEO_DESCRIPTION,
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: '4.9',
