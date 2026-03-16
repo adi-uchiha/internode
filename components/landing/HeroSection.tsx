@@ -53,8 +53,9 @@ export const HeroSection = () => {
             {/* Subtitle */}
             <FadeIn direction="up" delay={0.5}>
               <p className="text-muted-foreground text-lg md:text-xl max-w-lg mb-10 leading-relaxed">
-                Real-time visibility into your engineering squads. Transform distributed work from
-                black-box experiences into transparent, growth-oriented delivery engines.
+                Stuck in a bloated, legacy ecosystem? Build at the speed of thought with an
+                engineering-first HUD designed to replace sluggish black-box tools. Zero overhead,
+                infinite visibility.
               </p>
             </FadeIn>
 

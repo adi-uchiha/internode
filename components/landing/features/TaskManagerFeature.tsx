@@ -78,7 +78,7 @@ export const TaskManagerFeature = () => {
             Kanban & Time Tracking
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Jira-like task management built into Internode
+            Engineering-focused task management. Ditch the Jira bloat.
           </p>
         </div>
       </div>

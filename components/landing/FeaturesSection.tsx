@@ -23,8 +23,8 @@ export const FeaturesSection = () => {
             Built for <span className="text-primary">engineering</span> velocity
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            A developer-first approach to engineering management. Real-time data, actionable
-            insights, zero overhead.
+            A developer-first approach to project management. Designed to strip away the legacy
+            overhead and replace bloated workflows with real-time data and zero friction.
           </p>
         </FadeIn>
 

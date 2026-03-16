@@ -12,7 +12,7 @@ import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
 
 export const metadata: Metadata = {
   title: `${NEXT_PUBLIC_APP_NAME} | Engineering-Grade Project Management`,
-  description: `${NEXT_PUBLIC_APP_NAME} is the high-performance project management platform designed for engineering teams who demand precision, speed, and reliability. Architect your velocity.`,
+  description: `${NEXT_PUBLIC_APP_NAME} is the high-performance project management platform designed for engineering teams who are tired of Jira's bloat. Architect your velocity with precision, speed, and real-time visibility.`,
   keywords: [
     'project management',
     'engineering teams',
@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     'kanban',
     'real-time visibility',
     'developer tools',
+    'Jira alternative',
+    'Linear alternative',
+    'Next-gen project management',
+    'software engineering HUD',
+    'Fast agile tool',
   ],
   authors: [{ name: `${NEXT_PUBLIC_APP_NAME} Team` }],
   creator: NEXT_PUBLIC_APP_NAME,
