@@ -57,12 +57,12 @@ export const OrbitalDiagram = () => {
 
           // Smooth curve into the HUD
           const midY = startY + (endY - startY) * 0.55;
-          // Add a slight horizontal 'bend' for vertical paths (like block B) to ensure
-          // horizontal gradients are visible and the path has a valid bounding box.
-          const bend = Math.abs(startX - endX) < 1 ? 15 : 0;
-          const c1X = startX + bend;
+          // For vertical paths (like block B), add a slight S-curve to ensure
+          // the horizontal component of gradients is visible and the move looks technical.
+          const isVertical = Math.abs(startX - endX) < 1;
+          const c1X = isVertical ? startX + 30 : startX;
           const c1Y = midY;
-          const c2X = endX + (startX - endX) * 0.15 + bend * 0.5;
+          const c2X = isVertical ? endX - 30 : endX + (startX - endX) * 0.15;
           const c2Y = midY;
 
           return {
@@ -109,8 +109,8 @@ export const OrbitalDiagram = () => {
       {/* SVG for connection lines */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 580 580">
         <defs>
-          {/* Green pulse beam */}
-          <linearGradient id="pulseGradientGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+          {/* Green pulse beam - diagonal to work with all path orientations */}
+          <linearGradient id="pulseGradientGreen" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="transparent" />
             <stop offset="35%" stopColor="hsl(140 100% 50% / 0.15)" />
             <stop offset="50%" stopColor="hsl(140 100% 60% / 0.9)" />
@@ -118,8 +118,8 @@ export const OrbitalDiagram = () => {
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
 
-          {/* Yellow pulse beam (blocked) */}
-          <linearGradient id="pulseGradientYellow" x1="0%" y1="0%" x2="100%" y2="0%">
+          {/* Yellow pulse beam (blocked) - diagonal */}
+          <linearGradient id="pulseGradientYellow" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="transparent" />
             <stop offset="35%" stopColor="hsl(45 100% 50% / 0.15)" />
             <stop offset="50%" stopColor="hsl(45 100% 60% / 0.9)" />
@@ -162,7 +162,7 @@ export const OrbitalDiagram = () => {
               />
 
               {/* Multiple pulses per path for high frequency */}
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <g key={`${beam.id}-pulse-${i}`}>
                   {/* Glow layer */}
                   <motion.path
@@ -174,15 +174,15 @@ export const OrbitalDiagram = () => {
                     filter={`url(#${filterId})`}
                     initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
                     animate={{
-                      pathLength: [0, 0.15, 0.15, 0],
-                      pathOffset: [0, 0, 0.85, 1],
+                      pathLength: [0, 0.25, 0.25, 0],
+                      pathOffset: [0, 0, 0.75, 1],
                       opacity: [0, 0.9, 0.9, 0],
                     }}
                     transition={{
-                      duration: 4.0, // Slower
-                      delay: beam.delay + 1.2 + i * 1.33, // Staggered
+                      duration: 4.5,
+                      delay: beam.delay + 1.2 + i * 1.125,
                       repeat: Infinity,
-                      repeatDelay: 0, // Continuous
+                      repeatDelay: 0,
                       ease: 'linear',
                     }}
                   />
@@ -196,13 +196,13 @@ export const OrbitalDiagram = () => {
                     strokeLinecap="round"
                     initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
                     animate={{
-                      pathLength: [0, 0.15, 0.15, 0],
-                      pathOffset: [0, 0, 0.85, 1],
+                      pathLength: [0, 0.25, 0.25, 0],
+                      pathOffset: [0, 0, 0.75, 1],
                       opacity: [0, 1, 1, 0],
                     }}
                     transition={{
-                      duration: 4.0,
-                      delay: beam.delay + 1.2 + i * 1.33,
+                      duration: 4.5,
+                      delay: beam.delay + 1.2 + i * 1.125,
                       repeat: Infinity,
                       repeatDelay: 0,
                       ease: 'linear',
