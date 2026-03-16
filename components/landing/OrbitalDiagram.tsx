@@ -51,18 +51,20 @@ export const OrbitalDiagram = () => {
           if (!node) return null;
           const r = node.getBoundingClientRect();
 
-          // Start exactly at the bottom-center edge of the A/B/C square blocks
+          // Start exactly at the bottom edge of the A/B/C square blocks, with a tiny gap
           const startX = (r.left + r.width / 2 - containerRect.left) * scale;
-          const startY = (r.top + r.height - containerRect.top) * scale;
+          const startY = (r.bottom - containerRect.top) * scale + 4; // 4px gap outside
 
           // Smooth curve into the HUD
-          const midY = startY + (endY - startY) * 0.55;
-          // For vertical paths (like block B), add a slight S-curve to ensure
-          // the horizontal component of gradients is visible and the move looks technical.
-          const isVertical = Math.abs(startX - endX) < 1;
-          const c1X = isVertical ? startX + 30 : startX;
+          const midY = startY + (endY - startY) * 0.4;
+
+          // We MUST add a horizontal offset to the control points even for vertical paths.
+          // This ensures the SVG path has a non-zero width, allowing horizontal gradients to render.
+          const horizontalOffset = startX - endX || 40; // Fallback for perfectly vertical (B)
+
+          const c1X = startX + horizontalOffset * 0.1;
           const c1Y = midY;
-          const c2X = isVertical ? endX - 30 : endX + (startX - endX) * 0.15;
+          const c2X = endX + horizontalOffset * 0.05;
           const c2Y = midY;
 
           return {
@@ -169,18 +171,18 @@ export const OrbitalDiagram = () => {
                     d={beam.d}
                     fill="none"
                     stroke={`url(#${gradientId})`}
-                    strokeWidth="2.25"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     filter={`url(#${filterId})`}
                     initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
                     animate={{
-                      pathLength: [0, 0.25, 0.25, 0],
-                      pathOffset: [0, 0, 0.75, 1],
+                      pathLength: [0, 0.2, 0.2, 0],
+                      pathOffset: [0, 0, 0.8, 1],
                       opacity: [0, 0.9, 0.9, 0],
                     }}
                     transition={{
-                      duration: 4.5,
-                      delay: beam.delay + 1.2 + i * 1.125,
+                      duration: 1.8, // Snappy high velocity
+                      delay: beam.delay + 1.2 + i * 0.45, // Staggered for continuous flow
                       repeat: Infinity,
                       repeatDelay: 0,
                       ease: 'linear',
@@ -192,17 +194,17 @@ export const OrbitalDiagram = () => {
                     d={beam.d}
                     fill="none"
                     stroke={`url(#${gradientId})`}
-                    strokeWidth="1.25"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
                     initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
                     animate={{
-                      pathLength: [0, 0.25, 0.25, 0],
-                      pathOffset: [0, 0, 0.75, 1],
+                      pathLength: [0, 0.2, 0.2, 0],
+                      pathOffset: [0, 0, 0.8, 1],
                       opacity: [0, 1, 1, 0],
                     }}
                     transition={{
-                      duration: 4.5,
-                      delay: beam.delay + 1.2 + i * 1.125,
+                      duration: 1.8,
+                      delay: beam.delay + 1.2 + i * 0.45,
                       repeat: Infinity,
                       repeatDelay: 0,
                       ease: 'linear',
