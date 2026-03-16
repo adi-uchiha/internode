@@ -26,8 +26,8 @@ export const OrbitalDiagram = () => {
 
   const defs = useMemo(
     () => ({
-      active: { gradientId: 'pulseGradientGreen', filterId: 'glowGreen' },
-      blocked: { gradientId: 'pulseGradientYellow', filterId: 'glowYellow' },
+      active: { filterId: 'glowGreen', strokeColor: 'hsl(140 100% 50%)' },
+      blocked: { filterId: 'glowYellow', strokeColor: 'hsl(45 100% 50%)' },
     }),
     []
   );
@@ -51,21 +51,15 @@ export const OrbitalDiagram = () => {
           if (!node) return null;
           const r = node.getBoundingClientRect();
 
-          // Start exactly at the bottom edge of the A/B/C square blocks, with a tiny gap
+          // Start exactly at the bottom edge of the A/B/C square blocks, with a gap to clear labels
           const startX = (r.left + r.width / 2 - containerRect.left) * scale;
-          const startY = (r.bottom - containerRect.top) * scale + 4; // 4px gap outside
+          const startY = (r.bottom - containerRect.top) * scale + 35; // 35px gap clears the "ACTIVE" text below
 
-          // Smooth curve into the HUD
-          const midY = startY + (endY - startY) * 0.4;
-
-          // We MUST add a horizontal offset to the control points even for vertical paths.
-          // This ensures the SVG path has a non-zero width, allowing horizontal gradients to render.
-          const horizontalOffset = startX - endX || 40; // Fallback for perfectly vertical (B)
-
-          const c1X = startX + horizontalOffset * 0.1;
-          const c1Y = midY;
-          const c2X = endX + horizontalOffset * 0.05;
-          const c2Y = midY;
+          // Clean symmetric curve. No horizontal offsets needed since we use solid stroke colors.
+          const c1X = startX;
+          const c1Y = startY + (endY - startY) * 0.4;
+          const c2X = endX;
+          const c2Y = endY - (endY - startY) * 0.4;
 
           return {
             id: member.id,
@@ -111,34 +105,32 @@ export const OrbitalDiagram = () => {
       {/* SVG for connection lines */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 580 580">
         <defs>
-          {/* Green pulse beam - diagonal to work with all path orientations */}
-          <linearGradient id="pulseGradientGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="35%" stopColor="hsl(140 100% 50% / 0.15)" />
-            <stop offset="50%" stopColor="hsl(140 100% 60% / 0.9)" />
-            <stop offset="65%" stopColor="hsl(140 100% 50% / 0.15)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
+          {/* We use solid colors via React state now, keeping filters for the glowing effect */}
 
-          {/* Yellow pulse beam (blocked) - diagonal */}
-          <linearGradient id="pulseGradientYellow" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="35%" stopColor="hsl(45 100% 50% / 0.15)" />
-            <stop offset="50%" stopColor="hsl(45 100% 60% / 0.9)" />
-            <stop offset="65%" stopColor="hsl(45 100% 50% / 0.15)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-
-          <filter id="glowGreen" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <filter
+            id="glowGreen"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+            filterUnits="userSpaceOnUse"
+          >
+            <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
 
-          <filter id="glowYellow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <filter
+            id="glowYellow"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+            filterUnits="userSpaceOnUse"
+          >
+            <feGaussianBlur stdDeviation="1.2" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
@@ -148,7 +140,7 @@ export const OrbitalDiagram = () => {
 
         {/* Beams (DOM-aligned) */}
         {beamPaths.map((beam) => {
-          const { gradientId, filterId } = defs[beam.status];
+          const { filterId, strokeColor } = defs[beam.status];
           return (
             <g key={beam.id}>
               {/* Base guide */}
@@ -163,54 +155,29 @@ export const OrbitalDiagram = () => {
                 transition={{ duration: 1.1, delay: beam.delay + 0.4 }}
               />
 
-              {/* Multiple pulses per path for high frequency */}
-              {[0, 1, 2, 3].map((i) => (
-                <g key={`${beam.id}-pulse-${i}`}>
-                  {/* Glow layer */}
-                  <motion.path
-                    d={beam.d}
-                    fill="none"
-                    stroke={`url(#${gradientId})`}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    filter={`url(#${filterId})`}
-                    initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
-                    animate={{
-                      pathLength: [0, 0.2, 0.2, 0],
-                      pathOffset: [0, 0, 0.8, 1],
-                      opacity: [0, 0.9, 0.9, 0],
-                    }}
-                    transition={{
-                      duration: 1.8, // Snappy high velocity
-                      delay: beam.delay + 1.2 + i * 0.45, // Staggered for continuous flow
-                      repeat: Infinity,
-                      repeatDelay: 0,
-                      ease: 'linear',
-                    }}
-                  />
-
-                  {/* Core layer */}
-                  <motion.path
-                    d={beam.d}
-                    fill="none"
-                    stroke={`url(#${gradientId})`}
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
-                    animate={{
-                      pathLength: [0, 0.2, 0.2, 0],
-                      pathOffset: [0, 0, 0.8, 1],
-                      opacity: [0, 1, 1, 0],
-                    }}
-                    transition={{
-                      duration: 1.8,
-                      delay: beam.delay + 1.2 + i * 0.45,
-                      repeat: Infinity,
-                      repeatDelay: 0,
-                      ease: 'linear',
-                    }}
-                  />
-                </g>
+              {/* Laser Pulses (2 per path for balanced high-velocity stream) */}
+              {[0, 1].map((i) => (
+                <motion.path
+                  key={`${beam.id}-pulse-${i}`}
+                  d={beam.d}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  filter={`url(#${filterId})`}
+                  initial={{ pathLength: 0, pathOffset: 0, opacity: 0 }}
+                  animate={{
+                    pathLength: [0, 0.08, 0.08, 0],
+                    pathOffset: [0, 0, 0.92, 1],
+                    opacity: [0, 0.8, 0.8, 0],
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    delay: beam.delay + 1.2 + i * 1.1,
+                    repeat: Infinity,
+                    ease: 'linear',
+                  }}
+                />
               ))}
             </g>
           );
@@ -222,8 +189,8 @@ export const OrbitalDiagram = () => {
         {teamMembers.map((member, index) => (
           <motion.div
             key={member.id}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: member.delay + 0.3 }}
             className="flex flex-col items-center gap-2"
           >
