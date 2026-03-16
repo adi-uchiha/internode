@@ -61,16 +61,6 @@ export function InvitationEmail({
           fontWeight={400}
           fontStyle="normal"
         />
-        {/* Force Outlook to use sans-serif instead of Times New Roman */}
-        {`
-          <!--[if mso]>
-            <style type="text/css">
-              * {
-                font-family: sans-serif !important;
-              }
-            </style>
-          <![endif]-->
-        `}
       </Head>
       <Preview>
         {inviterName} invited you to join {organizationName} on Internode
