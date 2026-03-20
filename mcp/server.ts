@@ -14,6 +14,11 @@ app.use(cors());
 // Strict JSON parsing with a payload limit to prevent DoS attacks
 app.use(express.json({ limit: '5mb' }));
 
+// Health check for Render deployment verification
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Active connections metric
 const activeSessions = new Map<string, StreamableHTTPServerTransport>();
 const MAX_CONCURRENT_SESSIONS = 1000;

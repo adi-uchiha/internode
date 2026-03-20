@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Internode MCP Deployment Architecture
 
 This document outlines the **Split-Deployment Infrastructure** for Internode, separating the stateless Next.js frontend from the stateful MCP (Model Context Protocol) server.
@@ -18,7 +22,7 @@ The system is split into two distinct execution environments to handle standard 
 ### 🤖 2. MCP Server (Render / Railway)
 
 - **Repo Path**: `/mcp/server.ts`
-- **Platform**: Render (Web Service) or Railway.
+- **Platform**: Render (Web Service).
 - **Role**: Maintains persistent agent connections via SSE. It bypasses Vercel’s serverless function timeout and statelessness.
 - **Environment**: Node.js (Bun Runtime)
 - **Port Strategy**: Listens on `process.env.PORT` (automatically assigned by Render as `10000`).
