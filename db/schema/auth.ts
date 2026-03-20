@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { users } from './users';
+import { organizations } from './organizations';
 
 export const sessions = pgTable('sessions', {
   id: text('id').primaryKey(),
@@ -40,4 +41,19 @@ export const verifications = pgTable('verifications', {
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const apiKeys = pgTable('api_keys', {
+  id: text('id').primaryKey(), // SHA-256 hash of the token
+  name: text('name').notNull(),
+  hint: text('hint').notNull(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at'),
+  lastUsedAt: timestamp('last_used_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });

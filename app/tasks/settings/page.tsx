@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/lib/toast';
+import { ApiKeysManager } from './ApiKeysManager';
 
 export default function SettingsPage() {
   const { orgRole } = useAuth();
@@ -68,6 +69,17 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="md:col-span-1">
+          <h3 className="font-display font-semibold text-lg">API Keys & Agents</h3>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">
+            Manage machine-to-machine tokens for MCP servers, external AIs, and CI/CD pipelines.
+            This binds all automated actions to your user account.
+          </p>
+        </div>
+        <div className="md:col-span-2">
+          <ApiKeysManager />
         </div>
 
         <div className="md:col-span-1">
