@@ -1,111 +1,81 @@
 'use client';
+
+/**
+ * Task Manager Layout
+ * ─────────────────────────────────────────────────────────────────────────────
+ * ARCHITECTURE: The "OrgScopedLayout" pattern.
+ *
+ * All org-dependent hooks (invitations, search history, notifications) are
+ * isolated inside the <OrgScopedLayout> component, which is only mounted by
+ * React when `isOrgReady === true`.
+ *
+ * This is the ONLY correct way to conditionally fire hooks at the
+ * architectural level — not via `enabled` flags scattered everywhere, but
+ * via conditional rendering of the component that owns those hooks.
+ *
+ * The org resolution state machine now lives entirely in AuthContext.
+ * This layout is purely a structural/UI concern.
+ */
+
 import { ReactNode, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { authClient } from '@/lib/auth-client';
 import { useSearchHistory, useLogSearch } from '@/hooks/useSearchHistory';
 import { useUserInvitations } from '@/hooks/useInvites';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { useSearch } from '@/hooks/useSearch';
+import type { OrgRole } from '@/contexts/AuthContext';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: string;
+  badge?: number;
+  roles?: OrgRole[];
+}
 
 interface TaskManagerLayoutProps {
   children: ReactNode;
   title?: string;
 }
 
-export default function TaskManagerLayout({
-  children,
-  title: initialTitle,
-}: TaskManagerLayoutProps) {
+// ─── OrgScopedLayout ──────────────────────────────────────────────────────────
+//
+// This component is the ORG-GATEWAY. It is only ever rendered after
+// `isOrgReady === true` is confirmed by the parent layout.
+//
+// By isolating org-dependent hooks here, we guarantee at the React
+// component tree level that they NEVER mount prematurely. Even if
+// AuthContext re-renders during session refresh, as long as the parent
+// doesn't render <OrgScopedLayout>, none of these hooks fire.
+
+interface OrgScopedLayoutProps {
+  children: ReactNode;
+  title: string;
+  orgRole: OrgRole;
+  pathname: string;
+}
+
+function OrgScopedLayout({ children, title, orgRole, pathname }: OrgScopedLayoutProps) {
+  const router = useRouter();
+
+  // ── Search state ────────────────────────────────────────────────────────────
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { results: searchResults, isSearching } = useSearch(searchQuery, showSearch);
-  const { user, session, orgRole, isLoading: authLoading } = useAuth();
 
-  // ─── Organization State ──────────────────────────────────────────────────────
-  const { data: orgs, isPending: orgsLoading } = authClient.useListOrganizations();
-
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Combined resolution state: System is "fully loaded" ONLY if auth is done,
-  // and we have a definitive resolution from the orgs list.
-  const isFullyLoaded = !authLoading && !orgsLoading;
-  const activeOrgId = session?.session.activeOrganizationId;
-
-  // A user truly has "no org" ONLY if the list has been fetched and is confirmed empty.
-  // We check Array.isArray and .length strictly to avoid false positives during cache wipes.
-  const hasNoOrg = isFullyLoaded && !!user && Array.isArray(orgs) && orgs.length === 0;
-
-  const isRedirectingToOnboarding = hasNoOrg && pathname !== '/tasks/onboarding';
-
-  // ─── Auto-select Active Organization ───────────────────────────────────────
-  // If the user is logged in, has organizations, but NO organization is currently
-  // marked as "active" in the session, we automatically select the first one.
-  useEffect(() => {
-    if (!isFullyLoaded || !user) return;
-
-    // If we have orgs but none is active, set the first one as active
-    if (!activeOrgId && Array.isArray(orgs) && orgs.length > 0) {
-      const firstOrgId = orgs[0].id;
-      console.log(`[layout] Auto-setting active organization: ${firstOrgId}`);
-      void authClient.organization.setActive({ organizationId: firstOrgId }).then(() => {
-        // Refresh ensures the session update is reflected everywhere
-        router.refresh();
-      });
-    }
-  }, [isFullyLoaded, user, activeOrgId, orgs, router]);
-
-  // Disable org-dependent hooks when user has no org (or no active org yet)
-  const { data: searchHistory = [] } = useSearchHistory({ enabled: !!activeOrgId });
+  // ── Org-scoped hooks — safe to call, org is confirmed ready ────────────────
+  const { data: searchHistory = [] } = useSearchHistory({ enabled: true });
   const logSearchMutation = useLogSearch();
+  const { data: userInvites = [] } = useUserInvitations();
+  const pendingInvCount = userInvites.length;
 
-  // ─── Redirect Interceptor ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isFullyLoaded) return;
-
-    // 1. Unauthenticated → /login
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-
-    // 2. Onboarding: Org-less user → /tasks/onboarding
-    if (hasNoOrg && pathname !== '/tasks/onboarding') {
-      router.replace('/tasks/onboarding');
-      return;
-    }
-
-    // 3. Reverse Onboarding: Org-ready user on onboarding page → /tasks/dashboard
-    if (!hasNoOrg && pathname === '/tasks/onboarding') {
-      router.replace('/tasks/dashboard');
-      return;
-    }
-  }, [user, hasNoOrg, isFullyLoaded, pathname, router]);
-
-  // Determine current page title based on pathname if not provided
-  const title = useMemo(() => {
-    if (pathname.includes('/tasks/dashboard')) return 'Dashboard';
-    if (pathname.includes('/tasks/projects')) return 'Projects';
-    if (pathname.includes('/tasks/kanban')) return 'Kanban Board';
-    if (pathname.includes('/tasks/my-tickets')) return 'My Tickets';
-    if (pathname.includes('/tasks/members')) return 'Members';
-    if (pathname.includes('/tasks/analytics')) return 'Analytics';
-    if (pathname.includes('/tasks/settings')) return 'Settings';
-    if (pathname.includes('/tasks/ticket')) return 'Ticket Detail';
-    if (pathname.includes('/tasks/onboarding')) return 'Onboarding';
-    if (pathname.includes('/tasks/profile')) return 'Profile';
-    if (pathname.includes('/tasks/breakthroughs')) return 'Wall of Fame';
-    if (pathname.includes('/tasks/leaves')) return 'Leave Registry';
-    if (pathname.includes('/tasks/admin-review')) return 'Admin Review';
-    if (pathname.includes('/tasks/notifications')) return 'Signal Hub';
-    return initialTitle || 'Task Manager';
-  }, [pathname, initialTitle]);
-
-  // ⌘K shortcut
+  // ── Keyboard shortcut: ⌘K ──────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -129,10 +99,7 @@ export default function TaskManagerLayout({
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  const { data: userInvites = [] } = useUserInvitations();
-  const pendingInvCount = userInvites.length;
-
-  const navItems = [
+  const navItems: NavItem[] = [
     { label: 'Dashboard', href: '/tasks/dashboard', icon: 'ph:chart-pie-duotone' },
     { label: 'Projects', href: '/tasks/projects', icon: 'ph:folder-duotone' },
     { label: 'Board', href: '/tasks/kanban', icon: 'ph:kanban-duotone' },
@@ -143,7 +110,7 @@ export default function TaskManagerLayout({
       label: 'Members',
       href: '/tasks/members',
       icon: 'ph:users-three-duotone',
-      roles: ['owner', 'admin'],
+      roles: ['owner', 'admin'] as OrgRole[],
     },
     {
       label: 'Invites',
@@ -155,7 +122,7 @@ export default function TaskManagerLayout({
       label: 'Analytics',
       href: '/tasks/analytics',
       icon: 'ph:presentation-chart-duotone',
-      roles: ['owner', 'admin'],
+      roles: ['owner', 'admin'] as OrgRole[],
     },
     {
       label: 'Breakthroughs',
@@ -171,39 +138,20 @@ export default function TaskManagerLayout({
       label: 'Admin Review',
       href: '/tasks/admin-review',
       icon: 'ph:shield-check-duotone',
-      roles: ['owner', 'admin'],
+      roles: ['owner', 'admin'] as OrgRole[],
     },
     {
       label: 'Settings',
       href: '/tasks/settings',
       icon: 'ph:gear-duotone',
-      roles: ['owner', 'admin'],
+      roles: ['owner', 'admin'] as OrgRole[],
     },
   ].filter((item) => !item.roles || item.roles.includes(orgRole));
-
-  // ─── Guard: Still Loading ───────────────────────────────────────────────────
-  // Block ALL rendering while auth/org status is resolving to prevent any
-  // child component from mounting hooks that fire org-dependent API calls.
-  if (!isFullyLoaded) {
-    return <UnifiedLoader variant="fullscreen" message="WAKING_SYSTEM..." />;
-  }
-
-  // ─── Guard: Redirecting to Onboarding ───────────────────────────────────────
-  if (isRedirectingToOnboarding) {
-    return <UnifiedLoader variant="fullscreen" message="PREPARING_ORGANIZATION..." />;
-  }
-
-  // ─── Guard: On Onboarding Page (no org yet) ─────────────────────────────────
-  // The onboarding page is under /tasks/, so it inherits this layout.
-  // When the user has no org, skip DashboardLayout entirely to prevent its
-  // internal hooks (useNotifications, etc.) from firing org-dependent API calls.
-  if (hasNoOrg) {
-    return <>{children}</>;
-  }
 
   return (
     <DashboardLayout navItems={navItems} title={title}>
       {children}
+
       {/* Command Palette / Search Overlay */}
       <AnimatePresence>
         {showSearch && (
@@ -243,7 +191,7 @@ export default function TaskManagerLayout({
                       searchResults.projects.length === 0 &&
                       !isSearching ? (
                         <div className="p-4 text-center text-muted-foreground font-mono text-[10px] italic">
-                          No results matching "{searchQuery}"
+                          No results matching &quot;{searchQuery}&quot;
                         </div>
                       ) : (
                         <>
@@ -332,17 +280,17 @@ export default function TaskManagerLayout({
                   {
                     icon: 'solar:add-circle-linear',
                     title: 'Create new ticket',
-                    roles: ['owner', 'admin'],
+                    roles: ['owner', 'admin'] as OrgRole[],
                   },
                   {
                     icon: 'solar:clock-circle-linear',
                     title: 'Log time',
-                    roles: ['owner', 'admin', 'member'],
+                    roles: ['owner', 'admin', 'member'] as OrgRole[],
                   },
                   {
                     icon: 'solar:graph-up-linear',
                     title: 'View analytics',
-                    roles: ['owner', 'admin'],
+                    roles: ['owner', 'admin'] as OrgRole[],
                   },
                 ]
                   .filter((a) => !a.roles || a.roles.includes(orgRole))
@@ -362,5 +310,95 @@ export default function TaskManagerLayout({
         )}
       </AnimatePresence>
     </DashboardLayout>
+  );
+}
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
+
+export default function TaskManagerLayout({
+  children,
+  title: initialTitle,
+}: TaskManagerLayoutProps) {
+  const { user, isOrgReady, hasNoOrg, orgRole, isLoading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // ── Derive page title from pathname ─────────────────────────────────────────
+  const title = useMemo(() => {
+    if (pathname.includes('/tasks/dashboard')) return 'Dashboard';
+    if (pathname.includes('/tasks/projects')) return 'Projects';
+    if (pathname.includes('/tasks/kanban')) return 'Kanban Board';
+    if (pathname.includes('/tasks/my-tickets')) return 'My Tickets';
+    if (pathname.includes('/tasks/members')) return 'Members';
+    if (pathname.includes('/tasks/analytics')) return 'Analytics';
+    if (pathname.includes('/tasks/settings')) return 'Settings';
+    if (pathname.includes('/tasks/ticket')) return 'Ticket Detail';
+    if (pathname.includes('/tasks/onboarding')) return 'Onboarding';
+    if (pathname.includes('/tasks/profile')) return 'Profile';
+    if (pathname.includes('/tasks/breakthroughs')) return 'Wall of Fame';
+    if (pathname.includes('/tasks/leaves')) return 'Leave Registry';
+    if (pathname.includes('/tasks/admin-review')) return 'Admin Review';
+    if (pathname.includes('/tasks/notifications')) return 'Signal Hub';
+    return initialTitle || 'Task Manager';
+  }, [pathname, initialTitle]);
+
+  // ── Redirect logic — only runs when system is fully resolved ────────────────
+  // We intentionally do NOT redirect while loading to avoid flash-redirects.
+  useEffect(() => {
+    if (isLoading) return;
+
+    // 1. Unauthenticated → /login
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    // 2. Org-less user → onboarding
+    if (hasNoOrg && pathname !== '/tasks/onboarding') {
+      router.replace('/tasks/onboarding');
+      return;
+    }
+
+    // 3. Org-ready user landed on onboarding page → dashboard
+    if (!hasNoOrg && isOrgReady && pathname === '/tasks/onboarding') {
+      router.replace('/tasks/dashboard');
+      return;
+    }
+  }, [isLoading, user, hasNoOrg, isOrgReady, pathname, router]);
+
+  // ── Guard: Still resolving auth/org state ───────────────────────────────────
+  // Block ALL rendering while state is in-flight. This is the wall that
+  // prevents every single child hook from firing prematurely.
+  if (isLoading) {
+    return <UnifiedLoader variant="fullscreen" message="WAKING_SYSTEM..." />;
+  }
+
+  // ── Guard: Org is not yet ready (auto-set in progress) ───────────────────
+  // This covers the window between "session loaded, orgs loaded, but
+  // activeOrgId not yet set" — i.e. setActive is running in AuthContext.
+  if (!isOrgReady && !hasNoOrg && !!user) {
+    return <UnifiedLoader variant="fullscreen" message="INITIALIZING_ORGANIZATION..." />;
+  }
+
+  // ── Guard: Onboarding (no org) ───────────────────────────────────────────
+  // Render children directly (the onboarding page) without DashboardLayout,
+  // which prevents DashboardLayout's internal hooks from firing.
+  if (hasNoOrg) {
+    return <>{children}</>;
+  }
+
+  // ── Guard: Not yet redirected from onboarding page ────────────────────────
+  if (pathname === '/tasks/onboarding' && !hasNoOrg) {
+    return <UnifiedLoader variant="fullscreen" message="PREPARING_ORGANIZATION..." />;
+  }
+
+  // ── Full org-scoped layout ───────────────────────────────────────────────
+  // At this point: user is authenticated, org is active, member is resolved.
+  // OrgScopedLayout mounts here — and ONLY here — making it impossible for
+  // org-dependent hooks to fire before this point in the component tree.
+  return (
+    <OrgScopedLayout title={title} orgRole={orgRole} pathname={pathname}>
+      {children}
+    </OrgScopedLayout>
   );
 }

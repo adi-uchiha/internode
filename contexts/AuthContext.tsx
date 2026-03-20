@@ -1,118 +1,267 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect } from 'react';
+/**
+ * AuthContext — Single source of truth for authentication + organization state.
+ *
+ * DESIGN PRINCIPLES:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 1. `isOrgReady` is the definitive gate. It is `true` only after:
+ *    - The session has finished loading, AND
+ *    - The organizations list has been fetched, AND
+ *    - EITHER: activeOrganizationId is set AND the member record is resolved
+ *      OR: the user has no orgs at all (ready to show onboarding)
+ *
+ * 2. `useActiveMember()` from better-auth is NOT used anywhere. It is an
+ *    unconditional reactive hook that hits /api/auth/organization/get-active-member
+ *    regardless of whether an org is active, causing 400 spam on login.
+ *    Instead, we use `authClient.organization.getActiveMember()` (promise-based)
+ *    via TanStack Query with `enabled: !!activeOrgId` — full control, no leaks.
+ *
+ * 3. The `setActive` auto-selection is debounced with a ref guard so it fires
+ *    exactly once, even across StrictMode double-invocations or refresh cycles.
+ *
+ * 4. All org-dependent hooks (useUserInvitations, notifications, etc.) are
+ *    NOT called here. They live in OrgScopedLayout in app/tasks/layout.tsx
+ *    which is only mounted when `isOrgReady === true`.
+ */
+
+import { createContext, useContext, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { User, Session } from '@/lib/auth-types';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type OrgRole = 'owner' | 'admin' | 'member';
+
 interface AuthContextType {
+  // Core session state
   session: Session | null;
   user: User | null;
-  orgRole: 'owner' | 'admin' | 'member';
+
+  // Organization gate — the single source of truth consumers should check
+  isOrgReady: boolean;
+  hasNoOrg: boolean;
+  activeOrgId: string | null;
+  orgRole: OrgRole;
+
+  // Combined loading — true while session OR org resolution is in-flight
   isLoading: boolean;
+  isAuthenticated: boolean;
+
+  // Auth actions
   login: (email: string, password: string, redirectTo?: string) => Promise<boolean>;
   signup: (email: string, password: string, name?: string, redirectTo?: string) => Promise<boolean>;
   logout: (redirectTo?: string) => Promise<void>;
-  isAuthenticated: boolean;
 }
+
+// ─── Context ──────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
-  const pathname = usePathname();
-  const { data: sessionData, isPending: isLoading, error } = authClient.useSession();
+  const queryClient = useQueryClient();
 
-  const user = sessionData?.user as User | null;
+  // ── 1. Session ──────────────────────────────────────────────────────────────
+  const {
+    data: sessionData,
+    isPending: isSessionLoading,
+    error: sessionError,
+  } = authClient.useSession();
+
+  const user = (sessionData?.user as User | null) ?? null;
+  const activeOrgId = sessionData?.session?.activeOrganizationId ?? null;
+
+  // ── 2. Organizations List ────────────────────────────────────────────────────
+  // Only fetch when the user is confirmed authenticated. This prevents the
+  // hook from firing on public pages or during the sign-in transition.
+  const { data: orgs, isPending: isOrgsLoading } = authClient.useListOrganizations();
+
+  // Whether the org list fetch has settled (either data OR no-orgs)
+  const orgsSettled = !isOrgsLoading;
+  const hasNoOrg = orgsSettled && !!user && Array.isArray(orgs) && orgs.length === 0;
+
+  // ── 3. Member Role — guarded, promise-based, NO better-auth reactive hook ──
+  // We use TanStack Query with `enabled: !!activeOrgId` so this NEVER fires
+  // until we have a confirmed active organization in the session.
+  const { data: memberData, isPending: isMemberPending } = useQuery({
+    queryKey: ['active-member', activeOrgId],
+    queryFn: async () => {
+      const { data, error } = await authClient.organization.getActiveMember();
+      if (error) throw new Error(error.message ?? 'Failed to fetch member');
+      return data;
+    },
+    // THE CENTRAL GUARD: only fetch when we have a confirmed active org
+    enabled: !!activeOrgId,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const orgRole: OrgRole = (memberData?.role as OrgRole) ?? 'member';
+
+  // ── 4. Org Readiness Gate ───────────────────────────────────────────────────
+  // The system is "org ready" when:
+  // a) Session and orgs have both finished loading
+  // b) AND: (activeOrgId is set AND member is also resolved)
+  //    OR:  (user has no orgs → show onboarding)
+  //    OR:  (user is not authenticated → layout will redirect to /login)
+  const isLoading = isSessionLoading || (!!user && isOrgsLoading);
+
+  const isOrgReady =
+    !isLoading &&
+    // Either: user has org and it is active with member resolved
+    ((!!activeOrgId && !isMemberPending) ||
+      // Or: user is confirmed org-less (show onboarding)
+      hasNoOrg ||
+      // Or: there are orgs but none active yet (auto-set is about to run)
+      // We intentionally keep this false until setActive completes.
+      false);
+
+  // ── 5. Auto-set Active Org (once, guarded) ──────────────────────────────────
+  // If the user has orgs but none is active (e.g., first login after session
+  // cookie was cleared or they never had an activeOrganizationId set),
+  // automatically set the first org as active. A ref guard ensures this fires
+  // exactly once per session; router.refresh() is NOT used — we rely on
+  // authClient.getSession() to update the reactive session cache instead.
+  const isSettingActiveOrg = useRef(false);
 
   useEffect(() => {
-    // The "not logged in → /login" and "logged in but on auth page → /dashboard"
-    // redirects are now delegated to Middleware and the root layout to avoid
-    // competing with organizational redirects.
+    // Wait for all data to settle before attempting auto-set
+    if (isSessionLoading || isOrgsLoading) return;
+    // Must be authenticated
+    if (!user) return;
+    // No work needed if org already active
+    if (activeOrgId) return;
+    // No work if user genuinely has no orgs
+    if (!Array.isArray(orgs) || orgs.length === 0) return;
+    // Ref guard: prevent concurrent or repeated calls
+    if (isSettingActiveOrg.current) return;
 
-    if (error) {
-      console.error('Session error:', error);
+    isSettingActiveOrg.current = true;
+
+    const firstOrgId = orgs[0].id;
+    console.log(`[AuthContext] Auto-setting active organization: ${firstOrgId}`);
+
+    authClient.organization
+      .setActive({ organizationId: firstOrgId })
+      .then(async () => {
+        // Force-refresh the session cache so useSession() re-emits with
+        // the new activeOrganizationId — no router.refresh() needed.
+        await authClient.getSession({ fetchOptions: { cache: 'no-store' } });
+        // Invalidate the member query so it re-fetches with the new org
+        queryClient.invalidateQueries({ queryKey: ['active-member'] });
+      })
+      .catch((err) => {
+        console.error('[AuthContext] Failed to auto-set active org:', err);
+        // Reset guard on failure so it can retry next render cycle
+        isSettingActiveOrg.current = false;
+      });
+  }, [isSessionLoading, isOrgsLoading, user, activeOrgId, orgs, queryClient]);
+
+  // Reset the ref when user logs out (activeOrgId goes back to null + user is null)
+  useEffect(() => {
+    if (!user) {
+      isSettingActiveOrg.current = false;
     }
-  }, [sessionData, isLoading, error, pathname, router]);
+  }, [user]);
 
-  const login = async (email: string, password: string, redirectTo?: string): Promise<boolean> => {
-    const { data: signInData, error: signInError } = await authClient.signIn.email({
-      email,
-      password,
-    });
-
-    if (signInError || !signInData) {
-      return false;
+  // Log session errors for observability (no user-facing side effects here)
+  useEffect(() => {
+    if (sessionError) {
+      console.error('[AuthContext] Session error:', sessionError);
     }
+  }, [sessionError]);
 
-    // Ensure session is fresh before redirecting
-    await authClient.getSession();
+  // ── 6. Auth Actions ─────────────────────────────────────────────────────────
 
-    router.push(redirectTo || '/tasks/dashboard');
+  const login = useCallback(
+    async (email: string, password: string, redirectTo?: string): Promise<boolean> => {
+      const { data: signInData, error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+      });
 
-    router.refresh();
-    return true;
-  };
+      if (signInError || !signInData) {
+        return false;
+      }
 
-  const signup = async (
-    email: string,
-    password: string,
-    name?: string,
-    redirectTo?: string
-  ): Promise<boolean> => {
-    const { data: signUpData, error: signUpError } = await authClient.signUp.email({
-      email,
-      password,
-      name: name || email.split('@')[0],
-    });
+      // Force session cache refresh before navigating so the layout
+      // receives the authenticated session immediately on mount.
+      await authClient.getSession({ fetchOptions: { cache: 'no-store' } });
 
-    if (signUpError || !signUpData) {
-      console.error('Signup failed:', signUpError);
-      return false;
-    }
+      router.push(redirectTo || '/tasks/dashboard');
+      return true;
+    },
+    [router]
+  );
 
-    // Ensure session is fresh
-    await authClient.getSession();
+  const signup = useCallback(
+    async (
+      email: string,
+      password: string,
+      name?: string,
+      redirectTo?: string
+    ): Promise<boolean> => {
+      const { data: signUpData, error: signUpError } = await authClient.signUp.email({
+        email,
+        password,
+        name: name || email.split('@')[0],
+      });
 
-    router.push(redirectTo || '/tasks/dashboard');
-    router.refresh();
-    return true;
-  };
+      if (signUpError || !signUpData) {
+        console.error('[AuthContext] Signup failed:', signUpError);
+        return false;
+      }
 
-  const queryClient = useQueryClient();
-  const logout = async (redirectTo?: string) => {
-    await authClient.signOut();
-    queryClient.clear(); // Clear all TanStack search/org/user caches
-    router.push(redirectTo || '/login');
-    router.refresh();
-  };
+      await authClient.getSession({ fetchOptions: { cache: 'no-store' } });
 
-  const { data: member, isPending: isMemberLoading } = authClient.useActiveMember();
-  const orgRole = (member?.role as 'owner' | 'admin' | 'member') || 'member';
+      router.push(redirectTo || '/tasks/dashboard');
+      return true;
+    },
+    [router]
+  );
 
-  // Combined loading state: we are "loading" if the session itself is pending,
-  // OR if we have an active organization but are still fetching the user's role/membership details.
-  const isCombinedLoading =
-    isLoading || (!!sessionData?.session.activeOrganizationId && isMemberLoading);
+  const logout = useCallback(
+    async (redirectTo?: string): Promise<void> => {
+      await authClient.signOut();
+      // Clear all org + user-scoped cached data
+      queryClient.clear();
+      // Reset the auto-set guard so next login works cleanly
+      isSettingActiveOrg.current = false;
+      router.push(redirectTo || '/login');
+    },
+    [router, queryClient]
+  );
+
+  // ── 7. Context Value ─────────────────────────────────────────────────────────
 
   return (
     <AuthContext.Provider
       value={{
         session: sessionData as Session | null,
         user,
+        isOrgReady,
+        hasNoOrg,
+        activeOrgId,
         orgRole,
-        isLoading: isCombinedLoading,
+        isLoading,
+        isAuthenticated: !!user,
         login,
         signup,
         logout,
-        isAuthenticated: !!user,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

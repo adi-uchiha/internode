@@ -84,18 +84,22 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
     .where(eq(projects.organizationId, orgId));
 
   // Optimize Project Distribution calculation
+  // NOTE: We use JSON.stringify + ::jsonb cast (matching /api/tickets pattern)
+  // instead of jsonb_build_array() with a Drizzle parameter. The latter causes
+  // Postgres type-inference failures when the parameter binding is ambiguous.
+  // COALESCE ensures we always get a numeric result even on empty sets.
   const projectDistribution = await Promise.all(
     projectStatsRaw.map(async (p) => {
       const [{ count }] = await db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`COALESCE(count(*)::integer, 0)` })
         .from(tickets)
         .where(
           and(
             eq(tickets.organizationId, orgId!),
-            sql`${tickets.projectIds} @> jsonb_build_array(${p.id})`
+            sql`${tickets.projectIds} @> ${JSON.stringify([p.id])}::jsonb`
           )
         );
-      return { name: p.name, tickets: Number(count), hours: 0 };
+      return { name: p.name, tickets: Number(count ?? 0), hours: 0 };
     })
   );
 
