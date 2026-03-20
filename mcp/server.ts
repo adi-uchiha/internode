@@ -78,7 +78,11 @@ async function mcpAuthMiddleware(req: any, res: Response, next: NextFunction) {
   }
 }
 
-app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/health', (req, res) => {
+  const origin = req.get('origin') || req.ip || 'unknown';
+  console.log(`[Health Check] ${new Date().toISOString()} - Origin: ${origin}`);
+  res.status(200).send('OK');
+});
 
 app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) => {
   const incomingSessionId =
