@@ -25,7 +25,7 @@ async function withSafeDb<T>(
   }
 }
 
-export function registerTicketsTools(server: McpServer, orgId: string, authorUserId: string) {
+export function registerTicketsTools(server: McpServer) {
   // 1. LIST TICKETS
   server.registerTool(
     'list_tickets',
@@ -41,7 +41,8 @@ export function registerTicketsTools(server: McpServer, orgId: string, authorUse
         offset: z.number().min(0).default(0).describe('Number of tickets to skip for pagination.'),
       },
     },
-    async ({ limit, offset }) => {
+    async ({ limit, offset }, extra) => {
+      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
       return withSafeDb(async () => {
         return await db.query.tickets.findMany({
           where: eq(tickets.organizationId, orgId),
@@ -63,7 +64,8 @@ export function registerTicketsTools(server: McpServer, orgId: string, authorUse
         ticketId: z.string().describe('The short ticket identifier (e.g. TASK12)'),
       },
     },
-    async ({ ticketId }) => {
+    async ({ ticketId }, extra) => {
+      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
       try {
         const ticket = await db.query.tickets.findFirst({
           where: and(eq(tickets.organizationId, orgId), eq(tickets.ticketId, ticketId)),
@@ -102,7 +104,11 @@ export function registerTicketsTools(server: McpServer, orgId: string, authorUse
         assigneeId: z.string().optional().describe('User ID of the assignee, if known'),
       },
     },
-    async ({ title, description, priority, status, assigneeId }) => {
+    async ({ title, description, priority, status, assigneeId }, extra) => {
+      const { orgId, userId: authorUserId } = extra.authInfo as unknown as {
+        orgId: string;
+        userId: string;
+      };
       try {
         const [updatedOrg] = await db
           .update(organizations)
@@ -160,7 +166,8 @@ export function registerTicketsTools(server: McpServer, orgId: string, authorUse
         assigneeId: z.string().optional(),
       },
     },
-    async ({ ticketId, title, description, status, priority, assigneeId }) => {
+    async ({ ticketId, title, description, status, priority, assigneeId }, extra) => {
+      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
       try {
         const updateData: Partial<typeof tickets.$inferInsert> = {};
         if (title !== undefined) updateData.title = title;
@@ -210,7 +217,8 @@ export function registerTicketsTools(server: McpServer, orgId: string, authorUse
         ticketId: z.string().describe('The short ticket identifier (e.g. TASK12)'),
       },
     },
-    async ({ ticketId }) => {
+    async ({ ticketId }, extra) => {
+      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
       try {
         const [deleted] = await db
           .delete(tickets)
