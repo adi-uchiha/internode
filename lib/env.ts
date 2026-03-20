@@ -7,10 +7,20 @@
 
 function requireEnv(key: string): string {
   const value = process.env[key];
+
+  // If we're on the client (browser), we only care about NEXT_PUBLIC_ variables.
+  // Accessing non-public variables should not throw at import-time as it crashes the bundle.
+  const isClient = typeof window !== 'undefined';
+  const isPublic = key.startsWith('NEXT_PUBLIC_');
+
   if (!value) {
-    throw new Error(
-      `[env] Missing required environment variable: "${key}". ` + `Add it to your .env file.`
-    );
+    if (isPublic || !isClient) {
+      throw new Error(
+        `[env] Missing required environment variable: "${key}". ` + `Add it to your .env file.`
+      );
+    }
+    // Return empty string for private variables on the client to avoid import-time crash.
+    return '';
   }
   return value;
 }
