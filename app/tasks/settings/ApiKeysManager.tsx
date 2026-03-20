@@ -59,18 +59,37 @@ export function ApiKeysManager() {
       </div>
 
       {newRawToken && (
-        <div className="p-4 border border-primary/40 bg-primary/10 rounded-md space-y-3 relative group">
-          <p className="text-xs text-primary font-semibold flex items-center gap-2">
-            <Icon icon="solar:shield-check-bold" className="w-4 h-4" />
-            Token generated! Copy this now, it won't be shown again.
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="text-sm font-mono flex-1 bg-background/50 p-3 rounded-md border border-border/50 break-all select-all">
-              {newRawToken}
-            </code>
-            <Button size="icon" variant="outline" onClick={() => copyToClipboard(newRawToken)}>
-              <Icon icon="solar:copy-linear" className="w-4 h-4" />
-            </Button>
+        <div className="p-4 border border-primary/40 bg-primary/10 rounded-md space-y-4 relative group">
+          <div>
+            <p className="text-xs text-primary font-semibold flex items-center gap-2 mb-2">
+              <Icon icon="solar:shield-check-bold" className="w-4 h-4" />
+              Token generated! Copy this now, it won't be shown again.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="text-sm font-mono flex-1 bg-background/50 p-3 rounded-md border border-border/50 break-all select-all">
+                {newRawToken}
+              </code>
+              <Button size="icon" variant="outline" onClick={() => copyToClipboard(newRawToken)}>
+                <Icon icon="solar:copy-linear" className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-primary/20">
+            <p className="text-[10px] text-muted-foreground mb-2 font-mono uppercase tracking-widest">
+              Agent Configuration Snippet
+            </p>
+            <pre className="text-[10px] font-mono text-muted-foreground p-3 bg-background/80 rounded border border-primary/20 overflow-x-auto select-all">
+              {`"internode": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "mcp-remote",
+    "${typeof window !== 'undefined' ? window.location.origin.replace('3000', '8080') : 'http://localhost:8080'}/api/mcp/sse",
+    "--header",
+    "Authorization: Bearer ${newRawToken}"
+  ]
+}`}
+            </pre>
           </div>
         </div>
       )}
