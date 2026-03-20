@@ -77,78 +77,56 @@ async function mcpAuthMiddleware(req: Request, res: Response, next: NextFunction
   }
 }
 
-// StreamableHTTPServerTransport acts as a unified sink handling both GET initialization
-// and POST tool calls inside handleRequest(req, res) by utilizing query?sessionId implicit generation.
-app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) => {
-  if (req.method === 'GET') {
-    if (activeSessions.size >= MAX_CONCURRENT_SESSIONS) {
-      res.status(503).json({ error: 'Server at capacity, too many active connections' });
-      return;
-    }
+// Factory function to create and configure a scoped MCP server instance
+const createMcpInstance = (
+  orgId: string,
+  userId: string
+): { server: McpServer; transport: StreamableHTTPServerTransport } => {
+  const server = new McpServer({ name: 'internode-mcp', version: '1.0.0' });
+  registerTicketsTools(server, orgId, userId);
 
-    const sessionId = randomUUID();
-
-    try {
-      const ctx = req.mcpCtx!;
-      console.log(`[MCP] Establishing SSE Session [${sessionId}] for Org: ${ctx.orgId}`);
-
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => sessionId,
-      });
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (sessionId) => {
       activeSessions.set(sessionId, transport);
-
-      const server = new McpServer({ name: 'internode-mcp', version: '1.0.0' });
-
-      // Wire up all capabilities specifically scoped to this user/org execution context
-      registerTicketsTools(server, ctx.orgId, ctx.userId);
-
-      await server.connect(transport);
-
-      // Guaranteed cleanup to aggressively prevent memory leaks on dropped connections
-      transport.onclose = () => {
-        activeSessions.delete(sessionId);
-        console.log(`[MCP] Cleaned up Session [${sessionId}]`);
-      };
-
-      await transport.handleRequest(req, res);
-    } catch (error) {
-      console.error(`[MCP SSE Setup Error] Session [${sessionId}]:`, error);
+      console.log(`[MCP] Session Initialized: ${sessionId} (Org: ${orgId})`);
+    },
+    onsessionclosed: (sessionId) => {
       activeSessions.delete(sessionId);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Failed to establish robust SSE connection' });
-      }
-    }
-  } else if (req.method === 'POST') {
-    try {
-      // The new Streamable HTTP transport spec favors the 'mcp-session-id' header
-      const sessionId =
-        (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+      console.log(`[MCP] Session Closed: ${sessionId}`);
+    },
+  });
 
-      if (!sessionId) {
-        res.status(400).json({
-          error: 'Missing or invalid sessionId (header: mcp-session-id or query: sessionId)',
-        });
+  return { server, transport };
+};
+
+app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) => {
+  const ctx = req.mcpCtx!;
+  const sessionId = (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+
+  let transport = sessionId ? activeSessions.get(sessionId) : undefined;
+
+  try {
+    if (!transport) {
+      if (activeSessions.size >= MAX_CONCURRENT_SESSIONS) {
+        res.status(503).json({ error: 'Server at capacity' });
         return;
       }
 
-      const transport = activeSessions.get(sessionId);
-      if (!transport) {
-        console.warn(`[MCP] POST received for unknown/expired session: ${sessionId}`);
-        res
-          .status(404)
-          .send(
-            'Session Transport lost, expired, or actively disconnected. Please reconnect to /api/mcp/sse'
-          );
-        return;
-      }
-
-      await transport.handleRequest(req, res, req.body);
-    } catch (error) {
-      console.error('[MCP Message Dispatch Error]:', error);
-      res.status(500).json({ error: 'Failed to process incoming agent message' });
+      // Initialize a new session/transport for this agent connection
+      const instance = createMcpInstance(ctx.orgId, ctx.userId);
+      transport = instance.transport;
+      await instance.server.connect(transport);
     }
-  } else {
-    res.status(405).send('Method Not Allowed');
+
+    // Delegate ALL request handling (GET/POST/DELETE) to the transport instance
+    // This allows the SDK to manage the SSE handshake, messaging, and session headers natively.
+    await transport.handleRequest(req, res);
+  } catch (error) {
+    console.error(`[MCP Error] Request failed:`, error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal MCP transport error' });
+    }
   }
 });
 
