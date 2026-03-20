@@ -120,14 +120,20 @@ app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) =
     }
   } else if (req.method === 'POST') {
     try {
-      const sessionId = req.query.sessionId;
-      if (!sessionId || typeof sessionId !== 'string') {
-        res.status(400).json({ error: 'Missing or invalid sessionId parameter' });
+      // The new Streamable HTTP transport spec favors the 'mcp-session-id' header
+      const sessionId =
+        (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+
+      if (!sessionId) {
+        res.status(400).json({
+          error: 'Missing or invalid sessionId (header: mcp-session-id or query: sessionId)',
+        });
         return;
       }
 
       const transport = activeSessions.get(sessionId);
       if (!transport) {
+        console.warn(`[MCP] POST received for unknown/expired session: ${sessionId}`);
         res
           .status(404)
           .send(
