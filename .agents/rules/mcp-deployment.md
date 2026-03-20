@@ -21,7 +21,7 @@ The system is split into two distinct execution environments to handle standard 
 
 ### 🤖 2. MCP Server (Render / Railway)
 
-- **Repo Path**: `/mcp/server.ts`
+- **Repo Path**: `/mcp/server.ts` https://internode.onrender.com
 - **Platform**: Render (Web Service).
 - **Role**: Maintains persistent agent connections via SSE. It bypasses Vercel’s serverless function timeout and statelessness.
 - **Environment**: Node.js (Bun Runtime)
@@ -44,12 +44,12 @@ The system is split into two distinct execution environments to handle standard 
 
 Both services MUST share the same **System of Record** (Database and Auth Secrets).
 
-| Variable                | Needed on Vercel? | Needed on Render? | Source                                          |
-| :---------------------- | :---------------- | :---------------- | :---------------------------------------------- |
-| `DATABASE_URL`          | ✅ Yes            | ✅ Yes            | Neon/Postgres connection string.                |
-| `BETTER_AUTH_SECRET`    | ✅ Yes            | ✅ Yes            | Shared encryption key for session parsing.      |
-| `NEXT_PUBLIC_MCP_URL`   | ✅ Yes            | ❌ No             | The URL of your Render service (for UI config). |
-| `AUTH_GITHUB_ID/SECRET` | ✅ Yes            | ❌ No             | Only for frontend OAuth.                        |
+| Variable                | Needed on Vercel? | Needed on Render? | Source                                            |
+| :---------------------- | :---------------- | :---------------- | :------------------------------------------------ |
+| `DATABASE_URL`          | ✅ Yes            | ✅ Yes            | Neon/Postgres connection string.                  |
+| `BETTER_AUTH_SECRET`    | ✅ Yes            | ✅ Yes            | Shared encryption key for session parsing.        |
+| `NEXT_PUBLIC_MCP_URL`   | ✅ Yes            | ❌ No             | Local: `http://localhost:8080`, Prod: Render URL. |
+| `AUTH_GITHUB_ID/SECRET` | ✅ Yes            | ❌ No             | Only for frontend OAuth.                          |
 
 ---
 

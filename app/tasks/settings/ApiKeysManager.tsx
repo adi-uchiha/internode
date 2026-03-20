@@ -84,7 +84,7 @@ export function ApiKeysManager() {
   "args": [
     "-y",
     "mcp-remote",
-    "${typeof window !== 'undefined' ? window.location.origin.replace('3000', '8080') : 'http://localhost:8080'}/api/mcp/sse",
+    "${process.env.NEXT_PUBLIC_MCP_URL!.replace(/\/$/, '')}/api/mcp/sse",
     "--header",
     "Authorization: Bearer ${newRawToken}"
   ]
