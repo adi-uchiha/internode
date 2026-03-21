@@ -7,17 +7,8 @@
  * IMPORTANT: Environment vars MUST BE added to the turbo.json file as well. Otherwise, they will be stripped off during build.
  */
 
-const isServer = typeof window === 'undefined';
-const isRender = process.env.RENDER === 'true';
-const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
-
-/**
- * Core variables that MUST be present for any server instance (web or MCP).
- */
-const CORE_VARS = ['DATABASE_URL'];
-
 function requireEnv(key: string): string {
-  if (!isServer) {
+  if (typeof window !== 'undefined') {
     // Return empty string on the client for private vars to avoid crash.
     // Public vars are handled separately below.
     return process.env[key] || '';
@@ -25,13 +16,6 @@ function requireEnv(key: string): string {
 
   const value = process.env[key];
   if (!value) {
-    // If we're on Render (MCP server) or skipping validation, we only throw for CORE_VARS.
-    // This allows the MCP server to start without needing every single frontend secret.
-    if ((isRender || skipValidation) && !CORE_VARS.includes(key)) {
-      console.warn(`[env] WARNING: Missing non-core environment variable: "${key}"`);
-      return '';
-    }
-
     throw new Error(
       `[env] Missing required environment variable: "${key}". ` + `Add it to your .env file.`
     );
@@ -56,21 +40,12 @@ export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT || '';
 
 // Perform server-side validation for public variables
-if (isServer) {
-  if (!NEXT_PUBLIC_APP_URL || !NEXT_PUBLIC_APP_NAME) {
-    if (isRender || skipValidation) {
-      console.warn(
-        '[env] WARNING: NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_APP_NAME is missing. ' +
-          'Email links and branding in notifications will be broken.'
-      );
-    } else {
-      if (!NEXT_PUBLIC_APP_URL) {
-        throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_APP_URL"');
-      }
-      if (!NEXT_PUBLIC_APP_NAME) {
-        throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_APP_NAME"');
-      }
-    }
+if (typeof window === 'undefined') {
+  if (!NEXT_PUBLIC_APP_URL) {
+    throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_APP_URL"');
+  }
+  if (!NEXT_PUBLIC_APP_NAME) {
+    throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_APP_NAME"');
   }
 }
 

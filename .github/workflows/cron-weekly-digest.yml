@@ -21,24 +21,84 @@ jobs:
         run: |
           echo "Triggering weekly digest at $(date -u)..."
 
-          # Ensure no double slashes if APP_URL has a trailing slash
-          CLEAN_URL="${APP_URL%/}"
-          echo "Hitting: ${CLEAN_URL}/api/cron/weekly-digest"
-
-          response=$(curl -sL \
-            -o /tmp/response.json \
-            -w "%{http_code}" \
-            -X GET "${CLEAN_URL}/api/cron/weekly-digest" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json")
-
-          echo "HTTP Status: $response"
-          echo "Response body:"
-          cat /tmp/response.json
-
-          if [ "$response" != "200" ]; then
-            echo "::error::Weekly digest cron returned non-200 status: $response"
+          # Validate required secrets are present
+          if [ -z "$APP_URL" ]; then
+            echo "::error::NEXT_PUBLIC_APP_URL secret is not set."
+            exit 1
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not set."
             exit 1
           fi
 
-          echo "::notice::Weekly digest cron completed successfully."
+          # Strip any trailing slash from the URL
+          CLEAN_URL="${APP_URL%/}"
+          TARGET="${CLEAN_URL}/api/cron/weekly-digest"
+          echo "Hitting: ${TARGET}"
+
+          # --no-location (-L is intentionally omitted): following redirects would
+          # silently strip the Authorization header and hit the login page instead,
+          # making the step report success while no emails were ever sent.
+          #
+          # --fail-with-body: causes curl to exit non-zero on any HTTP error status
+          # (4xx / 5xx) and still print the response body for debugging.
+          HTTP_STATUS=$(curl \
+            --silent \
+            --no-location \
+            --fail-with-body \
+            --max-time 300 \
+            --retry 2 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -o /tmp/response.json \
+            -w "%{http_code}" \
+            -X GET "${TARGET}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json")
+
+          CURL_EXIT=$?
+
+          echo "HTTP Status: ${HTTP_STATUS}"
+          echo "Response body:"
+          cat /tmp/response.json
+          echo ""
+
+          # Guard: if curl itself failed (network error, timeout, etc.)
+          if [ $CURL_EXIT -ne 0 ]; then
+            echo "::error::curl failed with exit code ${CURL_EXIT} (HTTP ${HTTP_STATUS}). See response body above."
+            exit 1
+          fi
+
+          # Guard: reject non-200 even if curl didn't exit non-zero
+          # (belt-and-suspenders in case --fail-with-body behaviour differs on older curl)
+          if [ "${HTTP_STATUS}" != "200" ]; then
+            echo "::error::Weekly digest cron returned unexpected status ${HTTP_STATUS}."
+            exit 1
+          fi
+
+          # Guard: ensure we got JSON, not an HTML redirect to the login page.
+          # A redirect would return a 200 HTML page and look like success to curl.
+          CONTENT_TYPE=$(curl \
+            --silent \
+            --no-location \
+            --max-time 10 \
+            -o /dev/null \
+            -w "%{content_type}" \
+            -X GET "${TARGET}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json" 2>/dev/null || true)
+
+          if [[ "$CONTENT_TYPE" != *"application/json"* ]]; then
+            echo "::error::Response content-type is '${CONTENT_TYPE}', expected application/json. The endpoint may be redirecting to the login page — check that CRON_SECRET is correctly set."
+            exit 1
+          fi
+
+          # Surface the sent/skipped stats from the JSON response for visibility
+          if command -v jq &>/dev/null; then
+            SENT=$(jq -r '.sent // "?"' /tmp/response.json)
+            SKIPPED=$(jq -r '.skipped // "?"' /tmp/response.json)
+            WEEK=$(jq -r '.week // "?"' /tmp/response.json)
+            echo "::notice::Weekly digest completed — Week: ${WEEK} | Emails sent: ${SENT} | Skipped: ${SKIPPED}"
+          else
+            echo "::notice::Weekly digest cron completed successfully."
+          fi
