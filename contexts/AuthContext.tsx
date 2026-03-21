@@ -29,7 +29,6 @@ import { createContext, useContext, ReactNode, useEffect, useRef, useCallback } 
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
 import type { User, Session } from '@/lib/auth-types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,7 +63,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   // ── 1. Session ──────────────────────────────────────────────────────────────
@@ -190,14 +188,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Force session cache refresh before navigating so the layout
-      // receives the authenticated session immediately on mount.
-      await authClient.getSession({ fetchOptions: { cache: 'no-store' } });
-
-      router.push(redirectTo || '/tasks/dashboard');
+      // Hard navigation ensures that Better Auth client-side reactive hooks
+      // (like useListOrganizations) trigger a fresh data fetch rather than
+      // being stuck with a cached 401 error from the unauthenticated state.
+      window.location.href = redirectTo || '/tasks/dashboard';
       return true;
     },
-    [router]
+    []
   );
 
   const signup = useCallback(
@@ -218,12 +215,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      await authClient.getSession({ fetchOptions: { cache: 'no-store' } });
-
-      router.push(redirectTo || '/tasks/dashboard');
+      // Hard navigation to bootstrap the entire authenticated state properly
+      window.location.href = redirectTo || '/tasks/dashboard';
       return true;
     },
-    [router]
+    []
   );
 
   const logout = useCallback(async (redirectTo?: string): Promise<void> => {
