@@ -351,9 +351,9 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] border border-border bg-card overflow-hidden z-50 rounded-sm shadow-xl"
+                    className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] border border-border bg-card overflow-hidden z-50 rounded-sm shadow-xl flex flex-col"
                   >
-                    <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30 shrink-0">
                       <span className="font-display font-semibold text-sm tracking-tight">
                         NOTIFICATIONS ({unreadCount})
                       </span>
@@ -365,7 +365,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         Mark all read
                       </button>
                     </div>
-                    <div className="overflow-y-auto max-h-[400px]">
+                    <div className="overflow-y-auto flex-1" data-lenis-prevent="true">
                       {notifications.length === 0 ? (
                         <div className="p-8 text-center border-b border-border text-xs font-mono text-muted-foreground">
                           You have no new notifications.
@@ -406,7 +406,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         ))
                       )}
                     </div>
-                    <div className="p-3 text-center bg-muted/10 border-t border-border">
+                    <div className="p-3 text-center bg-muted/10 border-t border-border shrink-0">
                       <Link
                         href="/tasks/notifications"
                         onClick={() => setShowNotifications(false)}
