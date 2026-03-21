@@ -48,9 +48,12 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     })
     .where(and(eq(tickets.id, existingTicket.id), eq(tickets.organizationId, orgId!)));
 
-  // --- Notification Trigger ---
+  // --- In-App Notification Trigger (fire-and-forget) ---
+  // Time logs do not send email — only in-app bell notification.
+  // This is intentional: logging time is a frequent action and would
+  // produce too much email noise.
   if (newTimeLog) {
-    await NotificationService.notifyTicketEvent({
+    void NotificationService.notifyTicketEvent({
       organizationId: orgId!,
       ticketId: existingTicket.id,
       type: 'time-logged',

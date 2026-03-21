@@ -5,6 +5,7 @@ import { Session } from './auth-types';
 import { ApiError, ValidationError } from './api-error';
 import { members } from '@/db/schema';
 import { type InferSelectModel } from 'drizzle-orm';
+import { CRON_SECRET } from './env';
 
 type HandlerContext = {
   params: Promise<Record<string, string>>;
@@ -135,6 +136,44 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           error: errorMessage,
           code: 'internal_server_error',
         },
+        { status: 500 }
+      );
+    }
+  };
+}
+
+/**
+ * Wraps a cron-triggered API endpoint with bearer-token authentication.
+ *
+ * Security: validates the Authorization header against CRON_SECRET.
+ * Returns 401 if missing or incorrect.
+ * Returns 500 with structured error on handler exception.
+ *
+ * Usage:
+ *   export const GET = withCronAuth(async (req) => {
+ *     // ... cron logic
+ *     return NextResponse.json({ success: true, sent: N });
+ *   });
+ */
+export function withCronAuth(handler: (req: Request) => Promise<Response>) {
+  return async (req: Request) => {
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
+
+    if (!token || token !== CRON_SECRET) {
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'invalid_cron_token' },
+        { status: 401 }
+      );
+    }
+
+    try {
+      return await handler(req);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error('[CronJob] Unhandled error:', { message: error.message, stack: error.stack });
+      return NextResponse.json(
+        { error: 'Internal Server Error', code: 'internal_server_error' },
         { status: 500 }
       );
     }

@@ -1,0 +1,40 @@
+name: Cron — Weekly Digest
+
+on:
+  schedule:
+    # Runs every Sunday at 07:00 UTC (12:30 PM IST)
+    - cron: '0 7 * * 0'
+  # Allow manual triggering from the Actions tab (useful for testing)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Trigger Weekly Digest Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ping /api/cron/weekly-digest
+        env:
+          APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Triggering weekly digest at $(date -u)..."
+
+          response=$(curl -s \
+            -o /tmp/response.json \
+            -w "%{http_code}" \
+            -X GET "${APP_URL}/api/cron/weekly-digest" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json")
+
+          echo "HTTP Status: $response"
+          echo "Response body:"
+          cat /tmp/response.json
+
+          if [ "$response" != "200" ]; then
+            echo "::error::Weekly digest cron returned non-200 status: $response"
+            exit 1
+          fi
+
+          echo "::notice::Weekly digest cron completed successfully."

@@ -1,12 +1,10 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins';
-import { render } from '@react-email/render';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { client } from './email';
-import { RESEND_FROM_EMAIL, NEXT_PUBLIC_APP_URL } from './env';
-import { InvitationEmail } from '@/emails/InvitationEmail';
+import { NEXT_PUBLIC_APP_URL } from './env';
+import { EmailService } from './email/service';
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -25,9 +23,17 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async () => {
-          // If a user is created, they might be joining an org later
-          // For now, most member logic happens in the member table
+        after: async (user) => {
+          // Fire-and-forget welcome email after every new account creation
+          void EmailService.welcome({
+            userEmail: user.email,
+            payload: {
+              to: user.email,
+              organizationName: 'Internode',
+              userName: user.name || user.email.split('@')[0],
+              dashboardUrl: NEXT_PUBLIC_APP_URL,
+            },
+          });
         },
       },
     },
@@ -46,40 +52,21 @@ export const auth = betterAuth({
        *   - inviter      : { name, email }
        */
       sendInvitationEmail: async (data) => {
-        try {
-          const acceptUrl = `${NEXT_PUBLIC_APP_URL}/accept-invite?invitationId=${data.id}`;
-
-          const html = await render(
-            InvitationEmail({
-              inviterName: data.inviter.user.name || 'A team member',
-              inviterEmail: data.inviter.user.email,
-              organizationName: data.organization.name,
-              role: data.role,
-              acceptUrl,
-              expiresInDays: 7,
-              baseUrl: NEXT_PUBLIC_APP_URL,
-            })
-          );
-
-          await client.sendAsync({
-            from: RESEND_FROM_EMAIL,
+        // Delegates to EmailService — handles SMTP rendering, error catching, and logging.
+        // Invitations bypass preference gates — they are always transactional.
+        void EmailService.sendInvitation({
+          inviteeEmail: data.email,
+          payload: {
             to: data.email,
-            subject: `You've been invited to join ${data.organization.name} on Internode`,
-            attachment: [{ data: html, alternative: true }],
-          });
-
-          console.log(`[auth] Invitation email sent to ${data.email}`);
-        } catch (err: unknown) {
-          // Never let email failures break the invitation creation flow,
-          // but log it extensively for system administrators.
-          const error = err as Error;
-          console.error('[auth] CRITICAL_EMAIL_FAILURE:', {
-            email: data.email,
-            org: data.organization.slug,
-            error: error.message || String(error),
-            stack: error.stack,
-          });
-        }
+            organizationName: data.organization.name,
+            inviterName: data.inviter.user.name || 'A team member',
+            inviterEmail: data.inviter.user.email,
+            role: data.role,
+            acceptUrl: `${NEXT_PUBLIC_APP_URL}/accept-invite?invitationId=${data.id}`,
+            expiresInDays: 7,
+            baseUrl: NEXT_PUBLIC_APP_URL,
+          },
+        });
       },
     }),
   ],

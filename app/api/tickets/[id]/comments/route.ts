@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { comments, tickets } from '@/db/schema';
+import { comments, tickets, organizations } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { createCommentSchema } from '@/lib/validations/tickets';
-import { NotificationService } from '@/lib/notifications';
+import { EmailService } from '@/lib/email/service';
+import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id: urlId } = await params;
@@ -45,6 +46,10 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
 
   const ticket = await db.query.tickets.findFirst({
     where: and(ticketQuery, eq(tickets.organizationId, orgId!)),
+    with: {
+      createdBy: { columns: { id: true, email: true, name: true } },
+      assignee: { columns: { id: true, email: true, name: true } },
+    },
   });
 
   if (!ticket) {
@@ -70,15 +75,53 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     },
   });
 
-  // --- Notification Trigger ---
+  // --- Email + Notification Trigger (fire-and-forget) ---
   if (fullComment) {
-    await NotificationService.notifyTicketEvent({
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId!),
+      columns: { name: true },
+    });
+
+    // Build deduplicated recipient list: creator + assignee — excluding the commenter
+    const potentialRecipients = [
+      ticket.createdBy && {
+        userId: ticket.createdBy.id,
+        email: ticket.createdBy.email,
+        name: ticket.createdBy.name,
+      },
+      ticket.assignee && {
+        userId: ticket.assignee.id,
+        email: ticket.assignee.email,
+        name: ticket.assignee.name,
+      },
+    ].filter(
+      (r): r is { userId: string; email: string; name: string } =>
+        !!r && r.userId !== session!.user.id
+    );
+
+    // Deduplicate by userId
+    const seen = new Set<string>();
+    const recipients = potentialRecipients.filter((r) => {
+      if (seen.has(r.userId)) return false;
+      seen.add(r.userId);
+      return true;
+    });
+
+    void EmailService.newComment({
       organizationId: orgId!,
-      ticketId,
-      type: 'comment',
-      title: 'New Comment',
-      subtitle: `[${ticket.ticketId}] ${session!.user.name}: ${body.content.slice(0, 50)}${body.content.length > 50 ? '...' : ''}`,
+      ticketId: ticket.id,
       excludeUserId: session!.user.id,
+      recipients,
+      payload: {
+        to: [],
+        organizationName: org?.name ?? 'Your Organization',
+        recipientName: '',
+        commenterName: session!.user.name || session!.user.email,
+        ticketShortId: ticket.ticketId,
+        ticketTitle: ticket.title,
+        commentSnippet: body.content.slice(0, 200),
+        ticketUrl: `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${ticket.ticketId}`,
+      },
     });
   }
 

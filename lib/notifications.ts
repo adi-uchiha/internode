@@ -9,7 +9,10 @@ export type NotificationType =
   | 'status'
   | 'time-logged'
   | 'comment'
-  | 'member-joined';
+  | 'member-joined'
+  | 'leave-requested'
+  | 'leave-status'
+  | 'breakthrough';
 
 export interface CreateNotificationParams {
   organizationId: string;

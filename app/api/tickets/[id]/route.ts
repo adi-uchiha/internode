@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets, projects } from '@/db/schema';
+import { tickets, projects, users, organizations } from '@/db/schema';
 import { eq, and, inArray, type InferSelectModel } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { updateTicketSchema } from '@/lib/validations/tickets';
-import { NotificationService } from '@/lib/notifications';
+import { EmailService } from '@/lib/email/service';
+import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
 
 export const GET = withErrorHandler(async (request, { params, orgId }) => {
   const { id } = await params;
@@ -93,35 +94,86 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
     .returning();
 
-  // --- Notification Triggers ---
+  // --- Email + Notification Triggers (fire-and-forget) ---
   if (updatedTicketRaw) {
-    const ticketIdForService = updatedTicketRaw.id;
     const ticketShortId = updatedTicketRaw.ticketId;
     const ticketTitle = updatedTicketRaw.title;
+    const ticketUrl = `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${ticketShortId}`;
 
-    // 1. Assignment Notification
+    // Fetch org name once for emails
+    const org = await db.query.organizations.findFirst({
+      where: eq(organizations.id, orgId!),
+      columns: { name: true },
+    });
+    const organizationName = org?.name ?? 'Your Organization';
+
+    // 1. Ticket Assigned — new assignee differs from previous
     if (body.assigneeId !== undefined && body.assigneeId !== existingTicket.assigneeId) {
       if (body.assigneeId) {
-        await NotificationService.notifyAssignment({
-          organizationId: orgId!,
-          ticketId: ticketIdForService,
-          ticketTitle: ticketTitle,
-          assigneeId: body.assigneeId,
-          assignerName: session!.user.name || 'Admin',
+        const assignee = await db.query.users.findFirst({
+          where: eq(users.id, body.assigneeId),
+          columns: { email: true, name: true },
         });
+
+        if (assignee) {
+          void EmailService.ticketAssigned({
+            organizationId: orgId!,
+            assigneeId: body.assigneeId,
+            assigneeEmail: assignee.email,
+            payload: {
+              to: assignee.email,
+              organizationName,
+              assigneeName: assignee.name,
+              assignerName: session!.user.name || session!.user.email,
+              ticketShortId,
+              ticketTitle,
+              ticketUrl,
+            },
+          });
+        }
       }
     }
 
-    // 2. Status Change Notification
+    // 2. Status Changed — notify creator + assignee (not the actor)
     if (body.status !== undefined && body.status !== existingTicket.status) {
-      await NotificationService.notifyTicketEvent({
-        organizationId: orgId!,
-        ticketId: ticketIdForService,
-        type: 'status',
-        title: 'Status Updated',
-        subtitle: `[${ticketShortId}] Moved to ${body.status.toUpperCase()}`,
-        excludeUserId: session!.user.id,
-      });
+      // Collect recipients: original creator + original assignee
+      const recipientIds = [
+        existingTicket.createdById,
+        existingTicket.assigneeId,
+        // Also notify the new assignee if one was just set
+        body.assigneeId ?? null,
+      ].filter((uid): uid is string => !!uid && uid !== session!.user.id);
+
+      const uniqueIds = [...new Set(recipientIds)];
+
+      if (uniqueIds.length > 0) {
+        const recipientRows = await db
+          .select({ id: users.id, email: users.email, name: users.name })
+          .from(users)
+          .where(inArray(users.id, uniqueIds));
+
+        void EmailService.ticketStatusChanged({
+          organizationId: orgId!,
+          ticketId: updatedTicketRaw.id,
+          excludeUserId: session!.user.id,
+          recipients: recipientRows.map((r) => ({
+            userId: r.id,
+            email: r.email,
+            name: r.name,
+          })),
+          payload: {
+            to: [],
+            organizationName,
+            recipientName: '',
+            ticketShortId,
+            ticketTitle,
+            oldStatus: existingTicket.status,
+            newStatus: body.status,
+            changedByName: session!.user.name || session!.user.email,
+            ticketUrl,
+          },
+        });
+      }
     }
   }
 

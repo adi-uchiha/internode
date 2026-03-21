@@ -3,6 +3,8 @@
  *
  * All vars here throw at import-time (server startup) if missing,
  * guaranteeing no silent runtime failures.
+ *
+ * IMPORTANT: Environment vars MUST BE added to the turbo.json file as well. Otherwise, they will be stripped off during build.
  */
 
 function requireEnv(key: string): string {
@@ -56,3 +58,4 @@ export const GITHUB_CLIENT_SECRET = requireEnv('GITHUB_CLIENT_SECRET');
 export const SMTP_USER = requireEnv('SMTP_USER');
 export const SMTP_PASSWORD = requireEnv('SMTP_PASSWORD');
 export const RESEND_FROM_EMAIL = requireEnv('RESEND_FROM_EMAIL');
+export const CRON_SECRET = requireEnv('CRON_SECRET');

@@ -1,0 +1,40 @@
+name: Cron — Overdue Ticket Reminders
+
+on:
+  schedule:
+    # Runs Monday–Friday at 09:00 UTC (2:30 PM IST)
+    - cron: '0 9 * * 1-5'
+  # Allow manual triggering from the Actions tab (useful for testing)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Trigger Overdue Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping /api/cron/overdue
+        env:
+          APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Triggering overdue reminders at $(date -u)..."
+
+          response=$(curl -s \
+            -o /tmp/response.json \
+            -w "%{http_code}" \
+            -X GET "${APP_URL}/api/cron/overdue" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json")
+
+          echo "HTTP Status: $response"
+          echo "Response body:"
+          cat /tmp/response.json
+
+          if [ "$response" != "200" ]; then
+            echo "::error::Cron endpoint returned non-200 status: $response"
+            exit 1
+          fi
+
+          echo "::notice::Overdue reminder cron completed successfully."
