@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { timeLogs, tickets } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { timeLogs, tickets, organizations, members } from '@/db/schema';
+import { eq, and, inArray, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { logTimeSchema } from '@/lib/validations/tickets';
 import { NotificationService } from '@/lib/notifications';
+import { EmailService } from '@/lib/email/service';
+import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
 
 export const POST = withErrorHandler(async (request, { params, session, orgId }) => {
   const { id } = await params;
@@ -48,11 +50,9 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     })
     .where(and(eq(tickets.id, existingTicket.id), eq(tickets.organizationId, orgId!)));
 
-  // --- In-App Notification Trigger (fire-and-forget) ---
-  // Time logs do not send email — only in-app bell notification.
-  // This is intentional: logging time is a frequent action and would
-  // produce too much email noise.
+  // --- Notification & Email Triggers (fire-and-forget) ---
   if (newTimeLog) {
+    // 1. In-app bell notification
     void NotificationService.notifyTicketEvent({
       organizationId: orgId!,
       ticketId: existingTicket.id,
@@ -61,6 +61,44 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       subtitle: `[${existingTicket.ticketId}] ${session!.user.name} logged ${body.hours}h`,
       excludeUserId: session!.user.id,
     });
+
+    // 2. Email Notification to Org Owners and Admins
+    if (orgId) {
+      const org = await db.query.organizations.findFirst({
+        where: eq(organizations.id, orgId),
+        columns: { name: true },
+      });
+
+      const adminMembers = await db.query.members.findMany({
+        where: and(
+          eq(members.organizationId, orgId),
+          inArray(members.role, ['owner', 'admin']),
+          ne(members.userId, session!.user.id) // Do not email the person who logged the time
+        ),
+        with: {
+          user: { columns: { id: true, email: true, name: true } },
+        },
+      });
+
+      const adminRecipients = adminMembers
+        .filter((m) => m.user)
+        .map((m) => ({ userId: m.userId, email: m.user.email, name: m.user.name }));
+
+      void EmailService.timeLogged({
+        recipients: adminRecipients,
+        payload: {
+          to: adminRecipients.map((a) => a.email),
+          recipientName: '', // injected in EmailService per-user
+          loggerName: session!.user.name || session!.user.email,
+          ticketShortId: existingTicket.ticketId,
+          ticketTitle: existingTicket.title || 'Untitled Ticket',
+          hours: body.hours,
+          note: body.note || '',
+          organizationName: org?.name ?? 'Your Organization',
+          dashboardUrl: `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${existingTicket.ticketId}`,
+        },
+      });
+    }
   }
 
   // Fetch full ticket with relations to reconcile drift (Blueprint 9.2)

@@ -16,6 +16,7 @@ import { FeedbackProvidedEmail } from '@/emails/FeedbackProvidedEmail';
 import { WelcomeEmail } from '@/emails/WelcomeEmail';
 import { OverdueTicketEmail } from '@/emails/OverdueTicketEmail';
 import { WeeklyDigestEmail } from '@/emails/WeeklyDigestEmail';
+import { TimeLoggedEmail } from '@/emails/TimeLoggedEmail';
 
 // ─── Payload Type Imports ────────────────────────────────────────────────────
 import type {
@@ -30,6 +31,7 @@ import type {
   WelcomeEmailPayload,
   OverdueTicketPayload,
   WeeklyDigestPayload,
+  TimeLoggedPayload,
 } from './types';
 
 // ─── Shared Recipient Type ───────────────────────────────────────────────────
@@ -396,6 +398,39 @@ export const EmailService = {
         subject: `${payload.newMemberName} has joined ${payload.organizationName}`,
         html,
         context: 'member-joined',
+      });
+    }
+  },
+
+  // ─── Time Logs ──────────────────────────────────────────────────────────
+
+  /**
+   * Time Logged — notifies org owners/admins when a member logs time.
+   *
+   * Only sends to recipients who have the 'timeLogged' preference enabled.
+   */
+  async timeLogged(params: {
+    recipients: EmailRecipient[];
+    payload: TimeLoggedPayload;
+  }): Promise<void> {
+    const { recipients, payload } = params;
+
+    if (recipients.length === 0) return;
+
+    const enabledUserIds = await filterEnabledRecipients(
+      recipients.map((r) => r.userId),
+      'timeLogged'
+    );
+
+    for (const admin of recipients.filter((r) => enabledUserIds.includes(r.userId))) {
+      const html = await render(
+        TimeLoggedEmail({ ...payload, recipientName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
+      );
+      await dispatch({
+        to: admin.email,
+        subject: `[${payload.ticketShortId}] ${payload.loggerName} logged ${payload.hours}h`,
+        html,
+        context: 'time-logged',
       });
     }
   },

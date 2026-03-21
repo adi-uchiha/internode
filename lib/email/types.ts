@@ -69,6 +69,16 @@ export interface OverdueTicketPayload extends BaseEmailPayload {
   ticketUrl: string;
 }
 
+export interface TimeLoggedPayload extends BaseEmailPayload {
+  recipientName: string;
+  loggerName: string;
+  ticketShortId: string;
+  ticketTitle: string;
+  hours: number;
+  note: string;
+  dashboardUrl: string;
+}
+
 // ─── Leaves ────────────────────────────────────────────────────────────────
 
 export interface LeaveSubmittedPayload extends BaseEmailPayload {

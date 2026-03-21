@@ -17,6 +17,7 @@ export type EmailPreferenceKey =
   | 'leaveSubmitted'
   | 'memberJoined'
   | 'feedbackProvided'
+  | 'timeLogged'
   | 'overdueReminder'
   | 'weeklyDigest';
 
