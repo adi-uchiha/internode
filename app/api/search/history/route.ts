@@ -26,7 +26,13 @@ export const POST = withErrorHandler(async (req, { session, orgId }) => {
   const [existing] = await db
     .select()
     .from(searchHistory)
-    .where(and(eq(searchHistory.entityId, entityId), eq(searchHistory.organizationId, orgId)));
+    .where(
+      and(
+        eq(searchHistory.entityId, entityId),
+        eq(searchHistory.organizationId, orgId),
+        eq(searchHistory.userId, session!.user.id)
+      )
+    );
 
   if (existing) {
     await db

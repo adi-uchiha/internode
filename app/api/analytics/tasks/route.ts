@@ -83,25 +83,24 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
     .from(projects)
     .where(eq(projects.organizationId, orgId));
 
-  // Optimize Project Distribution calculation
-  // NOTE: We use JSON.stringify + ::jsonb cast (matching /api/tickets pattern)
-  // instead of jsonb_build_array() with a Drizzle parameter. The latter causes
-  // Postgres type-inference failures when the parameter binding is ambiguous.
-  // COALESCE ensures we always get a numeric result even on empty sets.
-  const projectDistribution = await Promise.all(
-    projectStatsRaw.map(async (p) => {
-      const [{ count }] = await db
-        .select({ count: sql<number>`COALESCE(count(*)::integer, 0)` })
-        .from(tickets)
-        .where(
-          and(
-            eq(tickets.organizationId, orgId!),
-            sql`${tickets.projectIds} @> ${JSON.stringify([p.id])}::jsonb`
-          )
-        );
-      return { name: p.name, tickets: Number(count ?? 0), hours: 0 };
+  const ticketCountsRaw = await db
+    .select({
+      projectId: sql<string>`jsonb_array_elements_text(${tickets.projectIds})`,
+      count: sql<number>`count(*)::integer`,
     })
-  );
+    .from(tickets)
+    .where(
+      and(eq(tickets.organizationId, orgId), sql`jsonb_typeof(${tickets.projectIds}) = 'array'`)
+    )
+    .groupBy(sql`jsonb_array_elements_text(${tickets.projectIds})`);
+
+  const ticketCountMap = Object.fromEntries(ticketCountsRaw.map((r) => [r.projectId, r.count]));
+
+  const projectDistribution = projectStatsRaw.map((p) => ({
+    name: p.name,
+    tickets: ticketCountMap[p.id] || 0,
+    hours: 0,
+  }));
 
   // 5. Daily Activity (Heatmap Data)
   const heatmapRaw = await db

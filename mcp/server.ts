@@ -20,17 +20,20 @@ app.use(
 
 app.use(express.json({ limit: '5mb' }));
 
-const activeSessions = new Map<string, StreamableHTTPServerTransport>();
+const activeSessions = new Map<
+  string,
+  { transport: StreamableHTTPServerTransport; identity: { userId: string; orgId: string } }
+>();
 const MAX_CONCURRENT_SESSIONS = 1000;
 
 const createMcpInstance = (orgId: string, userId: string) => {
   const server = new McpServer({ name: 'internode-mcp', version: '1.0.0' });
-  registerTicketsTools(server);
+  registerTicketsTools(server, orgId, userId);
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
     onsessioninitialized: (sessionId) => {
-      activeSessions.set(sessionId, transport);
+      activeSessions.set(sessionId, { transport, identity: { userId, orgId } });
       console.log(
         `[MCP Registry] Registered Session: ${sessionId} (Org: ${orgId}, User: ${userId})`
       );
@@ -70,7 +73,11 @@ async function mcpAuthMiddleware(req: any, res: Response, next: NextFunction) {
     req.mcpProxyIdentity = { userId: apiKey.userId, orgId: apiKey.organizationId };
     req.auth = req.mcpProxyIdentity;
 
-    db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, apiKey.id)).execute();
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, apiKey.id))
+      .execute();
     next();
   } catch (error) {
     console.error('[MCP Auth Fatal]:', error);
@@ -85,20 +92,32 @@ app.get('/health', (req, res) => {
 });
 
 app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const identity = (req as any).mcpProxyIdentity;
+
   const incomingSessionId =
     (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
 
-  let transport = incomingSessionId ? activeSessions.get(incomingSessionId) : undefined;
+  let transport: StreamableHTTPServerTransport | undefined;
 
-  if (transport) {
-    console.log(`[MCP] Using active session: ${incomingSessionId}`);
-  } else {
+  if (incomingSessionId) {
+    const entry = activeSessions.get(incomingSessionId);
+    if (entry) {
+      // Validate identity ownership to prevent cross-account hijacking
+      if (entry.identity.userId !== identity.userId || entry.identity.orgId !== identity.orgId) {
+        console.warn(`[MCP Security] Hijack attempt detected for session ${incomingSessionId}`);
+        return res.status(403).json({ error: 'Session ownership mismatch' });
+      }
+      transport = entry.transport;
+      console.log(`[MCP] Using active session: ${incomingSessionId}`);
+    }
+  }
+
+  if (!transport) {
     if (activeSessions.size >= MAX_CONCURRENT_SESSIONS) {
       return res.status(503).json({ error: 'Capacity reached' });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const identity = (req as any).mcpProxyIdentity;
     console.log(`[MCP] Bootstrapping new session for Org: ${identity.orgId}`);
     transport = createMcpInstance(identity.orgId, identity.userId);
   }

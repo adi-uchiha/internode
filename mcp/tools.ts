@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { db } from '../db';
-import { tickets, organizations } from '../db/schema';
-import { eq, sql, and } from 'drizzle-orm';
+import { tickets, organizations, users } from '../db/schema';
+import { eq, sql, and, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { EmailService } from '../lib/email/service';
+import { NEXT_PUBLIC_APP_URL } from '../lib/env';
 
 /**
  * Utility to catch internal errors so that the LLM agent handles them gracefully
@@ -25,7 +27,7 @@ async function withSafeDb<T>(
   }
 }
 
-export function registerTicketsTools(server: McpServer) {
+export function registerTicketsTools(server: McpServer, orgId: string, userId: string) {
   // 1. LIST TICKETS
   server.registerTool(
     'list_tickets',
@@ -41,8 +43,7 @@ export function registerTicketsTools(server: McpServer) {
         offset: z.number().min(0).default(0).describe('Number of tickets to skip for pagination.'),
       },
     },
-    async ({ limit, offset }, extra) => {
-      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
+    async ({ limit, offset }) => {
       return withSafeDb(async () => {
         return await db.query.tickets.findMany({
           where: eq(tickets.organizationId, orgId),
@@ -64,8 +65,7 @@ export function registerTicketsTools(server: McpServer) {
         ticketId: z.string().describe('The short ticket identifier (e.g. TASK12)'),
       },
     },
-    async ({ ticketId }, extra) => {
-      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
+    async ({ ticketId }) => {
       try {
         const ticket = await db.query.tickets.findFirst({
           where: and(eq(tickets.organizationId, orgId), eq(tickets.ticketId, ticketId)),
@@ -104,17 +104,13 @@ export function registerTicketsTools(server: McpServer) {
         assigneeId: z.string().optional().describe('User ID of the assignee, if known'),
       },
     },
-    async ({ title, description, priority, status, assigneeId }, extra) => {
-      const { orgId, userId: authorUserId } = extra.authInfo as unknown as {
-        orgId: string;
-        userId: string;
-      };
+    async ({ title, description, priority, status, assigneeId }) => {
       try {
         const [updatedOrg] = await db
           .update(organizations)
           .set({ ticketCounter: sql`${organizations.ticketCounter} + 1` })
           .where(eq(organizations.id, orgId))
-          .returning({ ticketCounter: organizations.ticketCounter });
+          .returning({ ticketCounter: organizations.ticketCounter, name: organizations.name });
 
         if (!updatedOrg) {
           return {
@@ -137,9 +133,38 @@ export function registerTicketsTools(server: McpServer) {
             priority,
             status,
             assigneeId,
-            createdById: authorUserId,
+            createdById: userId,
           })
           .returning();
+
+        // Trigger side effect if assigned
+        if (assigneeId) {
+          const assignee = await db.query.users.findFirst({
+            where: eq(users.id, assigneeId),
+            columns: { email: true, name: true },
+          });
+          const assigner = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { email: true, name: true },
+          });
+
+          if (assignee && assigner) {
+            void EmailService.ticketAssigned({
+              organizationId: orgId,
+              assigneeId,
+              assigneeEmail: assignee.email,
+              payload: {
+                to: assignee.email,
+                organizationName: updatedOrg.name,
+                assigneeName: assignee.name,
+                assignerName: assigner.name || assigner.email,
+                ticketShortId: newTicket.ticketId,
+                ticketTitle: newTicket.title,
+                ticketUrl: `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${newTicket.ticketId}`,
+              },
+            });
+          }
+        }
 
         return {
           content: [{ type: 'text', text: `Ticket successfully created: ${newTicket.ticketId}` }],
@@ -166,9 +191,19 @@ export function registerTicketsTools(server: McpServer) {
         assigneeId: z.string().optional(),
       },
     },
-    async ({ ticketId, title, description, status, priority, assigneeId }, extra) => {
-      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
+    async ({ ticketId, title, description, status, priority, assigneeId }) => {
       try {
+        const existingTicket = await db.query.tickets.findFirst({
+          where: and(eq(tickets.organizationId, orgId), eq(tickets.ticketId, ticketId)),
+        });
+
+        if (!existingTicket) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: `Ticket ${ticketId} not found in this organization.` }],
+          };
+        }
+
         const updateData: Partial<typeof tickets.$inferInsert> = {};
         if (title !== undefined) updateData.title = title;
         if (description !== undefined) updateData.description = description;
@@ -186,11 +221,80 @@ export function registerTicketsTools(server: McpServer) {
           .where(and(eq(tickets.organizationId, orgId), eq(tickets.ticketId, ticketId)))
           .returning();
 
-        if (!updated) {
-          return {
-            isError: true,
-            content: [{ type: 'text', text: `Ticket ${ticketId} not found in this organization.` }],
-          };
+        if (updated) {
+          const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId),
+            columns: { name: true },
+          });
+          const organizationName = org?.name ?? 'Your Organization';
+          const triggerUser = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { email: true, name: true },
+          });
+          const triggerUserName = triggerUser?.name || triggerUser?.email || 'MCP Agent';
+
+          // Assignee change notification
+          if (assigneeId !== undefined && assigneeId !== existingTicket.assigneeId && assigneeId) {
+            const assignee = await db.query.users.findFirst({
+              where: eq(users.id, assigneeId),
+              columns: { email: true, name: true },
+            });
+            if (assignee) {
+              void EmailService.ticketAssigned({
+                organizationId: orgId,
+                assigneeId,
+                assigneeEmail: assignee.email,
+                payload: {
+                  to: assignee.email,
+                  organizationName,
+                  assigneeName: assignee.name,
+                  assignerName: triggerUserName,
+                  ticketShortId: updated.ticketId,
+                  ticketTitle: updated.title,
+                  ticketUrl: `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${updated.ticketId}`,
+                },
+              });
+            }
+          }
+
+          // Status change notification
+          if (status !== undefined && status !== existingTicket.status) {
+            const recipientIds = [
+              existingTicket.createdById,
+              existingTicket.assigneeId,
+              assigneeId ?? null,
+            ].filter((uid): uid is string => !!uid && uid !== userId);
+            const uniqueIds = [...new Set(recipientIds)];
+
+            if (uniqueIds.length > 0) {
+              const recipientRows = await db
+                .select({ id: users.id, email: users.email, name: users.name })
+                .from(users)
+                .where(inArray(users.id, uniqueIds));
+
+              void EmailService.ticketStatusChanged({
+                organizationId: orgId,
+                ticketId: updated.id,
+                excludeUserId: userId,
+                recipients: recipientRows.map((r) => ({
+                  userId: r.id,
+                  email: r.email,
+                  name: r.name,
+                })),
+                payload: {
+                  to: [],
+                  organizationName,
+                  recipientName: '',
+                  ticketShortId: updated.ticketId,
+                  ticketTitle: updated.title,
+                  oldStatus: existingTicket.status,
+                  newStatus: status,
+                  changedByName: triggerUserName,
+                  ticketUrl: `${NEXT_PUBLIC_APP_URL}/tasks/ticket/${updated.ticketId}`,
+                },
+              });
+            }
+          }
         }
 
         return {
@@ -217,8 +321,7 @@ export function registerTicketsTools(server: McpServer) {
         ticketId: z.string().describe('The short ticket identifier (e.g. TASK12)'),
       },
     },
-    async ({ ticketId }, extra) => {
-      const { orgId } = extra.authInfo as unknown as { orgId: string; userId: string };
+    async ({ ticketId }) => {
       try {
         const [deleted] = await db
           .delete(tickets)

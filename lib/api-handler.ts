@@ -39,7 +39,7 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           const hashedToken = createHash('sha256').update(rawToken).digest('hex');
 
           const { db } = await import('@/db');
-          const { apiKeys } = await import('@/db/schema');
+          const { apiKeys, users } = await import('@/db/schema');
           const { eq } = await import('drizzle-orm');
 
           const apiKeyData = await db.query.apiKeys.findFirst({
@@ -52,6 +52,45 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
 
           userId = apiKeyData.userId;
           orgId = apiKeyData.organizationId;
+
+          // Track usage (fire-and-forget but awaited for safety in core handler)
+          void db
+            .update(apiKeys)
+            .set({ lastUsedAt: new Date() })
+            .where(eq(apiKeys.id, apiKeyData.id))
+            .execute();
+
+          // Fetch user data to synthesize a Session object
+          const userData = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+          });
+
+          if (!userData) {
+            throw new ApiError('User not found for API key', 404, 'user_not_found');
+          }
+
+          session = {
+            session: {
+              id: 'api-key-session',
+              userId: userId,
+              activeOrganizationId: orgId,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+              ipAddress: null,
+              userAgent: null,
+            },
+            user: {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              emailVerified: userData.emailVerified,
+              image: userData.image,
+              createdAt: userData.createdAt,
+              updatedAt: userData.updatedAt,
+              notificationSettings: userData.notificationSettings,
+            },
+          } as unknown as Session;
         } else {
           const authSession = await auth.api.getSession({
             headers: reqHeaders,
