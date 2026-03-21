@@ -115,10 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Either: user has org and it is active with member resolved
     ((!!activeOrgId && !isMemberPending) ||
       // Or: user is confirmed org-less (show onboarding)
-      hasNoOrg ||
-      // Or: there are orgs but none active yet (auto-set is about to run)
-      // We intentionally keep this false until setActive completes.
-      false);
+      hasNoOrg);
 
   // ── 5. Auto-set Active Org (once, guarded) ──────────────────────────────────
   // If the user has orgs but none is active (e.g., first login after session

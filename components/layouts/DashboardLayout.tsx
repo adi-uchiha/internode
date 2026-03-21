@@ -54,7 +54,8 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   };
 
   const handleLogout = async () => {
-    await logout();
+    const returnUrl = encodeURIComponent(pathname);
+    await logout(`/login?redirect=${returnUrl}`);
   };
 
   useEffect(() => {

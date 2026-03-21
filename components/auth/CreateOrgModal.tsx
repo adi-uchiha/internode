@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { safeSwitchOrganization } from '@/lib/auth-utils';
 
 interface CreateOrgModalProps {
   open: boolean;
@@ -62,16 +63,14 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         return;
       }
 
-      await authClient.organization.setActive({ organizationId: data.id });
-      await authClient.getSession();
-      await queryClient.invalidateQueries({ refetchType: 'none' });
+      // Atomic switch to the new organization with cache safety
+      await safeSwitchOrganization(data.id, queryClient, router);
 
       toast.success('Organization created successfully');
       onOpenChange(false);
       setName('');
       setSlug('');
       setSlugEdited(false);
-      router.refresh();
     } catch {
       toast.error('An unexpected error occurred');
     } finally {

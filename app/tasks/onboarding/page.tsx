@@ -14,6 +14,7 @@ import { toast } from '@/lib/toast';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { safeSwitchOrganization } from '@/lib/auth-utils';
 
 // ─── Step identifiers ─────────────────────────────────────────────────────────
 
@@ -130,16 +131,8 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Explicitly set the new organization as active before redirecting
-      await authClient.organization.setActive({ organizationId: data.id });
-      await authClient.getSession(); // Force update client session store
-
-      // Surgical invalidation of org-dependent keys
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['organization'] }); // better-auth org keys
+      // Set the new organization as active with atomic cache clearance
+      await safeSwitchOrganization(data.id, queryClient, router);
 
       setStep('success');
       setTimeout(() => router.replace('/tasks/dashboard'), 1500);

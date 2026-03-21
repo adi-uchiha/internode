@@ -79,11 +79,8 @@ function AcceptInviteContent() {
         return;
       }
       try {
-        const { data, error } = await (
-          authClient.organization.getInvitation as (opts: {
-            query: { id: string };
-          }) => Promise<{ data: unknown; error: { message?: string } | null }>
-        )({
+        // Fetch invitation using the standardized client pattern
+        const { data, error } = await authClient.organization.getInvitation({
           query: { id: invitationId },
         });
 
@@ -96,54 +93,47 @@ function AcceptInviteContent() {
           return;
         }
 
-        // Client-side expiry guard
-        const rawExpiry = (data as { expiresAt: Date | string }).expiresAt;
-        if (new Date(rawExpiry as string) < new Date()) {
-          setErrorMessage(
-            'This invitation has expired. Please ask the organization admin to send a new one.'
-          );
-          setState('error');
-          return;
-        }
-
-        if ((data as { status: string }).status !== 'pending') {
-          if ((data as { status: string }).status === 'accepted') {
-            setErrorMessage('This invitation has already been accepted.');
-          } else {
-            setErrorMessage(
-              `This invitation is no longer active (status: ${(data as { status: string }).status}).`
-            );
-          }
-          setState('error');
-          return;
-        }
-
-        // Map better-auth data to our local type.
-        // Note: getInvitation returns org info as flat top-level fields
-        // (organizationName, organizationSlug, inviterEmail), NOT nested objects.
         const invData = data as {
           id: string;
           email: string;
           role: string;
           status: string;
-          expiresAt: Date | string;
+          expiresAt: string | Date;
           organizationId: string;
           organizationName?: string;
           organizationSlug?: string;
-          inviterEmail?: string;
         };
+
+        // Guard: Handle non-pending status
+        if (invData.status !== 'pending') {
+          setErrorMessage(
+            invData.status === 'accepted'
+              ? 'This invitation has already been accepted.'
+              : `This invitation is no longer active (status: ${invData.status}).`
+          );
+          setState('error');
+          return;
+        }
+
+        // Guard: Client-side expiry
+        if (new Date(invData.expiresAt) < new Date()) {
+          setErrorMessage('This invitation has expired.');
+          setState('error');
+          return;
+        }
 
         setInvitation({
           id: invData.id,
           email: invData.email,
           role: invData.role,
           status: invData.status,
-          expiresAt: invData.expiresAt as string,
+          expiresAt: invData.expiresAt,
           organizationId: invData.organizationId,
           organizationName: invData.organizationName ?? 'Unknown Organization',
           organizationSlug: invData.organizationSlug,
-          inviterName: undefined, // getInvitation only returns inviterEmail, not name
+          inviterName: undefined,
         });
+
         hasFetchedRef.current = true;
         setState('ready');
       } catch (err) {
