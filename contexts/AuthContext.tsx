@@ -226,17 +226,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [router]
   );
 
-  const logout = useCallback(
-    async (redirectTo?: string): Promise<void> => {
+  const logout = useCallback(async (redirectTo?: string): Promise<void> => {
+    try {
       await authClient.signOut();
-      // Clear all org + user-scoped cached data
-      queryClient.clear();
+    } catch (err) {
+      console.error('[AuthContext] Error during sign out:', err);
+    } finally {
       // Reset the auto-set guard so next login works cleanly
       isSettingActiveOrg.current = false;
-      router.push(redirectTo || '/login');
-    },
-    [router, queryClient]
-  );
+
+      // We specifically DO NOT call queryClient.clear() here.
+      // Clearing the query client while the UI is still mounted can cause active
+      // components to re-render with null/undefined data and crash before the
+      // browser has a chance to execute the redirect.
+      // Instead, window.location.href forces a hard page reload which inherently
+      // destroys all Next.js/React state and the in-memory React Query cache.
+      window.location.href = redirectTo || '/login';
+    }
+  }, []);
 
   // ── 7. Context Value ─────────────────────────────────────────────────────────
 

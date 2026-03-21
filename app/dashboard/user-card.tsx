@@ -1,22 +1,15 @@
 'use client';
 
-import { authClient } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import NextImage from 'next/image';
 import { SessionDetails } from '@/components/shared/SessionDetails';
 import type { Session } from '@/lib/auth-types';
 
 export default function UserCard({ session }: { session: Session }) {
-  const router = useRouter();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push('/login');
-        },
-      },
-    });
+    await logout();
   };
 
   return (
