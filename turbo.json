@@ -12,7 +12,11 @@
         "GITHUB_CLIENT_SECRET",
         "SMTP_USER",
         "SMTP_PASSWORD",
-        "RESEND_FROM_EMAIL"
+        "RESEND_FROM_EMAIL",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR",
+        "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG",
+        "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT"
       ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]

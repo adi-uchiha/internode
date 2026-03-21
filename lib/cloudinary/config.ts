@@ -1,54 +1,20 @@
 import type { UploadContext, FolderIds } from './types';
-
-/**
- * Validates all required env vars at module initialisation time.
- * Throws in development to surface misconfiguration early.
- * Warns in production to avoid crashing deployed builds.
- */
-function requireClientEnv(key: string): string {
-  // For NEXT_PUBLIC_ vars, we must access them via process.env[key]
-  // Next.js statically replaces process.env.NEXT_PUBLIC_* at build time
-  const value = process.env[key];
-  if (!value) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`[Cloudinary] Missing env var: ${key}`);
-    }
-    return '';
-  }
-  return value;
-}
-
-// We must use direct process.env.NEXT_PUBLIC_* references for Next.js static replacement
-const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '';
-const presetAvatar = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR ?? '';
-const presetOrg = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG ?? '';
-const presetContent = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT ?? '';
-
-// Validate at module load in development
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  const missing = [
-    ['NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME', cloudName],
-    ['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR', presetAvatar],
-    ['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG', presetOrg],
-    ['NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT', presetContent],
-  ].filter(([, v]) => !v);
-
-  if (missing.length > 0) {
-    console.warn(
-      `[Cloudinary] Missing env vars: ${missing.map(([k]) => k).join(', ')}. Image uploads will not work.`
-    );
-  }
-}
+import {
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR,
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG,
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT,
+} from '@/lib/env';
 
 export const cloudinaryConfig = {
-  cloudName,
+  cloudName: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   get uploadEndpoint() {
     return `https://api.cloudinary.com/v1_1/${this.cloudName}/image/upload`;
   },
   presets: {
-    avatar: presetAvatar,
-    'org-logo': presetOrg,
-    content: presetContent,
+    avatar: NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR,
+    'org-logo': NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG,
+    content: NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT,
   } satisfies Record<UploadContext, string>,
 } as const;
 
@@ -83,6 +49,3 @@ export const ACCEPTED_MIME_TYPES: Record<UploadContext, string[]> = {
   'org-logo': ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
   content: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
 };
-
-// Re-export requireClientEnv for potential reuse — kept private for now
-void requireClientEnv;

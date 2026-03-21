@@ -28,6 +28,14 @@ function requireEnv(key: string): string {
 export const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || '';
 export const NEXT_PUBLIC_APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || '';
 export const NEXT_PUBLIC_MCP_URL = process.env.NEXT_PUBLIC_MCP_URL || '';
+export const NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
+export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR || '';
+export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG || '';
+export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT || '';
 
 // Perform server-side validation for public variables
 if (typeof window === 'undefined') {
