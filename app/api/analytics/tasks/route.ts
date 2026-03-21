@@ -54,19 +54,35 @@ export const GET = withErrorHandler(async (_req, { orgId }) => {
   // Pivot status flow data
   const statusFlowMap: Record<
     string,
-    { week: string; todo: number; inProgress: number; inReview: number; done: number }
+    {
+      week: string;
+      todo: number;
+      inProgress: number;
+      inReview: number;
+      done: number;
+      unplanned: number;
+    }
   > = {};
   statusFlowRaw.forEach((row) => {
     const ws = new Date(row.weekStart).toISOString().split('T')[0];
     if (!statusFlowMap[ws]) {
-      statusFlowMap[ws] = { week: ws, todo: 0, inProgress: 0, inReview: 0, done: 0 };
+      statusFlowMap[ws] = {
+        week: ws,
+        todo: 0,
+        inProgress: 0,
+        inReview: 0,
+        done: 0,
+        unplanned: 0,
+      };
     }
     const key =
       row.status === 'in-progress'
         ? 'inProgress'
         : row.status === 'in-review'
           ? 'inReview'
-          : row.status;
+          : row.status === 'unplanned'
+            ? 'unplanned'
+            : row.status;
 
     const mappedKey = key as keyof Omit<(typeof statusFlowMap)[string], 'week'>;
     if (mappedKey in statusFlowMap[ws]) {

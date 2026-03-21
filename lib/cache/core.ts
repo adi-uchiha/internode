@@ -86,7 +86,10 @@ export const CacheCore = {
     queryClient: QueryClient,
     baseKey: QueryKey,
     newItem: T,
-    filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean
+    config?: {
+      filterPredicate?: (item: T, filters: Record<string, unknown>) => boolean;
+      identityCheck?: (item: T, newItem: T) => boolean;
+    }
   ) => {
     const queries = queryClient.getQueryCache().findAll({ queryKey: baseKey });
 
@@ -96,15 +99,24 @@ export const CacheCore = {
         const isFiltered = Object.keys(filters).length > 0;
 
         // If it's a filtered list, decide if the item belongs
-        if (isFiltered && filterPredicate && !filterPredicate(newItem, filters)) return old;
+        if (isFiltered && config?.filterPredicate && !config.filterPredicate(newItem, filters)) {
+          return old;
+        }
 
         if (!old) return [newItem];
         if (!Array.isArray(old)) return old;
 
-        const newId = newItem.id;
+        // Prevent duplicates in view but update existing item position (move to top)
+        const index = old.findIndex((item) => {
+          if (config?.identityCheck) return config.identityCheck(item, newItem);
+          return item.id === newItem.id;
+        });
 
-        // Prevent duplicates
-        if (newId && old.some((item) => item.id === newId)) return old;
+        if (index !== -1) {
+          const updatedOld = [...old];
+          updatedOld.splice(index, 1);
+          return [newItem, ...updatedOld];
+        }
 
         return [newItem, ...old];
       });

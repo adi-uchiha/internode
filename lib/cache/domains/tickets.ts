@@ -42,13 +42,15 @@ export const TicketDomain = {
     } as TicketWithRelations;
 
     // 1. Update ticket lists with smart filter synergy
-    CacheCore.prependToLists(queryClient, ['tickets'], augmentedTicket, (item, filters) => {
-      const f = filters as Record<string, string>;
-      // Match project filter
-      if (f.projectId && !(item.projectIds || []).includes(f.projectId)) return false;
-      // Match assignee filter
-      if (f.assigneeId && item.assigneeId !== f.assigneeId) return false;
-      return true;
+    CacheCore.prependToLists(queryClient, ['tickets'], augmentedTicket, {
+      filterPredicate: (item, filters) => {
+        const f = filters as Record<string, string>;
+        // Match project filter
+        if (f.projectId && !(item.projectIds || []).includes(f.projectId)) return false;
+        // Match assignee filter
+        if (f.assigneeId && item.assigneeId !== f.assigneeId) return false;
+        return true;
+      },
     });
 
     // 2. Local list update handled by prependToLists in step 1.

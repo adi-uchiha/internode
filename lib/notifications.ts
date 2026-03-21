@@ -29,7 +29,7 @@ export class NotificationService {
    * Includes basic deduplication to avoid spamming for the same event.
    */
   static async create(params: CreateNotificationParams) {
-    const { organizationId, userId, type, title, subtitle } = params;
+    const { organizationId, userId, type, title, subtitle, ticketId } = params;
 
     // Optional: Avoid sending notifications to the user who triggered the action
     // This should be handled by the caller by checking session.user.id
@@ -42,6 +42,7 @@ export class NotificationService {
           organizationId,
           userId,
           type,
+          ticketId: ticketId || null,
           title,
           subtitle: subtitle || null,
           read: false,

@@ -51,6 +51,7 @@ export const notifications = pgTable('notifications', {
   }).notNull(),
   title: text('title').notNull(),
   subtitle: text('subtitle'),
+  ticketId: text('ticket_id').references(() => tickets.id, { onDelete: 'set null' }),
   read: boolean('read').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

@@ -137,6 +137,7 @@ export const AnalyticsDomain = {
         if (normalized === 'in-progress') return 'inProgress' as const;
         if (normalized === 'in-review') return 'inReview' as const;
         if (normalized === 'done') return 'done' as const;
+        if (normalized === 'unplanned') return 'unplanned' as const;
         return null;
       };
 

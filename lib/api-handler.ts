@@ -168,7 +168,9 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
       }
 
       // Handle other known error types if necessary, otherwise generic 500
-      const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+      const isDev = process.env.NODE_ENV === 'development';
+      const errorMessage =
+        error instanceof Error && isDev ? error.message : 'Internal Server Error';
 
       return NextResponse.json(
         {

@@ -13,7 +13,10 @@ export const SearchDomain = {
    * Optimistically adds an item to search history.
    */
   addHistory: (queryClient: QueryClient, item: SearchHistoryItem) => {
-    CacheCore.prependToLists(queryClient, ['searchHistory'], item);
+    CacheCore.prependToLists(queryClient, ['searchHistory'], item, {
+      identityCheck: (oldItem, newItem) =>
+        oldItem.entityId === newItem.entityId && oldItem.entityType === newItem.entityType,
+    });
   },
 
   /**

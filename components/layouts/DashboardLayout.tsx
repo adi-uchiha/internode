@@ -3,7 +3,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { useIsMounted } from '@/hooks/use-mounted';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
   const hasActiveOrg = !!session?.session.activeOrganizationId;
 
   const pathname = usePathname();
+  const router = useRouter();
 
   const { data: notifications = [] } = useNotifications({ enabled: hasActiveOrg });
   const { mutateAsync: markAsRead } = useMarkNotificationsRead();
@@ -374,8 +375,15 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                         notifications.map((n) => (
                           <div
                             key={n.id}
+                            onClick={() => {
+                              if (n.ticketId) {
+                                router.push(`/tasks/ticket/${n.ticketId}`);
+                                setShowNotifications(false);
+                              }
+                            }}
                             className={cn(
-                              'p-4 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors relative',
+                              'p-4 border-b border-border transition-colors relative',
+                              n.ticketId ? 'cursor-pointer hover:bg-muted/30' : 'cursor-default',
                               !n.read && 'bg-primary/5'
                             )}
                           >
@@ -396,7 +404,7 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
                                 {n.title}
                               </span>
                             </div>
-                            <div className="font-mono text-xs text-muted-foreground ml-4 leading-relaxed">
+                            <div className="font-mono text-xs text-muted-foreground ml-4 leading-relaxed line-clamp-2">
                               {n.subtitle}
                             </div>
                             <div className="font-mono text-[10px] text-muted-foreground/60 ml-4 mt-2">

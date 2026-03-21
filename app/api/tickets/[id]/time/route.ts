@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { timeLogs, tickets, organizations, members } from '@/db/schema';
-import { eq, and, inArray, ne } from 'drizzle-orm';
+import { eq, and, inArray, ne, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
@@ -41,11 +41,11 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
     })
     .returning();
 
-  // Aggregating logged time to parent task cache
+  // Aggregating logged time to parent task cache (Atomic increment to avoid race conditions)
   await db
     .update(tickets)
     .set({
-      loggedHours: (existingTicket.loggedHours || 0) + body.hours,
+      loggedHours: sql`${tickets.loggedHours} + ${body.hours}`,
       updatedAt: new Date(),
     })
     .where(and(eq(tickets.id, existingTicket.id), eq(tickets.organizationId, orgId!)));

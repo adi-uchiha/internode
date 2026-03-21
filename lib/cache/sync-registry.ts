@@ -97,7 +97,7 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
     },
   ],
   'tickets.statusChanged': [
-    (qc, { from, to, assigneeId, ticketTitle, orgId }) => {
+    (qc, { from, to, assigneeId, ticketTitle, orgId, ticketId }) => {
       AnalyticsDomain.moveTicketStatus(qc, from, to);
       if (to === 'done') {
         AnalyticsDomain.adjustLeaderboard(qc, assigneeId || 'system', 0, 1);
@@ -120,6 +120,7 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
           type: 'status',
           title: 'Ticket Status Updated',
           subtitle: `Ticket "${ticketTitle}" moved from ${from} to ${to}`,
+          ticketId,
           read: false,
           user,
           createdAt: new Date(),

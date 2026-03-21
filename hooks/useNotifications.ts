@@ -5,16 +5,17 @@ import { type User } from './useUsers';
 import { apiClient } from '@/lib/api-client';
 import { CacheManager } from '@/lib/cache/manager';
 
-export type Notification = InferSelectModel<typeof notifications> & {
+export type Notification = Omit<InferSelectModel<typeof notifications>, 'ticketId'> & {
   user?: User;
+  ticketId?: string | null;
 };
 
 export function useNotifications(options?: { enabled?: boolean }) {
   return useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: () => apiClient.get('/api/notifications'),
-    staleTime: 60 * 1000, // Stay fresh for 1 minute
-    refetchInterval: 60000, // Poll every 60 seconds
+    staleTime: 10 * 1000, // Stay fresh for 10 seconds
+    refetchInterval: 30000, // Poll every 30 seconds
     enabled: options?.enabled ?? true,
   });
 }

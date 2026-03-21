@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tickets, projects, users, organizations } from '@/db/schema';
-import { eq, and, inArray, type InferSelectModel } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { updateTicketSchema } from '@/lib/validations/tickets';
@@ -66,7 +66,7 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     throw new NotFoundError('Ticket not found');
   }
 
-  const updateData: Partial<InferSelectModel<typeof tickets>> & { loggedHours?: number } = {};
+  const updateData: Partial<typeof tickets.$inferInsert> = {};
   if (body.status !== undefined) updateData.status = body.status;
   if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId;
   if (body.title !== undefined) updateData.title = body.title;
@@ -77,9 +77,10 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
   if (body.projectIds !== undefined) updateData.projectIds = body.projectIds;
   if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
-  // Aggregate logged hours if incrementing
+  // Aggregate logged hours if incrementing (Atomic increment to avoid race conditions)
   if (body.addLoggedHours !== undefined) {
-    updateData.loggedHours = (existingTicket.loggedHours || 0) + body.addLoggedHours;
+    // @ts-expect-error - drizzle requires number for type but accepts SQL for runtime updates
+    updateData.loggedHours = sql`${tickets.loggedHours} + ${body.addLoggedHours}`;
   }
 
   if (Object.keys(updateData).length === 0) {

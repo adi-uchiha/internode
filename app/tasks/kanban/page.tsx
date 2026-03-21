@@ -199,7 +199,7 @@ export default function KanbanPage() {
 
   const filteredTickets = tickets.filter((t) => {
     if (filter.priority !== 'all' && t.priority !== filter.priority) return false;
-    if (filter.project !== 'all' && !(t.projects || []).some((p) => p.name === filter.project))
+    if (filter.project !== 'all' && !(t.projects || []).some((p) => p.id === filter.project))
       return false;
     if (filter.search && !t.title.toLowerCase().includes(filter.search.toLowerCase())) return false;
     return true;
@@ -264,13 +264,15 @@ export default function KanbanPage() {
         >
           <SelectTrigger className="w-[150px] bg-card/50 border-border h-10 font-display text-sm">
             <SelectValue placeholder="Project">
-              {filter.project === 'all' ? 'All Projects' : filter.project}
+              {filter.project === 'all'
+                ? 'All Projects'
+                : projectsResponse?.find((p) => p.id === filter.project)?.name}
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="font-display">
             <SelectItem value="all">All Projects</SelectItem>
             {projectsResponse?.map((p) => (
-              <SelectItem key={p.id} value={p.name}>
+              <SelectItem key={p.id} value={p.id}>
                 {p.name}
               </SelectItem>
             ))}
