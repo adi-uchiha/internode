@@ -47,6 +47,6 @@ export const config = {
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      * - Any file with an image extension at root (icon-green.png, icon.svg, etc)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png|.*\\.svg|.*\\.ico|.*\\.jpg).*)',
+    '/((?!api/auth|api/cron|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png|.*\\.svg|.*\\.ico|.*\\.jpg).*)',
   ],
 };
