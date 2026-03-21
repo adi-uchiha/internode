@@ -16,7 +16,8 @@
         "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
         "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_AVATAR",
         "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG",
-        "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT"
+        "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT",
+        "CRON_SECRET"
       ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]

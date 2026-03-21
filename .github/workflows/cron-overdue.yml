@@ -21,10 +21,14 @@ jobs:
         run: |
           echo "Triggering overdue reminders at $(date -u)..."
 
-          response=$(curl -s \
+          # Ensure no double slashes if APP_URL has a trailing slash
+          CLEAN_URL="${APP_URL%/}"
+          echo "Hitting: ${CLEAN_URL}/api/cron/overdue"
+
+          response=$(curl -sL \
             -o /tmp/response.json \
             -w "%{http_code}" \
-            -X GET "${APP_URL}/api/cron/overdue" \
+            -X GET "${CLEAN_URL}/api/cron/overdue" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "Content-Type: application/json")
 
