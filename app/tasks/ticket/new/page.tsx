@@ -23,7 +23,7 @@ import { toast } from '@/lib/toast';
 
 export default function NewTicketPage() {
   const router = useRouter();
-  const { user, orgRole } = useAuth();
+  const { user, orgRole, activeOrgId } = useAuth();
   const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
   const [title, setTitle] = useState('');
@@ -253,7 +253,12 @@ export default function NewTicketPage() {
                   Copy Markdown
                 </Button>
               </div>
-              <MarkdownEditor value={description} onChange={setDescription} minHeight="350px" />
+              <MarkdownEditor
+                value={description}
+                onChange={setDescription}
+                minHeight="350px"
+                uploadContext={activeOrgId ? { orgId: activeOrgId } : undefined}
+              />
             </div>
           </div>
 

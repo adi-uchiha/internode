@@ -7,19 +7,54 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/lib/toast';
 import { ApiKeysManager } from './ApiKeysManager';
+import { LogoUpload } from '@/components/shared/LogoUpload';
+import {
+  useOrganization,
+  useUpdateOrganization,
+  useUpdateOrganizationLogo,
+} from '@/hooks/useOrganization';
 
 export default function SettingsPage() {
-  const { orgRole } = useAuth();
-  const [isSaving, setIsSaving] = useState(false);
+  const { orgRole, activeOrgId } = useAuth();
+  const { data: orgDetails } = useOrganization();
+  const updateOrgMutation = useUpdateOrganization();
+  const updateLogoMutation = useUpdateOrganizationLogo();
 
   const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
+  // Derive initial values from query — state is initialized from orgDetails
+  // Using orgDetails as default prevents the need for a useEffect sync
+  const [orgName, setOrgName] = useState('');
+  const [brandingColor, setBrandingColor] = useState('#00FF80');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Only hydrate once when data first arrives (not on every re-render)
+  if (orgDetails && !isHydrated) {
+    setOrgName(orgDetails.organizationName);
+    if (orgDetails.brandingColor) {
+      setBrandingColor(orgDetails.brandingColor);
+    }
+    setIsHydrated(true);
+  }
+
+  const isSaving = updateOrgMutation.isPending;
+
   const handleSave = async () => {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast.success('Settings updated successfully');
+    try {
+      await updateOrgMutation.mutateAsync({
+        name: orgName,
+      });
+      toast.success('Settings updated successfully');
+    } catch {
+      toast.error('Failed to save settings');
+    }
+  };
+
+  const handleLogoUpload = (url: string) => {
+    updateLogoMutation.mutate(url, {
+      onSuccess: () => toast.success('Logo updated successfully'),
+      onError: () => toast.error('Failed to update logo'),
+    });
   };
 
   if (!isAdmin) {
@@ -52,20 +87,56 @@ export default function SettingsPage() {
           </p>
         </div>
         <div className="md:col-span-2 space-y-6">
-          <div className="p-6 border border-border bg-card/30 space-y-4">
+          <div className="p-6 border border-border bg-card/30 space-y-6">
+            {/* Organization Logo */}
+            <div>
+              <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-3">
+                Organization Logo
+              </label>
+              <div className="flex items-center gap-4">
+                <LogoUpload
+                  currentLogoUrl={orgDetails?.logo}
+                  orgId={activeOrgId ?? ''}
+                  onUploadComplete={handleLogoUpload}
+                />
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Recommended: 256×256px, PNG or WebP
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60 font-mono">
+                    Max file size: 10 MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Organization Name */}
             <div>
               <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                 Organization Name
               </label>
-              <Input placeholder="Enter org name..." defaultValue="Internode" />
+              <Input
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Enter org name..."
+              />
             </div>
+
+            {/* Branding Color */}
             <div>
               <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                 Unified Branding Color
               </label>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary border border-white/20" />
-                <Input defaultValue="#00FF80" className="font-mono" />
+                <div
+                  className="w-10 h-10 border border-white/20 rounded-sm"
+                  style={{ backgroundColor: brandingColor }}
+                />
+                <Input
+                  value={brandingColor}
+                  onChange={(e) => setBrandingColor(e.target.value)}
+                  className="font-mono"
+                />
               </div>
             </div>
           </div>
@@ -98,7 +169,7 @@ export default function SettingsPage() {
               variant="outline"
               className="text-destructive border-destructive/30 hover:bg-destructive/10"
             >
-              Delete Internode
+              Delete {orgDetails?.organizationName || 'Organization'}
             </Button>
           </div>
         </div>

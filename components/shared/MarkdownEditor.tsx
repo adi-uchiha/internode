@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { cn } from '@/lib/utils';
+import { uploadToCloudinary, CloudinaryError, resolveFolder } from '@/lib/cloudinary';
+import { toast } from '@/lib/toast';
 
 interface MarkdownEditorProps {
   value: string;
@@ -11,6 +13,14 @@ interface MarkdownEditorProps {
   placeholder?: string;
   minHeight?: string;
   showPreview?: boolean;
+  /**
+   * When provided, enables image upload via paste and toolbar button.
+   * When absent, the image toolbar button is hidden and paste falls through normally.
+   */
+  uploadContext?: {
+    orgId: string;
+    ticketId?: string;
+  };
 }
 
 const toolbarButtons = [
@@ -123,20 +133,28 @@ export const MarkdownEditor = ({
   placeholder = 'Write markdown...',
   minHeight = '300px',
   showPreview: initialShowPreview = true,
+  uploadContext,
 }: MarkdownEditorProps) => {
   const [showPreview, setShowPreview] = useState(initialShowPreview);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const [uploadingCount, setUploadingCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Use a ref to always have the latest value in async callbacks
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const insertMarkdown = useCallback(
-    (prefix: string, suffix: string, placeholder: string, lineStart?: boolean) => {
+    (prefix: string, suffix: string, mdPlaceholder: string, lineStart?: boolean) => {
       const textarea = textareaRef.current;
       if (!textarea) return;
 
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const selectedText = value.substring(start, end);
-      const textToInsert = selectedText || placeholder;
+      const textToInsert = selectedText || mdPlaceholder;
 
       let newValue: string;
       let newCursorPos: number;
@@ -164,7 +182,7 @@ export const MarkdownEditor = ({
         if (!selectedText) {
           textarea.setSelectionRange(
             start + prefix.length,
-            start + prefix.length + placeholder.length
+            start + prefix.length + mdPlaceholder.length
           );
         } else {
           textarea.setSelectionRange(newCursorPos, newCursorPos);
@@ -172,6 +190,105 @@ export const MarkdownEditor = ({
       });
     },
     [value, onChange]
+  );
+
+  /**
+   * Inserts text at the current cursor position.
+   * Returns the placeholder token for replacement later.
+   */
+  const insertAtCursor = useCallback(
+    (text: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) {
+        // Fallback: append to end
+        onChange(valueRef.current + text);
+        return;
+      }
+
+      const start = textarea.selectionStart;
+      const before = valueRef.current.substring(0, start);
+      const after = valueRef.current.substring(start);
+      const newValue = before + text + after;
+      onChange(newValue);
+    },
+    [onChange]
+  );
+
+  /**
+   * Processes a single image file for upload.
+   * Creates a placeholder, uploads to Cloudinary, then replaces the placeholder.
+   */
+  const processImageUpload = useCallback(
+    (file: File) => {
+      if (!uploadContext) return;
+
+      const placeholderId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const placeholderToken = `![Uploading...][${placeholderId}]`;
+
+      insertAtCursor(placeholderToken);
+      setUploadingCount((c) => c + 1);
+
+      const folder = resolveFolder('content', {
+        orgId: uploadContext.orgId,
+        ticketId: uploadContext.ticketId,
+      });
+
+      uploadToCloudinary({ context: 'content', folder, file })
+        .then((result) => {
+          // Replace the placeholder token with the real markdown image
+          // Use ref to get the latest value
+          onChange(valueRef.current.replace(placeholderToken, `![image](${result.secure_url})`));
+        })
+        .catch((err: unknown) => {
+          const message = err instanceof CloudinaryError ? err.message : 'Upload failed';
+          onChange(valueRef.current.replace(placeholderToken, `![upload failed — ${message}][]`));
+          toast.error(`Image upload failed: ${message}`);
+        })
+        .finally(() => setUploadingCount((c) => c - 1));
+    },
+    [uploadContext, onChange, insertAtCursor]
+  );
+
+  /**
+   * Paste handler: intercepts image paste events to upload inline.
+   * Multiple images in a single paste are uploaded concurrently.
+   */
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!uploadContext) return;
+
+      const imageItems = Array.from(e.clipboardData.items).filter((item) =>
+        item.type.startsWith('image/')
+      );
+
+      if (imageItems.length === 0) return; // let normal text paste proceed
+
+      e.preventDefault();
+
+      for (const item of imageItems) {
+        const file = item.getAsFile();
+        if (!file) continue;
+        processImageUpload(file);
+      }
+    },
+    [uploadContext, processImageUpload]
+  );
+
+  /**
+   * File input change handler for the toolbar upload button.
+   */
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) return;
+
+      for (let i = 0; i < files.length; i++) {
+        processImageUpload(files[i]);
+      }
+
+      e.target.value = '';
+    },
+    [processImageUpload]
   );
 
   const lineNumbers = value.split('\n').length;
@@ -202,6 +319,33 @@ export const MarkdownEditor = ({
             </button>
           );
         })}
+
+        {/* Image Upload Button (only when uploadContext is provided) */}
+        {uploadContext && (
+          <>
+            <div className="w-px h-5 bg-border mx-1" />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload Image"
+              className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors relative"
+            >
+              <Icon icon="solar:gallery-add-linear" className="w-4 h-4" />
+              {uploadingCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-primary text-primary-foreground text-[8px] rounded-full flex items-center justify-center font-bold">
+                  {uploadingCount}
+                </span>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileInputChange}
+            />
+          </>
+        )}
 
         <div className="ml-auto flex gap-1">
           <button
@@ -249,6 +393,16 @@ export const MarkdownEditor = ({
         </div>
       </div>
 
+      {/* Upload Status Bar */}
+      {uploadingCount > 0 && (
+        <div className="px-3 py-1.5 bg-primary/5 border-b border-primary/20 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
+            Uploading {uploadingCount} image{uploadingCount > 1 ? 's' : ''}...
+          </span>
+        </div>
+      )}
+
       {/* Editor Area */}
       <div
         className={cn('grid', showPreview ? 'grid-cols-2' : 'grid-cols-1')}
@@ -267,6 +421,7 @@ export const MarkdownEditor = ({
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
+              onPaste={handlePaste}
               placeholder={placeholder}
               className="w-full h-full pl-10 p-3 bg-muted/50 text-sm font-mono text-foreground placeholder:text-muted-foreground outline-none resize-y"
               style={{ minHeight }}

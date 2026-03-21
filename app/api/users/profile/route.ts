@@ -6,13 +6,19 @@ import { withErrorHandler } from '@/lib/api-handler';
 
 export const PATCH = withErrorHandler(async (req, { session }) => {
   const body = await req.json();
-  const { name, department, notificationSettings, skillTags } = body;
+  const { name, image, department, notificationSettings, skillTags } = body;
 
-  // Update user name and settings
+  // Validate Cloudinary URL if image is provided
+  const CLOUDINARY_URL_PREFIX = 'https://res.cloudinary.com/';
+  const validatedImage =
+    typeof image === 'string' && image.startsWith(CLOUDINARY_URL_PREFIX) ? image : undefined;
+
+  // Update user name, image, and settings
   await db
     .update(users)
     .set({
       name,
+      image: validatedImage,
       notificationSettings,
       updatedAt: new Date(),
     })

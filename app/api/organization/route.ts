@@ -5,7 +5,8 @@ import { NextResponse } from 'next/server';
 import { withErrorHandler } from '@/lib/api-handler';
 
 export const GET = withErrorHandler(async (req, { orgId }) => {
-  if (!orgId) return NextResponse.json({ organizationName: '', organizationDomain: '' });
+  if (!orgId)
+    return NextResponse.json({ organizationName: '', organizationDomain: '', logo: null });
 
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, orgId),
@@ -14,21 +15,28 @@ export const GET = withErrorHandler(async (req, { orgId }) => {
   return NextResponse.json({
     organizationName: org?.name || '',
     organizationDomain: org?.slug || '',
+    logo: org?.logo ?? null,
   });
 });
 
 export const PATCH = withErrorHandler(
   async (req, { orgId }) => {
     const body = await req.json();
-    const { organizationName, organizationDomain } = body;
+    const { organizationName, organizationDomain, logo } = body;
 
     if (!orgId) throw new Error('No active organization');
+
+    // Validate Cloudinary URL if logo is provided
+    const CLOUDINARY_URL_PREFIX = 'https://res.cloudinary.com/';
+    const validatedLogo =
+      typeof logo === 'string' && logo.startsWith(CLOUDINARY_URL_PREFIX) ? logo : undefined;
 
     await db
       .update(organizations)
       .set({
         name: organizationName,
         slug: organizationDomain,
+        logo: validatedLogo,
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, orgId));

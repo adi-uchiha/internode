@@ -7,6 +7,7 @@ import { NotificationDomain } from './domains/notifications';
 import { SearchDomain } from './domains/search';
 import { InviteDomain } from './domains/invites';
 import { BreakthroughDomain } from './domains/breakthroughs';
+import { OrganizationDomain } from './domains/organizations';
 import { dispatchSynergy } from './sync-registry';
 
 /**
@@ -23,6 +24,7 @@ export const CacheManager = {
   search: SearchDomain,
   invites: InviteDomain,
   breakthroughs: BreakthroughDomain,
+  organizations: OrganizationDomain,
   dispatch: dispatchSynergy,
 
   /**

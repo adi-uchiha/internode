@@ -4,14 +4,16 @@ import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTickets } from '@/hooks/useTickets';
 import { useActivities } from '@/hooks/useActivities';
+import { useUpdateProfile } from '@/hooks/useUsers';
 import { Button } from '@/components/ui/button';
+import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { format, subDays, startOfDay, isSameDay } from 'date-fns';
-import Image from 'next/image';
 
 export default function ProfilePage() {
   const { user, orgRole, logout } = useAuth();
+  const updateProfileMutation = useUpdateProfile();
 
   const { data: tickets } = useTickets({ assigneeId: user?.id });
   const { data: activities } = useActivities({ userId: user?.id, limit: 10 });
@@ -88,24 +90,12 @@ export default function ProfilePage() {
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -z-10" />
         <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="relative">
-            {user?.image ? (
-              <Image
-                src={user.image}
-                alt={user.name || 'User'}
-                width={96}
-                height={96}
-                className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 transition-all group-hover:ring-primary/50"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full border-4 border-background shadow-xl ring-2 ring-primary/20 bg-muted flex items-center justify-center transition-all group-hover:ring-primary/50">
-                <Icon icon="solar:user-bold-duotone" className="w-12 h-12 text-muted-foreground" />
-              </div>
-            )}
-            <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary border-4 border-card flex items-center justify-center">
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            </div>
-          </div>
+          <AvatarUpload
+            currentImageUrl={user?.image}
+            userId={user?.id ?? ''}
+            size="lg"
+            onUploadComplete={(url) => updateProfileMutation.mutate({ id: user?.id, image: url })}
+          />
           <div className="text-center md:text-left flex-1">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>

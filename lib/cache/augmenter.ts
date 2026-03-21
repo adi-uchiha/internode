@@ -1,6 +1,15 @@
 import { QueryClient } from '@tanstack/react-query';
 import { type User } from '@/hooks/useUsers';
 import { type Project } from '@/hooks/useProjects';
+import { type OrganizationDetails } from '@/hooks/useOrganization';
+
+interface OrganizationListItem {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string | null;
+  [key: string]: unknown;
+}
 
 /**
  * The Augmenter layer hydrates raw database models with rich relational data
@@ -88,5 +97,20 @@ export const CacheAugmenter = {
       return undefined;
     }
     return found;
+  },
+
+  /**
+   * Resolves the logo URL for a given organization from the cache.
+   * First checks active-organization-details, then falls back to list-organizations.
+   */
+  orgLogo: (queryClient: QueryClient, orgId: string): string | null => {
+    const orgDetails = queryClient.getQueryData<OrganizationDetails>([
+      'active-organization-details',
+    ]);
+    if (orgDetails?.id === orgId && orgDetails.logo) return orgDetails.logo;
+
+    // Fall back to the list cache
+    const orgs = queryClient.getQueryData<OrganizationListItem[]>(['list-organizations']);
+    return orgs?.find((o) => o.id === orgId)?.logo ?? null;
   },
 };

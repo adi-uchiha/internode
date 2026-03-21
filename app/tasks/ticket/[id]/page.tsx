@@ -409,6 +409,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 value={editForm.description || ''}
                 onChange={(val) => setEditForm({ ...editForm, description: val })}
                 minHeight="400px"
+                uploadContext={{ orgId: ticket.organizationId, ticketId: ticket.id }}
               />
             ) : (
               <div className="border border-border/50 bg-card p-8 shadow-sm relative overflow-hidden group">
