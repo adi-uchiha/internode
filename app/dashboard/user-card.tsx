@@ -4,6 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import NextImage from 'next/image';
 import { SessionDetails } from '@/components/shared/SessionDetails';
 import type { Session } from '@/lib/auth-types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function UserCard({ session }: { session: Session }) {
   const { logout } = useAuth();
@@ -40,12 +51,29 @@ export default function UserCard({ session }: { session: Session }) {
         <SessionDetails session={session} />
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="mt-6 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-      >
-        Sign Out
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger
+          render={
+            <button className="mt-6 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800" />
+          }
+        >
+          Sign Out
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign back in to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} variant="destructive">
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

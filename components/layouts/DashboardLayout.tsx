@@ -12,6 +12,17 @@ import { useNotifications, useMarkNotificationsRead } from '@/hooks/useNotificat
 import Image from 'next/image';
 import { getFeatureStatus } from '@/lib/feature-flags';
 import { OrgSwitcher } from '@/components/auth/OrgSwitcher';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface NavSubItem {
   label: string;
@@ -300,15 +311,34 @@ export const DashboardLayout = ({ children, navItems, title }: DashboardLayoutPr
             </AnimatePresence>
           </Link>
 
-          <Button
-            variant="hero"
-            size="sm"
-            onClick={handleLogout}
-            className={cn('w-full justify-start mt-2', collapsed && 'justify-center px-0')}
-          >
-            <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
-            {!collapsed && <span className="ml-2">Logout</span>}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className={cn('w-full justify-start mt-2', collapsed && 'justify-center px-0')}
+                />
+              }
+            >
+              <Icon icon="solar:logout-2-linear" className="w-4 h-4" />
+              {!collapsed && <span className="ml-2">Logout</span>}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You will need to log back in to access your organization and dashboard.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout} variant="destructive">
+                  Log out
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </motion.aside>
 

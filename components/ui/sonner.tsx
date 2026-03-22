@@ -25,7 +25,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-bg': 'hsl(var(--card))',
           '--normal-text': 'hsl(var(--card-foreground))',
           '--normal-border': 'hsl(var(--border))',
-          '--border-radius': '12px',
+          '--border-radius': '0px',
           '--success-bg': 'hsl(var(--card))',
           '--success-text': 'hsl(var(--primary))',
           '--success-border': 'hsl(var(--primary) / 0.2)',
@@ -43,7 +43,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast group rounded-xl border bg-card text-card-foreground border-border shadow-lg px-4 py-3 min-w-[350px] transition-all duration-300 ease-in-out',
+            'cn-toast group rounded-none border bg-card text-card-foreground border-border shadow-lg px-4 py-3 min-w-[350px] transition-all duration-300 ease-in-out',
           success: 'success-toast !border-primary/20 !bg-card',
           error: 'error-toast !border-destructive/20 !bg-card',
           warning: 'warning-toast !border-yellow-500/20 !bg-card',
@@ -51,9 +51,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           title: 'text-sm font-semibold tracking-tight font-sans text-foreground',
           description: 'text-xs text-muted-foreground font-sans mt-1',
           actionButton:
-            'bg-primary text-primary-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity',
+            'bg-primary text-primary-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-none hover:opacity-90 transition-opacity',
           cancelButton:
-            'bg-muted text-muted-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-md hover:bg-muted/80 transition-colors',
+            'bg-muted text-muted-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-none hover:bg-muted/80 transition-colors',
           icon: 'mt-0.5',
         },
       }}

@@ -12,6 +12,17 @@ import { cn } from '@/lib/utils';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeSwitchOrganization } from '@/lib/auth-utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -379,15 +390,34 @@ function AcceptInviteContent() {
                       )}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 font-mono text-[10px] w-fit hover:bg-destructive/10 hover:text-destructive self-end"
-                    onClick={handleSwitchAccount}
-                  >
-                    <Icon icon="solar:user-plus-linear" className="w-3 h-3 mr-1" />
-                    Sign in with a different account
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 font-mono text-[10px] w-fit hover:bg-destructive/10 hover:text-destructive self-end"
+                        />
+                      }
+                    >
+                      <Icon icon="solar:user-plus-linear" className="w-3 h-3 mr-1" />
+                      Sign in with a different account
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          You will need to sign in again to accept the invitation.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSwitchAccount} variant="destructive">
+                          Log out
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
 
                 <Button

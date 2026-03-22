@@ -10,6 +10,17 @@ import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import { format, subDays, startOfDay, isSameDay } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function ProfilePage() {
   const { user, orgRole, logout } = useAuth();
@@ -313,13 +324,32 @@ export default function ProfilePage() {
               </Button>
             </div>
             <div className="pt-6 border-t border-border/50">
-              <button
-                onClick={() => logout()}
-                className="flex items-center gap-2 font-mono text-xs text-destructive hover:underline transition-all px-2"
-              >
-                <Icon icon="solar:logout-linear" className="w-4 h-4" />
-                TERMINATE SESSION
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <button className="flex items-center gap-2 font-mono text-xs text-destructive hover:underline transition-all px-2" />
+                  }
+                >
+                  <Icon icon="solar:logout-linear" className="w-4 h-4" />
+                  TERMINATE SESSION
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you sure you want to terminate your session?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You will need to log back in to access your organization and dashboard.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => logout()} variant="destructive">
+                      Log out
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
 
