@@ -5,6 +5,7 @@ import { eq, and, inArray, sql } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { updateTicketSchema } from '@/lib/validations/tickets';
+import { sanitizeHtml } from '@/lib/sanitizer';
 import { EmailService } from '@/lib/email/service';
 import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
 
@@ -74,7 +75,9 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
   if (body.status !== undefined) updateData.status = body.status;
   if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId;
   if (body.title !== undefined) updateData.title = body.title;
-  if (body.description !== undefined) updateData.description = body.description;
+  if (body.description !== undefined) {
+    updateData.description = body.description ? sanitizeHtml(body.description) : '';
+  }
   if (body.priority !== undefined) updateData.priority = body.priority;
   if (body.estimatedHours !== undefined) updateData.estimatedHours = body.estimatedHours;
   if (body.labels !== undefined) updateData.labels = body.labels;

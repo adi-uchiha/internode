@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { logTimeSchema } from '@/lib/validations/tickets';
+import { sanitizeHtml } from '@/lib/sanitizer';
 import { NotificationService } from '@/lib/notifications';
 import { EmailService } from '@/lib/email/service';
 import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
@@ -35,7 +36,7 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       ticketId: existingTicket.id, // always use internal PK
       userId: session!.user.id,
       hours: body.hours,
-      note: body.note || '',
+      note: body.note ? sanitizeHtml(body.note) : '',
       date: new Date(body.date),
       isBreakthrough: body.isBreakthrough,
     })

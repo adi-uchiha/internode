@@ -1,6 +1,6 @@
 import express, { Response, NextFunction } from 'express';
-import { Request } from 'express-serve-static-core';
 import cors from 'cors';
+import { NEXT_PUBLIC_APP_URL } from '../lib/env';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHash, randomUUID } from 'crypto';
@@ -11,9 +11,10 @@ import { registerTicketsTools } from './tools';
 
 const app = express();
 
-// Hardened CORS to ensure the bridge can read the session headers
+// Hardened CORS to restrict origins to the main app URL
 app.use(
   cors({
+    origin: NEXT_PUBLIC_APP_URL || '*',
     exposedHeaders: ['mcp-session-id', 'mcp-protocol-version', 'Authorization'],
   })
 );
@@ -48,9 +49,13 @@ const createMcpInstance = (orgId: string, userId: string) => {
   return transport;
 };
 
+interface McpRequest extends express.Request {
+  mcpProxyIdentity?: { userId: string; orgId: string };
+  auth?: { userId: string; orgId: string };
+}
+
 // Robust Auth Middleware
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function mcpAuthMiddleware(req: any, res: Response, next: NextFunction) {
+async function mcpAuthMiddleware(req: McpRequest, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
@@ -91,51 +96,62 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-app.all('/api/mcp/sse', mcpAuthMiddleware, async (req: Request, res: Response) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const identity = (req as any).mcpProxyIdentity;
+app.all(
+  '/api/mcp/sse',
+  mcpAuthMiddleware as express.RequestHandler,
+  async (req: express.Request, res: Response) => {
+    const identity = (req as McpRequest).mcpProxyIdentity;
+    if (!identity) return res.status(401).json({ error: 'Unauthorized' });
 
-  const incomingSessionId =
-    (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+    const incomingSessionId =
+      (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
 
-  let transport: StreamableHTTPServerTransport | undefined;
+    let transport: StreamableHTTPServerTransport | undefined;
 
-  if (incomingSessionId) {
-    const entry = activeSessions.get(incomingSessionId);
-    if (entry) {
-      // Validate identity ownership to prevent cross-account hijacking
-      if (entry.identity.userId !== identity.userId || entry.identity.orgId !== identity.orgId) {
-        console.warn(`[MCP Security] Hijack attempt detected for session ${incomingSessionId}`);
-        return res.status(403).json({ error: 'Session ownership mismatch' });
+    if (incomingSessionId) {
+      const entry = activeSessions.get(incomingSessionId);
+      if (entry) {
+        // Validate identity ownership to prevent cross-account hijacking
+        if (entry.identity.userId !== identity.userId || entry.identity.orgId !== identity.orgId) {
+          console.warn(`[MCP Security] Hijack attempt detected for session ${incomingSessionId}`);
+          return res.status(403).json({ error: 'Session ownership mismatch' });
+        }
+        transport = entry.transport;
+        console.log(`[MCP] Using active session: ${incomingSessionId}`);
       }
-      transport = entry.transport;
-      console.log(`[MCP] Using active session: ${incomingSessionId}`);
-    }
-  }
-
-  if (!transport) {
-    if (activeSessions.size >= MAX_CONCURRENT_SESSIONS) {
-      return res.status(503).json({ error: 'Capacity reached' });
     }
 
-    console.log(`[MCP] Bootstrapping new session for Org: ${identity.orgId}`);
-    transport = createMcpInstance(identity.orgId, identity.userId);
-  }
+    if (!transport) {
+      if (activeSessions.size >= MAX_CONCURRENT_SESSIONS) {
+        return res.status(503).json({ error: 'Capacity reached' });
+      }
 
-  try {
-    // Explicitly delegate to SDK with header/body support
-    await transport.handleRequest(req, res, req.body);
-  } catch (error) {
-    console.error('[MCP Pipe Error]:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal Error' });
+      console.log(`[MCP] Bootstrapping new session for Org: ${identity.orgId}`);
+      transport = createMcpInstance(identity.orgId, identity.userId);
+    }
+
+    try {
+      // Explicitly delegate to SDK with header/body support
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      console.error('[MCP Pipe Error]:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal Error' });
+      }
     }
   }
-});
+);
 
-const PORT = process.env.PORT || 8080;
+const rawPort = process.env.PORT || 8080;
+const PORT = typeof rawPort === 'string' ? parseInt(rawPort, 10) : rawPort;
+
+if (isNaN(PORT as number)) {
+  console.error(`❌ Invalid PORT: ${rawPort}`);
+  process.exit(1);
+}
+
 const httpServer = app.listen(PORT, () => {
-  console.log(`🚀 Internode MCP (Validated Mode) on port ${PORT}...`);
+  console.log(`🚀 Internode MCP (Hardened Mode) on port ${PORT}...`);
 });
 
 process.on('SIGTERM', () => httpServer.close(() => process.exit(0)));

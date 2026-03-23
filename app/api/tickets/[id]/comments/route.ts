@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { createCommentSchema } from '@/lib/validations/tickets';
+import { sanitizeHtml } from '@/lib/sanitizer';
 import { EmailService } from '@/lib/email/service';
 import { NEXT_PUBLIC_APP_URL } from '@/lib/env';
 
@@ -63,9 +64,12 @@ export const POST = withErrorHandler(async (request, { params, session, orgId })
       organizationId: orgId!,
       ticketId: ticket.id, // always use internal PK
       userId: session!.user.id,
-      content: body.content,
+      content: sanitizeHtml(body.content),
     })
     .returning();
+
+  // Update ticket timestamp
+  await db.update(tickets).set({ updatedAt: new Date() }).where(eq(tickets.id, ticket.id));
 
   // Fetch full comment with user to reconcile cache
   const fullComment = await db.query.comments.findFirst({

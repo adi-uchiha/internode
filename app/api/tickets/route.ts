@@ -12,6 +12,7 @@ import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
 import { createTicketSchema } from '@/lib/validations/tickets';
+import { sanitizeHtml } from '@/lib/sanitizer';
 
 export const GET = withErrorHandler(async (request, { orgId }) => {
   const { searchParams } = new URL(request.url);
@@ -107,7 +108,7 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
       organizationId: orgId!,
       ticketId: sequentialTicketId,
       title: body.title,
-      description: body.description || '',
+      description: body.description ? sanitizeHtml(body.description) : '',
       status: body.status,
       priority: body.priority,
       assigneeId: body.assigneeId,

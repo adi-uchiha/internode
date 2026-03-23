@@ -11,6 +11,9 @@ import { createHash } from 'crypto';
 import { isAtLeast } from './rbac';
 import { OrgRole } from './org-utils';
 
+import { logger } from './logger';
+import { rateLimit } from './rate-limit';
+
 type HandlerContext = {
   params: Promise<Record<string, string>>;
   session?: Session;
@@ -139,6 +142,17 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           }
         }
 
+        // 1. GLOBAL RATE LIMITING (Basic protection)
+        const ip = req.headers.get('x-forwarded-for') || 'unknown';
+        const rl = rateLimit(ip, { limit: 100, windowMs: 60 * 1000 }); // 100 req/min
+        if (!rl.success) {
+          logger.warn(`Rate limit exceeded for IP: ${ip}`, { url: req.url });
+          return NextResponse.json(
+            { error: 'Too many requests', retryAfter: rl.reset },
+            { status: 429, headers: { 'Retry-After': rl.reset.toString() } }
+          );
+        }
+
         return await handler(req, {
           params: context.params,
           session: session || undefined,
@@ -150,13 +164,28 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
 
       const safeSession = session as Session | null;
 
+      // 1. GLOBAL RATE LIMITING (Basic protection)
+      const ip = req.headers.get('x-forwarded-for') || 'unknown';
+      const rl = rateLimit(ip, { limit: 100, windowMs: 60 * 1000 }); // 100 req/min
+      if (!rl.success) {
+        logger.warn(`Rate limit exceeded for IP: ${ip}`, { url: req.url });
+        return NextResponse.json(
+          { error: 'Too many requests', retryAfter: rl.reset },
+          { status: 429, headers: { 'Retry-After': rl.reset.toString() } }
+        );
+      }
+
       return await handler(req, {
         params: context.params,
         session: safeSession || undefined,
         orgId: safeSession?.session?.activeOrganizationId || undefined,
       });
     } catch (error) {
-      console.error('[API_ERROR]', error);
+      logger.error(`[API_ERROR]`, {
+        url: req.url,
+        method: req.method,
+        error: error instanceof Error ? error.stack : error,
+      });
 
       if (error instanceof ApiError) {
         return NextResponse.json(
