@@ -1,6 +1,5 @@
 import express, { Response, NextFunction } from 'express';
 import cors from 'cors';
-import { NEXT_PUBLIC_APP_URL } from '../lib/env';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createHash, randomUUID } from 'crypto';
@@ -11,10 +10,11 @@ import { registerTicketsTools } from './tools';
 
 const app = express();
 
-// Hardened CORS to restrict origins to the main app URL
+// Wildcard CORS is required for compatibility with various IDE agents (Cursor, Antigravity, etc.)
+// Security is enforced via API Key authentication in mcpAuthMiddleware.
 app.use(
   cors({
-    origin: NEXT_PUBLIC_APP_URL || '*',
+    origin: '*',
     exposedHeaders: ['mcp-session-id', 'mcp-protocol-version', 'Authorization'],
   })
 );
