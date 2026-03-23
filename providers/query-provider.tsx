@@ -13,14 +13,21 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         queryCache: new QueryCache({
           onError: (error) => {
             if (error instanceof ApiClientError) {
-              console.error('[Global Query Error]', error);
+              // Only toast for generic queries if they are not background fetches or similar
+              // Usually queries don't need toasts unless they are explicit page loads
+              // But per user request, we keep detailed info
+              toast.error(error.message, {
+                description: `Error Code: ${error.code}`,
+              });
             }
           },
         }),
         mutationCache: new MutationCache({
           onError: (error) => {
             if (error instanceof ApiClientError) {
-              console.error('[Global Mutation Error]', error);
+              toast.error(error.message, {
+                description: `Error Code: ${error.code} ${error.details ? JSON.stringify(error.details) : ''}`,
+              });
             } else if (error instanceof Error) {
               toast.error(error.message);
             }

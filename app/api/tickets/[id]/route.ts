@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets, projects, users, organizations } from '@/db/schema';
+import { tickets, users, organizations, ticketProjects } from '@/db/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
@@ -20,6 +20,18 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
     with: {
       assignee: true,
       createdBy: true,
+      projects: {
+        with: {
+          project: {
+            columns: {
+              id: true,
+              name: true,
+              prefix: true,
+              color: true,
+            },
+          },
+        },
+      },
       timeLogs: {
         with: {
           user: true,
@@ -33,20 +45,12 @@ export const GET = withErrorHandler(async (request, { params, orgId }) => {
     throw new NotFoundError('Ticket not found');
   }
 
-  // Resolve project names from projectIds
-  const ticketProjectIds = ticket.projectIds || [];
-  let resolvedProjects: { id: string; name: string }[] = [];
-  if (ticketProjectIds.length > 0) {
-    const projectRows = await db
-      .select({ id: projects.id, name: projects.name })
-      .from(projects)
-      .where(and(inArray(projects.id, ticketProjectIds), eq(projects.organizationId, orgId!)));
-    resolvedProjects = ticketProjectIds
-      .map((pid) => projectRows.find((p) => p.id === pid))
-      .filter((p): p is { id: string; name: string } => !!p);
-  }
+  const formattedTicket = {
+    ...ticket,
+    projects: ticket.projects.map((p) => p.project),
+  };
 
-  return NextResponse.json({ ...ticket, projects: resolvedProjects });
+  return NextResponse.json(formattedTicket);
 });
 
 export const PATCH = withErrorHandler(async (request, { params, session, orgId }) => {
@@ -74,7 +78,6 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
   if (body.priority !== undefined) updateData.priority = body.priority;
   if (body.estimatedHours !== undefined) updateData.estimatedHours = body.estimatedHours;
   if (body.labels !== undefined) updateData.labels = body.labels;
-  if (body.projectIds !== undefined) updateData.projectIds = body.projectIds;
   if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
   // Aggregate logged hours if incrementing (Atomic increment to avoid race conditions)
@@ -94,6 +97,25 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     .set(updateData)
     .where(and(ticketQuery, eq(tickets.organizationId, orgId!)))
     .returning();
+
+  // Sync projects junction table
+  if (body.projectIds !== undefined) {
+    await db.transaction(async (tx) => {
+      // Delete existing
+      await tx.delete(ticketProjects).where(eq(ticketProjects.ticketId, updatedTicketRaw.id));
+
+      // Insert new
+      if (body.projectIds && body.projectIds.length > 0) {
+        await tx.insert(ticketProjects).values(
+          body.projectIds.map((projectId) => ({
+            ticketId: updatedTicketRaw.id,
+            projectId,
+            organizationId: orgId!,
+          }))
+        );
+      }
+    });
+  }
 
   // --- Email + Notification Triggers (fire-and-forget) ---
   if (updatedTicketRaw) {
@@ -127,6 +149,7 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
               assigneeName: assignee.name,
               assignerName: session!.user.name || session!.user.email,
               ticketShortId,
+              ticketId: existingTicket.id,
               ticketTitle,
               ticketUrl,
             },
@@ -184,6 +207,18 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     with: {
       assignee: true,
       createdBy: true,
+      projects: {
+        with: {
+          project: {
+            columns: {
+              id: true,
+              name: true,
+              prefix: true,
+              color: true,
+            },
+          },
+        },
+      },
       timeLogs: {
         with: {
           user: true,
@@ -199,20 +234,14 @@ export const PATCH = withErrorHandler(async (request, { params, session, orgId }
     },
   });
 
-  // Resolve project names from projectIds (matches GET /tickets logic)
-  const ticketProjectIds = fullTicket?.projectIds || [];
-  let resolvedProjects: { id: string; name: string }[] = [];
-  if (ticketProjectIds.length > 0) {
-    const projectRows = await db
-      .select({ id: projects.id, name: projects.name })
-      .from(projects)
-      .where(and(inArray(projects.id, ticketProjectIds), eq(projects.organizationId, orgId!)));
-    resolvedProjects = ticketProjectIds
-      .map((pid) => projectRows.find((p) => p.id === pid))
-      .filter((p): p is { id: string; name: string } => !!p);
-  }
+  const formattedTicket = fullTicket
+    ? {
+        ...fullTicket,
+        projects: fullTicket.projects.map((p) => p.project),
+      }
+    : null;
 
-  return NextResponse.json({ ...fullTicket, projects: resolvedProjects });
+  return NextResponse.json(formattedTicket);
 });
 
 export const DELETE = withErrorHandler(

@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     retry: 1,
   });
 
-  const orgRole: OrgRole = (memberData?.role as OrgRole) ?? 'member';
+  const orgRole: OrgRole = isMemberPending ? 'member' : ((memberData?.role as OrgRole) ?? 'member');
 
   // ── 4. Org Readiness Gate ───────────────────────────────────────────────────
   // The system is "org ready" when:

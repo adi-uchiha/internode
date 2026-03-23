@@ -36,6 +36,7 @@ export interface TicketAssignedPayload extends BaseEmailPayload {
   assignerName: string;
   /** Short human-readable ticket ID e.g. "VELO-12" */
   ticketShortId: string;
+  ticketId: string;
   ticketTitle: string;
   ticketUrl: string;
 }

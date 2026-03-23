@@ -290,6 +290,7 @@ All tables use `nanoid()` as a string PK generated in application code. While th
 ### 🟡 `console.log` / `console.error` used as the only observability mechanism
 
 No structured logging library (like `pino`) or error monitoring (Sentry) is integrated. In production, diagnosing issues requires manually grepping raw logs.
+It is hosted on vercel and MCP is hosted on Render.
 
 ### 🟡 `data` directory appears empty / unused
 

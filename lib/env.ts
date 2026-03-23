@@ -11,6 +11,11 @@ function requireEnv(key: string): string {
   if (typeof window !== 'undefined') {
     // Return empty string on the client for private vars to avoid crash.
     // Public vars are handled separately below.
+    if (process.env.NODE_ENV === 'development' && !key.startsWith('NEXT_PUBLIC_')) {
+      console.warn(
+        `[env] Attempted to access server-only environment variable "${key}" on the client.`
+      );
+    }
     return process.env[key] || '';
   }
 
@@ -46,6 +51,14 @@ if (typeof window === 'undefined') {
   }
   if (!NEXT_PUBLIC_APP_NAME) {
     throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_APP_NAME"');
+  }
+  if (!NEXT_PUBLIC_MCP_URL) {
+    throw new Error('[env] Missing required environment variable: "NEXT_PUBLIC_MCP_URL"');
+  }
+  if (!NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
+    throw new Error(
+      '[env] Missing required environment variable: "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"'
+    );
   }
 }
 

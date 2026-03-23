@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { auth } from './auth';
-import { Session } from './auth-types';
+import { Session, NotificationSettings } from './auth-types';
 import { ApiError, ValidationError } from './api-error';
-import { members } from '@/db/schema';
-import { type InferSelectModel } from 'drizzle-orm';
+import { db } from '@/db';
+import { members, apiKeys, users } from '@/db/schema';
+import { type InferSelectModel, eq, and } from 'drizzle-orm';
 import { CRON_SECRET } from './env';
+import { createHash } from 'crypto';
+import { isAtLeast } from './rbac';
+import { OrgRole } from './org-utils';
 
 type HandlerContext = {
   params: Promise<Record<string, string>>;
   session?: Session;
   orgId?: string;
-  orgRole?: import('./org-utils').OrgRole;
+  orgRole?: OrgRole;
   member?: InferSelectModel<typeof members>;
 };
 
@@ -34,13 +38,8 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
         const authHeader = req.headers.get('authorization') || reqHeaders.get('authorization');
 
         if (authHeader && authHeader.startsWith('Bearer ')) {
-          const { createHash } = await import('crypto');
           const rawToken = authHeader.replace('Bearer ', '');
           const hashedToken = createHash('sha256').update(rawToken).digest('hex');
-
-          const { db } = await import('@/db');
-          const { apiKeys, users } = await import('@/db/schema');
-          const { eq } = await import('drizzle-orm');
 
           const apiKeyData = await db.query.apiKeys.findFirst({
             where: eq(apiKeys.id, hashedToken),
@@ -53,8 +52,8 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           userId = apiKeyData.userId;
           orgId = apiKeyData.organizationId;
 
-          // Track usage (fire-and-forget but awaited for safety in core handler)
-          void db
+          // Track usage (awaited for safety)
+          await db
             .update(apiKeys)
             .set({ lastUsedAt: new Date() })
             .where(eq(apiKeys.id, apiKeyData.id))
@@ -79,6 +78,7 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
               expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
               ipAddress: null,
               userAgent: null,
+              token: '',
             },
             user: {
               id: userData.id,
@@ -88,9 +88,13 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
               image: userData.image,
               createdAt: userData.createdAt,
               updatedAt: userData.updatedAt,
-              notificationSettings: userData.notificationSettings,
+              joinDate: userData.createdAt,
+              notificationSettings: (userData.notificationSettings || {
+                email: {},
+                inApp: {},
+              }) as NotificationSettings,
             },
-          } as unknown as Session;
+          };
         } else {
           const authSession = await auth.api.getSession({
             headers: reqHeaders,
@@ -109,11 +113,11 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           }
         }
 
-        // Fetch user context from members table
-        const { db } = await import('@/db');
-        const { members } = await import('@/db/schema');
-        const { and, eq } = await import('drizzle-orm');
+        if (!userId) {
+          throw new ApiError('Unauthorized: No user ID', 401, 'unauthorized');
+        }
 
+        // Fetch user context from members table
         const memberData = await db.query.members.findFirst({
           where: and(eq(members.userId, userId), eq(members.organizationId, orgId)),
         });
@@ -122,13 +126,11 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           throw new ApiError('Not a member of this organization', 403, 'not_a_member');
         }
 
-        const { isAtLeast } = await import('./rbac');
-
         if (options.requiredRole) {
-          const userRole = memberData.role as import('./org-utils').OrgRole;
+          const userRole = memberData.role as OrgRole;
           const roles = Array.isArray(options.requiredRole)
-            ? (options.requiredRole as import('./org-utils').OrgRole[])
-            : [options.requiredRole as import('./org-utils').OrgRole];
+            ? (options.requiredRole as OrgRole[])
+            : [options.requiredRole as OrgRole];
 
           const hasAccess = roles.some((reqRole) => isAtLeast(userRole, reqRole));
 
@@ -141,7 +143,7 @@ export function withErrorHandler(handler: ApiHandler, options: HandlerOptions = 
           params: context.params,
           session: session || undefined,
           orgId: orgId || undefined,
-          orgRole: (memberData.role as import('./org-utils').OrgRole) || undefined,
+          orgRole: (memberData.role as OrgRole) || undefined,
           member: memberData as InferSelectModel<typeof members>,
         });
       }

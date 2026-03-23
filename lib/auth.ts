@@ -3,11 +3,16 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { NEXT_PUBLIC_APP_URL } from './env';
+import {
+  NEXT_PUBLIC_APP_URL,
+  BETTER_AUTH_URL,
+  GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET,
+} from './env';
 import { EmailService } from './email/service';
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: BETTER_AUTH_URL,
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
@@ -33,6 +38,8 @@ export const auth = betterAuth({
               userName: user.name || user.email.split('@')[0],
               dashboardUrl: NEXT_PUBLIC_APP_URL,
             },
+          }).catch((err) => {
+            console.error('[auth:databaseHooks] Failed to send welcome email:', err);
           });
         },
       },
@@ -66,6 +73,8 @@ export const auth = betterAuth({
             expiresInDays: 7,
             baseUrl: NEXT_PUBLIC_APP_URL,
           },
+        }).catch((err) => {
+          console.error('[auth:plugins] Failed to send invitation email:', err);
         });
       },
     }),
@@ -82,8 +91,8 @@ export const auth = betterAuth({
   },
   socialProviders: {
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      clientId: GITHUB_CLIENT_ID,
+      clientSecret: GITHUB_CLIENT_SECRET,
       mapProfileToUser: (profile) => {
         return {
           username: profile.login,

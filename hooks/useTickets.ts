@@ -24,11 +24,29 @@ export type TicketWithRelations = InferSelectModel<typeof tickets> & {
   timeLogs?: TimeLogWithUser[];
 };
 
-export function useTickets(params?: { projectId?: string; assigneeId?: string }) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
+export interface TicketSearchParams {
+  projectId?: string;
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export function useTickets(params?: TicketSearchParams) {
+  const queryParams = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    });
+  }
+  const queryString = queryParams.toString();
+
   return useQuery<TicketWithRelations[]>({
-    queryKey: params ? ['tickets', params] : ['tickets'],
-    queryFn: () => apiClient.get(`/api/tickets${query ? `?${query}` : ''}`),
+    queryKey: ['tickets', params],
+    queryFn: () => apiClient.get(`/api/tickets${queryString ? `?${queryString}` : ''}`),
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 }

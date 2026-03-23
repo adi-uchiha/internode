@@ -156,7 +156,7 @@ export const EmailService = {
     // Always create in-app notification regardless of email preference
     await NotificationService.notifyAssignment({
       organizationId: params.organizationId,
-      ticketId: params.payload.ticketShortId,
+      ticketId: params.payload.ticketId, // Use the full ticket UUID (params.payload.ticketId) not short ID
       ticketTitle: params.payload.ticketTitle,
       assigneeId: params.assigneeId,
       assignerName: params.payload.assignerName,
@@ -211,21 +211,25 @@ export const EmailService = {
       'ticketStatusChanged'
     );
 
-    for (const recipient of eligibleRecipients.filter((r) => enabledUserIds.includes(r.userId))) {
-      const html = await render(
-        TicketStatusEmail({
-          ...payload,
-          recipientName: recipient.name,
-          baseUrl: NEXT_PUBLIC_APP_URL,
-        })
-      );
-      await dispatch({
-        to: recipient.email,
-        subject: `[${payload.ticketShortId}] Status changed to ${payload.newStatus}`,
-        html,
-        context: 'ticket-status-changed',
+    const emailPromises = eligibleRecipients
+      .filter((r) => enabledUserIds.includes(r.userId))
+      .map(async (recipient) => {
+        const html = await render(
+          TicketStatusEmail({
+            ...payload,
+            recipientName: recipient.name,
+            baseUrl: NEXT_PUBLIC_APP_URL,
+          })
+        );
+        await dispatch({
+          to: recipient.email,
+          subject: `[${payload.ticketShortId}] Status changed to ${payload.newStatus}`,
+          html,
+          context: 'ticket-status-changed',
+        });
       });
-    }
+
+    await Promise.all(emailPromises);
   },
 
   /**
@@ -259,17 +263,25 @@ export const EmailService = {
       'newComment'
     );
 
-    for (const recipient of eligibleRecipients.filter((r) => enabledUserIds.includes(r.userId))) {
-      const html = await render(
-        NewCommentEmail({ ...payload, recipientName: recipient.name, baseUrl: NEXT_PUBLIC_APP_URL })
-      );
-      await dispatch({
-        to: recipient.email,
-        subject: `New comment on [${payload.ticketShortId}] ${payload.ticketTitle}`,
-        html,
-        context: 'new-comment',
+    const emailPromises = eligibleRecipients
+      .filter((r) => enabledUserIds.includes(r.userId))
+      .map(async (recipient) => {
+        const html = await render(
+          NewCommentEmail({
+            ...payload,
+            recipientName: recipient.name,
+            baseUrl: NEXT_PUBLIC_APP_URL,
+          })
+        );
+        await dispatch({
+          to: recipient.email,
+          subject: `New comment on [${payload.ticketShortId}] ${payload.ticketTitle}`,
+          html,
+          context: 'new-comment',
+        });
       });
-    }
+
+    await Promise.all(emailPromises);
   },
 
   /**
@@ -306,35 +318,40 @@ export const EmailService = {
   }): Promise<void> {
     const { organizationId, adminRecipients, payload } = params;
 
+    if (adminRecipients.length === 0) return;
+
     // In-app notification to all admins
-    for (const admin of adminRecipients) {
-      await NotificationService.create({
+    const notificationPromises = adminRecipients.map((admin) =>
+      NotificationService.create({
         organizationId,
         userId: admin.userId,
         type: 'leave-requested',
         title: 'New Leave Request',
         subtitle: `${payload.requesterName} requested ${payload.leaveType} leave`,
-      });
-    }
-
-    if (adminRecipients.length === 0) return;
+      })
+    );
+    await Promise.all(notificationPromises);
 
     const enabledUserIds = await filterEnabledRecipients(
       adminRecipients.map((a) => a.userId),
       'leaveSubmitted'
     );
 
-    for (const admin of adminRecipients.filter((a) => enabledUserIds.includes(a.userId))) {
-      const html = await render(
-        LeaveSubmittedEmail({ ...payload, adminName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
-      );
-      await dispatch({
-        to: admin.email,
-        subject: `Leave Request: ${payload.requesterName} — ${payload.leaveType}`,
-        html,
-        context: 'leave-submitted',
+    const emailPromises = adminRecipients
+      .filter((admin) => enabledUserIds.includes(admin.userId))
+      .map(async (admin) => {
+        const html = await render(
+          LeaveSubmittedEmail({ ...payload, adminName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
+        );
+        await dispatch({
+          to: admin.email,
+          subject: `Leave Request: ${payload.requesterName} — ${payload.leaveType}`,
+          html,
+          context: 'leave-submitted',
+        });
       });
-    }
+
+    await Promise.all(emailPromises);
   },
 
   /**
@@ -389,17 +406,21 @@ export const EmailService = {
       'memberJoined'
     );
 
-    for (const admin of adminRecipients.filter((a) => enabledUserIds.includes(a.userId))) {
-      const html = await render(
-        MemberJoinedEmail({ ...payload, adminName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
-      );
-      await dispatch({
-        to: admin.email,
-        subject: `${payload.newMemberName} has joined ${payload.organizationName}`,
-        html,
-        context: 'member-joined',
+    const emailPromises = adminRecipients
+      .filter((admin) => enabledUserIds.includes(admin.userId))
+      .map(async (admin) => {
+        const html = await render(
+          MemberJoinedEmail({ ...payload, adminName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
+        );
+        await dispatch({
+          to: admin.email,
+          subject: `${payload.newMemberName} has joined ${payload.organizationName}`,
+          html,
+          context: 'member-joined',
+        });
       });
-    }
+
+    await Promise.all(emailPromises);
   },
 
   // ─── Time Logs ──────────────────────────────────────────────────────────
@@ -422,17 +443,21 @@ export const EmailService = {
       'timeLogged'
     );
 
-    for (const admin of recipients.filter((r) => enabledUserIds.includes(r.userId))) {
-      const html = await render(
-        TimeLoggedEmail({ ...payload, recipientName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
-      );
-      await dispatch({
-        to: admin.email,
-        subject: `[${payload.ticketShortId}] ${payload.loggerName} logged ${payload.hours}h`,
-        html,
-        context: 'time-logged',
+    const emailPromises = recipients
+      .filter((r) => enabledUserIds.includes(r.userId))
+      .map(async (admin) => {
+        const html = await render(
+          TimeLoggedEmail({ ...payload, recipientName: admin.name, baseUrl: NEXT_PUBLIC_APP_URL })
+        );
+        await dispatch({
+          to: admin.email,
+          subject: `[${payload.ticketShortId}] ${payload.loggerName} logged ${payload.hours}h`,
+          html,
+          context: 'time-logged',
+        });
       });
-    }
+
+    await Promise.all(emailPromises);
   },
 
   // ─── Feedback ────────────────────────────────────────────────────────────

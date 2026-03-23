@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { tickets, organizations, projects } from '@/db/schema';
-import { desc, eq, and, sql, inArray } from 'drizzle-orm';
+import {
+  tickets,
+  organizations,
+  ticketProjects,
+  TICKET_STATUSES,
+  TICKET_PRIORITIES,
+} from '@/db/schema';
+import { desc, eq, and, sql, exists } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { withErrorHandler } from '@/lib/api-handler';
 import { NotFoundError } from '@/lib/api-error';
@@ -11,20 +17,54 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const assigneeId = searchParams.get('assigneeId');
+  const status = searchParams.get('status');
+  const priority = searchParams.get('priority');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+  const offset = parseInt(searchParams.get('offset') || '0');
 
   const queryConditions = [eq(tickets.organizationId, orgId!)];
-  if (projectId)
-    queryConditions.push(sql`${tickets.projectIds} @> ${JSON.stringify([projectId])}::jsonb`);
+
+  if (projectId) {
+    queryConditions.push(
+      exists(
+        db
+          .select()
+          .from(ticketProjects)
+          .where(
+            and(eq(ticketProjects.ticketId, tickets.id), eq(ticketProjects.projectId, projectId))
+          )
+      )
+    );
+  }
+
   if (assigneeId) queryConditions.push(eq(tickets.assigneeId, assigneeId));
+  if (status) queryConditions.push(eq(tickets.status, status as (typeof TICKET_STATUSES)[number]));
+  if (priority)
+    queryConditions.push(eq(tickets.priority, priority as (typeof TICKET_PRIORITIES)[number]));
 
   const whereClause = and(...queryConditions);
 
   const allTickets = await db.query.tickets.findMany({
     where: whereClause,
+    limit,
+    offset,
     with: {
       assignee: true,
       createdBy: true,
+      projects: {
+        with: {
+          project: {
+            columns: {
+              id: true,
+              name: true,
+              prefix: true,
+              color: true,
+            },
+          },
+        },
+      },
       timeLogs: {
+        limit: 5,
         with: {
           user: true,
         },
@@ -33,25 +73,12 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
     orderBy: [desc(tickets.createdAt)],
   });
 
-  // Resolve project names from projectIds
-  const allProjectIds = [...new Set(allTickets.flatMap((t) => t.projectIds || []))];
-  let projectMap: Record<string, { id: string; name: string }> = {};
-  if (allProjectIds.length > 0) {
-    const projectRows = await db
-      .select({ id: projects.id, name: projects.name })
-      .from(projects)
-      .where(inArray(projects.id, allProjectIds));
-    projectMap = Object.fromEntries(projectRows.map((p) => [p.id, p]));
-  }
-
-  const ticketsWithProjects = allTickets.map((t) => ({
+  const formattedTickets = allTickets.map((t) => ({
     ...t,
-    projects: (t.projectIds || [])
-      .map((pid) => projectMap[pid])
-      .filter((p): p is { id: string; name: string } => !!p),
+    projects: t.projects.map((p) => p.project),
   }));
 
-  return NextResponse.json(ticketsWithProjects);
+  return NextResponse.json(formattedTickets);
 });
 
 export const POST = withErrorHandler(async (request, { session, orgId }) => {
@@ -83,7 +110,6 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
       description: body.description || '',
       status: body.status,
       priority: body.priority,
-      projectIds: body.projectIds,
       assigneeId: body.assigneeId,
       createdById: session!.user.id,
       estimatedHours: body.estimatedHours,
@@ -92,12 +118,35 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     })
     .returning();
 
+  // Handle projects junction table
+  if (body.projectIds && body.projectIds.length > 0) {
+    await db.insert(ticketProjects).values(
+      body.projectIds.map((projectId) => ({
+        ticketId: newTicketRaw.id,
+        projectId,
+        organizationId: orgId!,
+      }))
+    );
+  }
+
   // Fetch full ticket with relations to reconcile cache (Blueprint 10)
   const fullTicket = await db.query.tickets.findFirst({
     where: eq(tickets.id, newTicketRaw.id),
     with: {
       assignee: true,
       createdBy: true,
+      projects: {
+        with: {
+          project: {
+            columns: {
+              id: true,
+              name: true,
+              prefix: true,
+              color: true,
+            },
+          },
+        },
+      },
       timeLogs: {
         with: {
           user: true,
@@ -106,18 +155,12 @@ export const POST = withErrorHandler(async (request, { session, orgId }) => {
     },
   });
 
-  // Resolve project names from projectIds (matches GET /tickets logic)
-  const ticketProjectIds = fullTicket?.projectIds || [];
-  let resolvedProjects: { id: string; name: string }[] = [];
-  if (ticketProjectIds.length > 0) {
-    const projectRows = await db
-      .select({ id: projects.id, name: projects.name })
-      .from(projects)
-      .where(inArray(projects.id, ticketProjectIds));
-    resolvedProjects = ticketProjectIds
-      .map((pid) => projectRows.find((p) => p.id === pid))
-      .filter((p): p is { id: string; name: string } => !!p);
-  }
+  const formattedTicket = fullTicket
+    ? {
+        ...fullTicket,
+        projects: fullTicket.projects.map((p) => p.project),
+      }
+    : null;
 
-  return NextResponse.json({ ...fullTicket, projects: resolvedProjects }, { status: 201 });
+  return NextResponse.json(formattedTicket, { status: 201 });
 });

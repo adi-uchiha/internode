@@ -49,58 +49,59 @@ export const GET = withCronAuth(async () => {
     const orgId = member.organizationId;
 
     try {
-      // Count tickets completed this week (assigned to user)
-      const completedResult = await db
-        .select({ count: count() })
-        .from(tickets)
-        .where(
-          and(
-            eq(tickets.organizationId, orgId),
-            eq(tickets.assigneeId, userId),
-            eq(tickets.status, 'done'),
-            gte(tickets.updatedAt, weekStart),
-            lt(tickets.updatedAt, weekEnd)
-          )
-        );
+      // Parallelize all DB queries for this member to avoid sequential bottleneck
+      const [completedResult, inProgressResult, hoursResult, userGoal] = await Promise.all([
+        // Count tickets completed this week (assigned to user)
+        db
+          .select({ count: count() })
+          .from(tickets)
+          .where(
+            and(
+              eq(tickets.organizationId, orgId),
+              eq(tickets.assigneeId, userId),
+              eq(tickets.status, 'done'),
+              gte(tickets.updatedAt, weekStart),
+              lt(tickets.updatedAt, new Date(weekEnd.getTime() + 1))
+            )
+          ),
+        // Count tickets in-progress assigned to user
+        db
+          .select({ count: count() })
+          .from(tickets)
+          .where(
+            and(
+              eq(tickets.organizationId, orgId),
+              eq(tickets.assigneeId, userId),
+              eq(tickets.status, 'in-progress')
+            )
+          ),
+        // Sum hours logged this week by the user
+        db
+          .select({ total: sum(timeLogs.hours) })
+          .from(timeLogs)
+          .where(
+            and(
+              eq(timeLogs.organizationId, orgId),
+              eq(timeLogs.userId, userId),
+              gte(timeLogs.date, weekStart),
+              lt(timeLogs.date, new Date(weekEnd.getTime() + 1))
+            )
+          ),
+        // Get this week's goals for the user
+        db.query.weeklyGoals.findFirst({
+          where: and(
+            eq(weeklyGoals.organizationId, orgId),
+            eq(weeklyGoals.userId, userId),
+            gte(weeklyGoals.weekStart, weekStart),
+            lt(weeklyGoals.weekStart, weekEnd)
+          ),
+          with: { items: true },
+        }),
+      ]);
+
       const ticketsCompleted = completedResult[0]?.count ?? 0;
-
-      // Count tickets in-progress assigned to user
-      const inProgressResult = await db
-        .select({ count: count() })
-        .from(tickets)
-        .where(
-          and(
-            eq(tickets.organizationId, orgId),
-            eq(tickets.assigneeId, userId),
-            eq(tickets.status, 'in-progress')
-          )
-        );
       const ticketsInProgress = inProgressResult[0]?.count ?? 0;
-
-      // Sum hours logged this week by the user
-      const hoursResult = await db
-        .select({ total: sum(timeLogs.hours) })
-        .from(timeLogs)
-        .where(
-          and(
-            eq(timeLogs.organizationId, orgId),
-            eq(timeLogs.userId, userId),
-            gte(timeLogs.date, weekStart),
-            lt(timeLogs.date, weekEnd)
-          )
-        );
       const hoursLogged = Number(hoursResult[0]?.total ?? 0);
-
-      // Get this week's goals for the user
-      const userGoal = await db.query.weeklyGoals.findFirst({
-        where: and(
-          eq(weeklyGoals.organizationId, orgId),
-          eq(weeklyGoals.userId, userId),
-          gte(weeklyGoals.weekStart, weekStart),
-          lt(weeklyGoals.weekStart, weekEnd)
-        ),
-        with: { items: true },
-      });
 
       const goalsTotal = userGoal?.items?.length ?? 0;
       const goalsCompleted = userGoal?.items?.filter((i) => i.completed).length ?? 0;

@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { users } from './users';
 import { projects, projectMembers } from './projects';
-import { tickets, timeLogs, comments } from './tickets';
+import { tickets, timeLogs, comments, ticketProjects } from './tickets';
 import { leaveRequests } from './leaves';
 import { weeklyGoals, goalItems } from './goals';
 import { activities, notifications } from './system';
@@ -75,7 +75,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   members: many(projectMembers),
   breakthroughs: many(breakthroughs),
-  tickets: many(tickets),
+  tickets: many(ticketProjects),
 }));
 
 export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
@@ -112,6 +112,22 @@ export const ticketsRelations = relations(tickets, ({ one, many }) => ({
   timeLogs: many(timeLogs),
   comments: many(comments),
   activities: many(activities),
+  projects: many(ticketProjects),
+}));
+
+export const ticketProjectsRelations = relations(ticketProjects, ({ one }) => ({
+  ticket: one(tickets, {
+    fields: [ticketProjects.ticketId],
+    references: [tickets.id],
+  }),
+  project: one(projects, {
+    fields: [ticketProjects.projectId],
+    references: [projects.id],
+  }),
+  organization: one(organizations, {
+    fields: [ticketProjects.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 // Time Logs
