@@ -145,3 +145,19 @@ export interface WeeklyDigestPayload extends BaseEmailPayload {
   goalsTotal: number;
   dashboardUrl: string;
 }
+
+// ─── Billing & Subscription ────────────────────────────────────────────────
+export interface SubscriptionUpgradedPayload extends BaseEmailPayload {
+  adminName: string;
+  planName: string;
+  maxMembers: string;
+  maxProjects: string;
+  billingPortalUrl: string;
+}
+
+export interface SubscriptionCanceledPayload extends BaseEmailPayload {
+  adminName: string;
+  planName: string;
+  endsAtDate: string;
+  reSubscribeUrl: string;
+}

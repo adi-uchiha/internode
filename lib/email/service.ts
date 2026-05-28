@@ -17,6 +17,8 @@ import { WelcomeEmail } from '@/emails/WelcomeEmail';
 import { OverdueTicketEmail } from '@/emails/OverdueTicketEmail';
 import { WeeklyDigestEmail } from '@/emails/WeeklyDigestEmail';
 import { TimeLoggedEmail } from '@/emails/TimeLoggedEmail';
+import { SubscriptionUpgradedEmail } from '@/emails/SubscriptionUpgradedEmail';
+import { SubscriptionCanceledEmail } from '@/emails/SubscriptionCanceledEmail';
 
 // ─── Payload Type Imports ────────────────────────────────────────────────────
 import type {
@@ -32,6 +34,8 @@ import type {
   OverdueTicketPayload,
   WeeklyDigestPayload,
   TimeLoggedPayload,
+  SubscriptionUpgradedPayload,
+  SubscriptionCanceledPayload,
 } from './types';
 
 // ─── Shared Recipient Type ───────────────────────────────────────────────────
@@ -514,5 +518,55 @@ export const EmailService = {
       html,
       context: 'weekly-digest',
     });
+  },
+
+  // ─── Billing & Subscription ──────────────────────────────────────────────
+
+  /**
+   * Subscription Upgraded — notifies organization admins/owners.
+   * Not preference gated because it is a critical transactional billing event.
+   */
+  async subscriptionUpgraded(params: {
+    recipients: EmailRecipient[];
+    payload: SubscriptionUpgradedPayload;
+  }): Promise<void> {
+    const html = await render(
+      SubscriptionUpgradedEmail({ ...params.payload, baseUrl: NEXT_PUBLIC_APP_URL })
+    );
+
+    const emailPromises = params.recipients.map((recipient) =>
+      dispatch({
+        to: recipient.email,
+        subject: `[Internode] You're now on the ${params.payload.planName} plan 🚀`,
+        html,
+        context: 'subscription-upgraded',
+      })
+    );
+
+    await Promise.all(emailPromises);
+  },
+
+  /**
+   * Subscription Canceled — notifies organization admins/owners.
+   * Not preference gated.
+   */
+  async subscriptionCanceled(params: {
+    recipients: EmailRecipient[];
+    payload: SubscriptionCanceledPayload;
+  }): Promise<void> {
+    const html = await render(
+      SubscriptionCanceledEmail({ ...params.payload, baseUrl: NEXT_PUBLIC_APP_URL })
+    );
+
+    const emailPromises = params.recipients.map((recipient) =>
+      dispatch({
+        to: recipient.email,
+        subject: `[Internode] Your ${params.payload.planName} subscription ends on ${params.payload.endsAtDate}`,
+        html,
+        context: 'subscription-canceled',
+      })
+    );
+
+    await Promise.all(emailPromises);
   },
 };

@@ -4,6 +4,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { CacheManager } from '@/lib/cache/manager';
 
+export interface BillingInfo {
+  plan: 'free' | 'pro' | 'enterprise';
+  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'expired';
+  customerId: string | null;
+  currentPeriodEnd: string | null;
+  usage: {
+    members: { used: number; max: number };
+    projects: { used: number; max: number };
+    orgs: { max: number };
+  };
+}
+
 export interface OrganizationDetails {
   id: string;
   organizationName: string;
@@ -11,6 +23,7 @@ export interface OrganizationDetails {
   organizationDomain: string;
   brandingColor?: string;
   logo?: string | null;
+  billing: BillingInfo;
 }
 
 /**
@@ -21,19 +34,38 @@ export function useOrganization() {
   return useQuery({
     queryKey: ['active-organization-details'],
     queryFn: async () => {
-      const { data, error } = await authClient.organization.getFullOrganization();
-      if (error) throw new Error(error.message ?? 'Failed to fetch organization');
-
-      return {
-        id: data.id,
-        organizationName: data.name,
-        organizationSlug: data.slug || '',
-        organizationDomain: (data.metadata as Record<string, string> | undefined)?.domain || '',
-        logo: data.logo ?? null,
-      } as OrganizationDetails;
+      const res = await fetch('/api/organization');
+      if (!res.ok) throw new Error('Failed to fetch organization');
+      return res.json() as Promise<OrganizationDetails>;
     },
     staleTime: 10 * 60 * 1000,
   });
+}
+
+/**
+ * Convenience hook for reading active organization billing data.
+ */
+export function useOrgBilling() {
+  const { data } = useOrganization();
+  return data?.billing ?? null;
+}
+
+/**
+ * Convenience hook for usage statistics & limit checking.
+ */
+export function usePlanLimitWarning(type: 'members' | 'projects') {
+  const billing = useOrgBilling();
+  if (!billing) return { isNearLimit: false, isAtLimit: false, used: 0, max: 0, percentUsed: 0 };
+  const stat = billing.usage[type];
+  const used = stat.used;
+  const max = stat.max;
+  return {
+    used,
+    max,
+    isAtLimit: used >= max,
+    isNearLimit: used >= max * 0.8,
+    percentUsed: Math.min(100, (used / max) * 100),
+  };
 }
 
 /**

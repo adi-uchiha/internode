@@ -1,51 +1,72 @@
+'use client';
+
 import { Icon } from '@iconify/react';
 import { Button } from '@/components/ui/button';
 import { FadeIn, StaggerContainer, StaggerItem } from './Animations';
+import { authClient } from '@/lib/auth-client';
+import Link from 'next/link';
+import { useIsMounted } from '@/hooks/use-mounted';
 
 const plans = [
   {
-    name: 'Starter',
-    tagline: 'For small teams',
+    name: 'Starter Free',
+    tagline: 'For solo developers & tiny teams',
     price: 'Free',
     period: '',
-    features: ['Up to 5 developers', 'Daily logging', 'Basic analytics', 'Email support'],
+    features: [
+      'Up to 5 active interns',
+      'Up to 3 active projects',
+      '1 active organization',
+      'Daily time logging',
+      'Basic analytics & board views',
+    ],
     cta: 'Get Started',
     featured: false,
   },
   {
-    name: 'Growth',
-    tagline: 'For scaling teams',
+    name: 'Pro Growth',
+    tagline: 'For scaling engineering teams',
     price: '$29',
     period: '/month',
     features: [
-      'Up to 25 members',
-      'Advanced analytics',
-      'AI weekly summaries',
-      'Slack integration',
-      'Priority support',
+      'Up to 20 active interns',
+      'Unlimited active projects',
+      'Up to 3 active organizations',
+      'Advanced organizational velocity analytics',
+      'AI weekly work summaries',
+      'Priority email support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Pro',
     featured: true,
   },
   {
     name: 'Enterprise',
-    tagline: 'For large orgs',
-    price: '$149',
+    tagline: 'For large agencies & software houses',
+    price: '$99',
     period: '/month',
     features: [
-      'Unlimited projects',
-      'Custom integrations',
-      'SSO & SAML',
-      'Dedicated account manager',
-      'SLA guarantees',
-      'On-prem option',
+      'Unlimited active interns',
+      'Unlimited active projects',
+      'Unlimited organizations',
+      'Custom MCP server integrations',
+      'Dedicated support channels',
+      'SLA & compliance guarantees',
     ],
-    cta: 'Contact Sales',
+    cta: 'Get Enterprise',
     featured: false,
   },
 ];
 
 export const PricingSection = () => {
+  const isMounted = useIsMounted();
+  const { data: session } = authClient.useSession();
+
+  const getHref = (planName: string) => {
+    if (!isMounted || !session) return '/login';
+    if (planName === 'Starter Free') return '/tasks/dashboard';
+    return '/tasks/settings#billing';
+  };
+
   return (
     <section id="pricing" className="relative py-32 overflow-hidden">
       {/* Background */}
@@ -98,9 +119,11 @@ export const PricingSection = () => {
                 )}
               </div>
 
-              <Button variant={plan.featured ? 'hero' : 'hero-outline'} className="w-full mb-6">
-                {plan.cta}
-              </Button>
+              <Link href={getHref(plan.name)} className="block mb-6">
+                <Button variant={plan.featured ? 'hero' : 'hero-outline'} className="w-full">
+                  {plan.cta}
+                </Button>
+              </Link>
 
               <ul className="space-y-3">
                 {plan.features.map((feature) => (

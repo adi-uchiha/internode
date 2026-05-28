@@ -27,6 +27,10 @@ export const PERMISSIONS = {
   // Feature Access
   CAN_VIEW_ANALYTICS: ['admin', 'owner'],
   CAN_VIEW_FEEDBACK_HUB: ['admin', 'owner'],
+
+  // Billing Operations
+  CAN_MANAGE_BILLING: ['owner'],
+  CAN_VIEW_BILLING: ['admin', 'owner'],
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

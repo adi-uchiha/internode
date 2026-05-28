@@ -15,10 +15,17 @@ export const ANALYTICS = {
   DEFAULT_TICKET_PRIORITY: 'medium' as const,
 };
 
+export const BILLING = {
+  PLANS: ['free', 'pro', 'enterprise'] as const,
+  GRACE_PERIOD_DAYS: 3, // After cancelation, org retains access for 3 days
+  CACHE_KEY: ['active-organization-billing'] as const,
+} as const;
+
 export const CACHE_KEYS = {
   TICKETS: ['tickets'] as const,
   PROJECTS: ['projects'] as const,
   USERS: ['users'] as const,
   ANALYTICS: ['analytics'] as const,
   MEMBERS: ['members'] as const,
+  ORGANIZATION: ['active-organization-details'] as const,
 };

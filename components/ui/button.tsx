@@ -32,6 +32,7 @@ const buttonVariants = cva(
         sm: "h-7 gap-1.5 rounded-sm px-3 text-[11px] font-mono uppercase tracking-widest has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
         lg: 'h-10 gap-2 px-6 text-sm font-mono uppercase tracking-[0.2em] has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5',
         xl: 'h-12 gap-3 px-8 text-base font-mono uppercase tracking-[0.3em] has-data-[icon=inline-end]:pr-7 has-data-[icon=inline-start]:pl-7',
+        hero: 'h-14 gap-2.5 px-10 text-base font-mono uppercase tracking-[0.2em] has-data-[icon=inline-end]:pr-8 has-data-[icon=inline-start]:pl-8',
         icon: 'size-8',
         'icon-xs': "size-6 rounded-sm [&_svg:not([class*='size-'])]:size-3",
         'icon-sm': "size-7 rounded-sm [&_svg:not([class*='size-'])]:size-3.5",
@@ -55,7 +56,17 @@ type ButtonProps = ButtonPrimitive.Props & {
     | 'link'
     | 'hero'
     | 'hero-outline';
-  size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl' | 'icon' | 'icon-xs' | 'icon-sm' | 'icon-lg';
+  size?:
+    | 'default'
+    | 'xs'
+    | 'sm'
+    | 'lg'
+    | 'xl'
+    | 'hero'
+    | 'icon'
+    | 'icon-xs'
+    | 'icon-sm'
+    | 'icon-lg';
   loading?: boolean;
 };
 

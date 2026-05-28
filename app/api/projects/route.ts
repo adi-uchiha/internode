@@ -4,6 +4,7 @@ import { projects } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { withErrorHandler } from '@/lib/api-handler';
 import { createProjectSchema } from '@/lib/validations/projects';
+import { assertPlanLimit } from '@/lib/billing-plans';
 
 export const GET = withErrorHandler(async (request, { orgId }) => {
   const allProjects = await db.query.projects.findMany({
@@ -16,6 +17,7 @@ export const GET = withErrorHandler(async (request, { orgId }) => {
 
 export const POST = withErrorHandler(
   async (req, { orgId }) => {
+    await assertPlanLimit(orgId!, 'projects');
     const json = await req.json();
     const body = createProjectSchema.parse(json);
     const id = `proj_${Math.random().toString(36).slice(2, 9)}`;

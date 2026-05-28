@@ -14,6 +14,7 @@ import {
   type OrgMember,
   type OrgRole,
 } from '@/hooks/useInvites';
+import { usePlanLimitWarning } from '@/hooks/useOrganization';
 import { toast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -192,6 +193,7 @@ function InviteModal({ onClose }: InviteModalProps) {
   const { mutateAsync: inviteMember, isPending: isInviting } = useInviteMember();
   const { mutateAsync: cancelInvitation, isPending: canceling } = useCancelInvitation();
   const { data: invitations, isLoading: invitesLoading } = useOrgInvitations();
+  const { isAtLimit, max } = usePlanLimitWarning('members');
 
   const pendingInvites = useMemo(
     () => invitations?.filter((i) => i.status === 'pending') ?? [],
@@ -266,6 +268,16 @@ function InviteModal({ onClose }: InviteModalProps) {
 
           {/* Invite Form */}
           <form onSubmit={handleInvite} className="space-y-5">
+            {isAtLimit && (
+              <div className="p-3.5 border border-amber-500/20 bg-amber-500/5 text-amber-400 font-mono text-xs space-y-1">
+                <span className="font-bold block">[PLAN_LIMIT_REACHED]</span>
+                <span>
+                  This organization has reached the limit of {max} interns on the Starter Free plan.
+                  Please upgrade to Pro Growth to invite more members.
+                </span>
+              </div>
+            )}
+
             <div>
               <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block mb-2">
                 Email Address
@@ -277,6 +289,7 @@ function InviteModal({ onClose }: InviteModalProps) {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 autoFocus
+                disabled={isAtLimit}
               />
             </div>
 
@@ -326,7 +339,7 @@ function InviteModal({ onClose }: InviteModalProps) {
               type="submit"
               variant="hero"
               className="w-full py-6 text-sm"
-              disabled={isInviting || !inviteEmail.trim()}
+              disabled={isInviting || !inviteEmail.trim() || isAtLimit}
             >
               {isInviting ? (
                 <UnifiedLoader size="sm" message="Sending..." className="text-primary-foreground" />

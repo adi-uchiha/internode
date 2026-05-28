@@ -18,6 +18,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeSwitchOrganization } from '@/lib/auth-utils';
 
+import { useOrganization } from '@/hooks/useOrganization';
+
 interface OrgSwitcherProps {
   collapsed?: boolean;
 }
@@ -25,6 +27,7 @@ interface OrgSwitcherProps {
 export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   const { data: orgs, isPending } = authClient.useListOrganizations();
   const { session } = useAuth();
+  const { data: orgDetails } = useOrganization();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -38,6 +41,7 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
   }
 
   const activeOrgId = session?.session.activeOrganizationId;
+  const activeOrgPlan = orgDetails?.billing?.plan;
 
   const handleSwitch = async (orgId: string | null) => {
     if (orgId === 'create-new') {
@@ -76,9 +80,29 @@ export function OrgSwitcher({ collapsed }: OrgSwitcherProps) {
         <SelectTrigger className="w-full h-9 bg-muted/20 border-border hover:bg-muted/50 transition-colors focus:ring-1 focus:ring-primary/50 text-sm font-display font-semibold">
           <SelectValue placeholder="Select Organization">
             {orgs?.find((o) => o.id === activeOrgId) ? (
-              <div className="flex items-center gap-2">
-                <Icon icon="solar:buildings-linear" className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 max-w-full overflow-hidden">
+                <Icon
+                  icon="solar:buildings-linear"
+                  className="w-4 h-4 text-muted-foreground shrink-0"
+                />
                 <span className="truncate">{orgs?.find((o) => o.id === activeOrgId)?.name}</span>
+                {activeOrgPlan && (
+                  <span
+                    className={`font-mono text-[9px] uppercase px-1 border tracking-wider ml-1.5 shrink-0 ${
+                      activeOrgPlan === 'enterprise'
+                        ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5'
+                        : activeOrgPlan === 'pro'
+                          ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
+                          : 'border-muted text-muted-foreground'
+                    }`}
+                  >
+                    {activeOrgPlan === 'enterprise'
+                      ? 'Ent'
+                      : activeOrgPlan === 'pro'
+                        ? 'Pro'
+                        : 'Free'}
+                  </span>
+                )}
               </div>
             ) : (
               <span className="text-muted-foreground">Select Organization</span>

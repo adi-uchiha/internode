@@ -19,6 +19,11 @@ export const SEO_KEYWORDS = [
   'developer-centric project management',
   'modern kanban for engineers',
   'software delivery platform',
+  'intern billing platform',
+  'engineering team subscription',
+  'volume-based billing SaaS',
+  'Lemon Squeezy integration',
+  'flexible pricing software teams',
 ];
 
 export const SEO_DESCRIPTION =

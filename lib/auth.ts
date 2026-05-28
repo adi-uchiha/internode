@@ -10,6 +10,7 @@ import {
   GITHUB_CLIENT_SECRET,
 } from './env';
 import { EmailService } from './email/service';
+import { assertPlanLimit } from './billing-plans';
 
 export const auth = betterAuth({
   baseURL: BETTER_AUTH_URL,
@@ -26,6 +27,14 @@ export const auth = betterAuth({
     },
   }),
   databaseHooks: {
+    invitation: {
+      create: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        before: async (invitation: any) => {
+          await assertPlanLimit(invitation.organizationId, 'members');
+        },
+      },
+    },
     user: {
       create: {
         after: async (user) => {

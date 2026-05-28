@@ -43,6 +43,9 @@ export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_ORG || '';
 export const NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET_CONTENT || '';
+export const NEXT_PUBLIC_LEMON_CHECKOUT_PRO = process.env.NEXT_PUBLIC_LEMON_CHECKOUT_PRO || '';
+export const NEXT_PUBLIC_LEMON_CHECKOUT_ENTERPRISE =
+  process.env.NEXT_PUBLIC_LEMON_CHECKOUT_ENTERPRISE || '';
 
 // Perform server-side validation for public variables
 if (typeof window === 'undefined') {
@@ -72,3 +75,8 @@ export const SMTP_USER = requireEnv('SMTP_USER');
 export const SMTP_PASSWORD = requireEnv('SMTP_PASSWORD');
 export const RESEND_FROM_EMAIL = requireEnv('RESEND_FROM_EMAIL');
 export const CRON_SECRET = requireEnv('CRON_SECRET');
+
+// Lemon Squeezy
+export const LEMON_SQUEEZY_API_KEY = requireEnv('LEMON_SQUEEZY_API_KEY');
+export const LEMON_SQUEEZY_WEBHOOK_SECRET = requireEnv('LEMON_SQUEEZY_WEBHOOK_SECRET');
+export const LEMON_SQUEEZY_STORE_ID = requireEnv('LEMON_SQUEEZY_STORE_ID');

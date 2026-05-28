@@ -3,19 +3,33 @@ import { organizations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { withErrorHandler } from '@/lib/api-handler';
+import { getOrgUsage, PlanId } from '@/lib/billing-plans';
 
 export const GET = withErrorHandler(async (req, { orgId }) => {
   if (!orgId)
-    return NextResponse.json({ organizationName: '', organizationDomain: '', logo: null });
+    return NextResponse.json({ id: '', organizationName: '', organizationDomain: '', logo: null });
 
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, orgId),
   });
 
+  const plan = (org?.subscriptionPlan ?? 'free') as PlanId;
+  const usage = await getOrgUsage(orgId, plan);
+
   return NextResponse.json({
+    id: org?.id || '',
     organizationName: org?.name || '',
     organizationDomain: org?.slug || '',
     logo: org?.logo ?? null,
+    billing: {
+      plan,
+      status: org?.subscriptionStatus ?? 'active',
+      customerId: org?.lemonCustomerId ?? null,
+      currentPeriodEnd: org?.subscriptionCurrentPeriodEnd
+        ? org.subscriptionCurrentPeriodEnd.toISOString()
+        : null,
+      usage,
+    },
   });
 });
 

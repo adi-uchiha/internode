@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { safeSwitchOrganization } from '@/lib/auth-utils';
+import { useOrganization } from '@/hooks/useOrganization';
 
 interface CreateOrgModalProps {
   open: boolean;
@@ -40,6 +41,12 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: orgDetails } = useOrganization();
+  const { data: orgs } = authClient.useListOrganizations();
+
+  const orgCount = orgs?.length || 0;
+  const maxOrgs = orgDetails?.billing?.usage?.orgs?.max ?? 1;
+  const isOrgLimitReached = orgCount >= maxOrgs;
 
   useEffect(() => {
     if (!slugEdited) {
@@ -101,6 +108,16 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           </DialogHeader>
 
           <div className="p-6 space-y-5">
+            {isOrgLimitReached && (
+              <div className="p-3.5 border border-amber-500/20 bg-amber-500/5 text-amber-400 font-mono text-xs space-y-1">
+                <span className="font-bold block">[ORGANIZATION_LIMIT_REACHED]</span>
+                <span>
+                  You have reached the maximum of {maxOrgs} organization(s) allowed on your current
+                  plan. Please upgrade your active organization to Pro Growth to create more.
+                </span>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block font-bold">
                 Organization Name
@@ -112,6 +129,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                 className="bg-muted/30 border-border h-11 font-display text-sm focus-visible:ring-primary/20"
                 required
                 autoFocus
+                disabled={isOrgLimitReached}
               />
             </div>
 
@@ -132,6 +150,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                   placeholder="acme-corp"
                   className="bg-muted/30 border-border rounded-l-none h-11 font-mono text-sm focus-visible:ring-primary/20"
                   required
+                  disabled={isOrgLimitReached}
                 />
               </div>
             </div>
@@ -161,7 +180,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
               type="submit"
               variant="hero"
               loading={isLoading}
-              disabled={!name.trim() || !slug.trim()}
+              disabled={!name.trim() || !slug.trim() || isOrgLimitReached}
               className="h-10 px-8"
             >
               Create Org

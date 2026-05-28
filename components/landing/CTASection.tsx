@@ -32,15 +32,15 @@ export const CTASection = () => {
             velocity tracking and automated insights.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="hero" size="lg" className="group h-14 px-10 text-lg">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button variant="hero" size="hero" className="group">
               <span>Initialize Internode</span>
             </Button>
-            <Button variant="hero-outline" size="lg" className="group">
+            <Button variant="hero-outline" size="hero" className="group">
               <span>Schedule Demo</span>
               <Icon
                 icon="solar:arrow-right-linear"
-                className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+                className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1"
               />
             </Button>
           </div>

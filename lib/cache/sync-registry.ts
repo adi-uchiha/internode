@@ -7,6 +7,7 @@ import { SearchDomain } from './domains/search';
 import { CacheCore } from './core';
 import { CacheAugmenter } from './augmenter';
 import { useUIStore } from '../store/ui-store';
+import { OrganizationDomain } from './domains/organizations';
 
 import {
   type TicketWithRelations,
@@ -46,7 +47,7 @@ export interface SynergyPayloads {
   'breakthroughs.created': { breakthrough: Breakthrough; orgId?: string | null; orgName: string };
   'leaves.created': { leave: Leave; userName: string };
   'leaves.statusChanged': { leaveId: string; status: string; userId: string };
-  'organizations.updated': { updates: Partial<OrganizationDetails> };
+  'organizations.updated': { updates: Partial<OrganizationDetails>; billingUpdated?: boolean };
 }
 
 /**
@@ -232,13 +233,14 @@ export const SyncRegistry: { [K in keyof SynergyPayloads]?: Transformer<K>[] } =
     },
   ],
   'organizations.updated': [
-    (qc, { updates }) => {
+    (qc, { updates, billingUpdated }) => {
       if (updates.brandingColor) {
         const { setBrandingColor } = useUIStore.getState();
         setBrandingColor(updates.brandingColor);
       }
-      // Ripple to all projects/members if organization status changes
-      // Removed tactical invalidation as per instruction
+      if (billingUpdated) {
+        OrganizationDomain.syncBilling(qc);
+      }
     },
   ],
   'breakthroughs.created': [

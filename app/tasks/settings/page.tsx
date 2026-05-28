@@ -14,11 +14,14 @@ import {
   useUpdateOrganizationLogo,
 } from '@/hooks/useOrganization';
 
+import { NEXT_PUBLIC_LEMON_CHECKOUT_PRO, NEXT_PUBLIC_LEMON_CHECKOUT_ENTERPRISE } from '@/lib/env';
+
 export default function SettingsPage() {
   const { orgRole, activeOrgId } = useAuth();
   const { data: orgDetails } = useOrganization();
   const updateOrgMutation = useUpdateOrganization();
   const updateLogoMutation = useUpdateOrganizationLogo();
+  const [isBillingLoading, setIsBillingLoading] = useState(false);
 
   const isAdmin = orgRole === 'admin' || orgRole === 'owner';
 
@@ -55,6 +58,24 @@ export default function SettingsPage() {
       onSuccess: () => toast.success('Logo updated successfully'),
       onError: () => toast.error('Failed to update logo'),
     });
+  };
+
+  const handleManageBilling = async () => {
+    setIsBillingLoading(true);
+    try {
+      const res = await fetch('/api/billing/portal');
+      if (!res.ok) throw new Error('Failed to generate billing portal link');
+      const data = await res.json();
+      if (data.portalUrl) {
+        window.open(data.portalUrl, '_blank');
+      } else {
+        toast.error('Failed to open billing portal');
+      }
+    } catch {
+      toast.error('Could not load billing portal');
+    } finally {
+      setIsBillingLoading(false);
+    }
   };
 
   if (!isAdmin) {
@@ -138,6 +159,143 @@ export default function SettingsPage() {
                   className="font-mono"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Billing & Subscription Section */}
+        <div className="md:col-span-1" id="billing">
+          <h3 className="font-display font-semibold text-lg">Billing & Subscription</h3>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">
+            Manage your organization plan, active limits, and Lemon Squeezy billing portal.
+          </p>
+        </div>
+        <div className="md:col-span-2">
+          <div className="p-6 border border-border bg-card/30 space-y-6">
+            <div className="flex justify-between items-center border-b border-border pb-4">
+              <div>
+                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block">
+                  Active Plan
+                </span>
+                <span className="font-display text-xl font-bold uppercase tracking-wider text-primary">
+                  {orgDetails?.billing?.plan === 'enterprise'
+                    ? 'Enterprise'
+                    : orgDetails?.billing?.plan === 'pro'
+                      ? 'Pro Growth'
+                      : 'Starter Free'}
+                </span>
+              </div>
+              <span
+                className={`font-mono text-xs px-2 py-1 border ${
+                  orgDetails?.billing?.status === 'active'
+                    ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
+                    : 'border-amber-500/30 text-amber-400 bg-amber-500/5'
+                }`}
+              >
+                STATUS: {orgDetails?.billing?.status?.toUpperCase() || 'ACTIVE'}
+              </span>
+            </div>
+
+            {/* Usage limits */}
+            <div className="space-y-4">
+              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block">
+                Resource Usage
+              </span>
+
+              {/* Member Limit */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-muted-foreground">👥 TEAM INTERNS</span>
+                  <span>
+                    {orgDetails?.billing?.usage?.members?.used} /{' '}
+                    {orgDetails?.billing?.usage?.members?.max === 999999
+                      ? '∞'
+                      : orgDetails?.billing?.usage?.members?.max}
+                  </span>
+                </div>
+                <div className="h-2 bg-black/40 border border-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        ((orgDetails?.billing?.usage?.members?.used || 0) /
+                          (orgDetails?.billing?.usage?.members?.max || 1)) *
+                          100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Project Limit */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-muted-foreground">📁 PROJECTS</span>
+                  <span>
+                    {orgDetails?.billing?.usage?.projects?.used} /{' '}
+                    {orgDetails?.billing?.usage?.projects?.max === 999999
+                      ? '∞'
+                      : orgDetails?.billing?.usage?.projects?.max}
+                  </span>
+                </div>
+                <div className="h-2 bg-black/40 border border-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        ((orgDetails?.billing?.usage?.projects?.used || 0) /
+                          (orgDetails?.billing?.usage?.projects?.max || 1)) *
+                          100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Period end warning */}
+            {orgDetails?.billing?.currentPeriodEnd && (
+              <p className="text-[10px] font-mono text-muted-foreground uppercase">
+                Current period ends:{' '}
+                {new Date(orgDetails.billing.currentPeriodEnd).toLocaleDateString()}
+              </p>
+            )}
+
+            {/* CTAs */}
+            <div className="pt-2">
+              {orgDetails?.billing?.plan === 'free' ? (
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="hero"
+                    onClick={() =>
+                      window.open(
+                        `${NEXT_PUBLIC_LEMON_CHECKOUT_PRO}?checkout[custom][org_id]=${activeOrgId}`,
+                        '_blank'
+                      )
+                    }
+                  >
+                    Upgrade to Pro Growth ($29) →
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.open(
+                        `${NEXT_PUBLIC_LEMON_CHECKOUT_ENTERPRISE}?checkout[custom][org_id]=${activeOrgId}`,
+                        '_blank'
+                      )
+                    }
+                  >
+                    Upgrade to Enterprise ($99) →
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="hero" onClick={handleManageBilling} loading={isBillingLoading}>
+                  <Icon icon="solar:card-rec-linear" className="w-4 h-4 mr-2" />
+                  Manage Subscription & Invoices →
+                </Button>
+              )}
             </div>
           </div>
         </div>

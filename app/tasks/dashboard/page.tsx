@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { UnifiedLoader } from '@/components/ui/UnifiedLoader';
 import { Leaderboard } from '@/components/dashboard/Leaderboard';
 import { useTaskAnalytics, useLeaderboard } from '@/hooks/useAnalytics';
+import { useOrganization } from '@/hooks/useOrganization';
 
 const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; color?: string }) => (
   <svg viewBox="0 0 70 20" className="w-full h-5">
@@ -45,10 +46,14 @@ const Sparkline = ({ data, color = 'hsl(140 100% 50%)' }: { data: number[]; colo
 
 // Admin Dashboard
 const AdminDashboardContent = () => {
+  const router = useRouter();
+  const { data: orgDetails } = useOrganization();
   const { data: analytics, isLoading: analyticsLoading } = useTaskAnalytics();
   const { data: activities, isLoading: activitiesLoading } = useActivities({ limit: 10 });
   const { data: tickets, isLoading: ticketsLoading } = useTickets();
   const { data: users } = useUsers();
+
+  const billing = orgDetails?.billing;
 
   const [activityFilter, setActivityFilter] = useState('all');
 
@@ -96,6 +101,67 @@ const AdminDashboardContent = () => {
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Billing Alert Banners */}
+      {billing?.status === 'unpaid' && (
+        <div className="p-4 border border-destructive/30 bg-destructive/5 text-destructive font-mono text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon icon="solar:shield-warning-linear" className="w-5 h-5 shrink-0 animate-pulse" />
+            <span>
+              [SYSTEM_ALERT] Your subscription is currently unpaid. Please update payment details in
+              Settings to prevent access gating.
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/20 hover:bg-destructive/10 shrink-0 ml-4"
+            onClick={() => router.push('/tasks/settings#billing')}
+          >
+            Resolve Invoices →
+          </Button>
+        </div>
+      )}
+
+      {billing?.status === 'past_due' && (
+        <div className="p-4 border border-amber-500/30 bg-amber-500/5 text-amber-400 font-mono text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon icon="solar:shield-warning-linear" className="w-5 h-5 shrink-0" />
+            <span>
+              [PAYMENT_OVERDUE] Your subscription is past due. Please update payment method to avoid
+              system locks.
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-amber-400 border-amber-500/20 hover:bg-amber-500/10 shrink-0 ml-4"
+            onClick={() => router.push('/tasks/settings#billing')}
+          >
+            Update Payment →
+          </Button>
+        </div>
+      )}
+
+      {billing?.status === 'canceled' && billing?.currentPeriodEnd && (
+        <div className="p-4 border border-muted text-muted-foreground bg-muted/5 font-mono text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon icon="solar:info-circle-linear" className="w-5 h-5 shrink-0" />
+            <span>
+              [SUBSCRIPTION_CANCELLED] Subscription deactivated. Grace period active until{' '}
+              {new Date(billing.currentPeriodEnd).toLocaleDateString()}.
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border hover:bg-muted/50 shrink-0 ml-4"
+            onClick={() => router.push('/tasks/settings#billing')}
+          >
+            Reactivate Plan →
+          </Button>
+        </div>
+      )}
+
       {/* KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (

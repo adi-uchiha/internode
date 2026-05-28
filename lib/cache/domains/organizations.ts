@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import type { OrganizationDetails } from '@/hooks/useOrganization';
+import type { OrganizationDetails, BillingInfo } from '@/hooks/useOrganization';
 
 interface OrganizationListItem {
   id: string;
@@ -41,5 +41,23 @@ export const OrganizationDomain = {
       refetchType: 'none',
     });
     queryClient.invalidateQueries({ queryKey: ['list-organizations'], refetchType: 'none' });
+  },
+
+  /**
+   * Optimistically update billing state in the cache.
+   */
+  optimisticUpdateBilling: (queryClient: QueryClient, updates: Partial<BillingInfo>) => {
+    queryClient.setQueryData(
+      ['active-organization-details'],
+      (old: OrganizationDetails | undefined) =>
+        old ? { ...old, billing: { ...old.billing, ...updates } } : old
+    );
+  },
+
+  /**
+   * Invalidate the organization query after a webhook or plan change.
+   */
+  syncBilling: (queryClient: QueryClient) => {
+    queryClient.invalidateQueries({ queryKey: ['active-organization-details'] });
   },
 };

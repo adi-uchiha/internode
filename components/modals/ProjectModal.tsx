@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateProject } from '@/hooks/useProjects';
 import { toast } from '@/lib/toast';
+import { usePlanLimitWarning } from '@/hooks/useOrganization';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -17,9 +18,14 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const { mutateAsync: createProject, isPending } = useCreateProject();
+  const { isAtLimit, max } = usePlanLimitWarning('projects');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAtLimit) {
+      toast.error('Limit reached. Upgrade to initialize more projects.');
+      return;
+    }
     if (!name.trim()) {
       toast.error('Project name is required');
       return;
@@ -84,6 +90,16 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {isAtLimit && (
+                  <div className="p-3.5 border border-amber-500/20 bg-amber-500/5 text-amber-400 font-mono text-xs space-y-1">
+                    <span className="font-bold block">[PROJECT_LIMIT_REACHED]</span>
+                    <span>
+                      This organization has reached the limit of {max} projects on the Starter Free
+                      plan. Please upgrade to Pro Growth to initialize more projects.
+                    </span>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest block font-bold">
                     Project Name
@@ -94,6 +110,7 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Phoenix Engine"
                     className="bg-muted/30 border-border h-11 font-mono text-sm focus-visible:ring-primary/20"
+                    disabled={isAtLimit}
                   />
                 </div>
 
@@ -112,12 +129,14 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
                       onChange={(e) => setColor(e.target.value)}
                       placeholder="#3b82f6"
                       className="bg-muted/30 border-border h-11 font-mono text-sm flex-1"
+                      disabled={isAtLimit}
                     />
                     <input
                       type="color"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
                       className="w-11 h-11 bg-transparent border-0 cursor-pointer overflow-hidden p-0"
+                      disabled={isAtLimit}
                     />
                   </div>
                 </div>
@@ -136,6 +155,7 @@ export function ProjectModal({ isOpen, onClose }: ProjectModalProps) {
                     variant="hero"
                     className="flex-1 h-11 font-mono text-xs uppercase tracking-widest shadow-lg shadow-primary/20"
                     loading={isPending}
+                    disabled={isAtLimit}
                   >
                     Initialize
                   </Button>

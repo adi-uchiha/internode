@@ -78,10 +78,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ── 2. Organizations List ────────────────────────────────────────────────────
   // Only fetch when the user is confirmed authenticated. This prevents the
   // hook from firing on public pages or during the sign-in transition.
-  const { data: orgs, isPending: isOrgsLoading } = authClient.useListOrganizations();
+  const { data: orgs, isPending: isOrgsLoading } = useQuery({
+    queryKey: ['list-organizations', user?.id],
+    queryFn: async () => {
+      const { data, error } = await authClient.organization.list();
+      if (error) throw new Error(error.message ?? 'Failed to list organizations');
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Whether the org list fetch has settled (either data OR no-orgs)
-  const orgsSettled = !isOrgsLoading;
+  const orgsSettled = !isOrgsLoading && (!!orgs || !user);
   const hasNoOrg = orgsSettled && !!user && Array.isArray(orgs) && orgs.length === 0;
 
   // ── 3. Member Role — guarded, promise-based, NO better-auth reactive hook ──
