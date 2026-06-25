@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import Link from 'next/link';
 import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
 
 export const Footer = () => {
@@ -101,20 +102,20 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-4">
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/privacy"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Privacy
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  href="/terms"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Terms
-                </a>
+                </Link>
               </li>
               <li>
                 <a

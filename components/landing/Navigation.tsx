@@ -3,9 +3,9 @@ import { AuthButtons } from './AuthButtons';
 import { FadeIn } from './Animations';
 
 const navItems = [
-  { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Features', href: '/#features' },
+  { label: 'How It Works', href: '/#how-it-works' },
+  { label: 'Pricing', href: '/#pricing' },
 ];
 
 import { NEXT_PUBLIC_APP_NAME } from '@/lib/env';
@@ -31,13 +31,13 @@ export const Navigation = () => {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 font-display animated-underline"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
 
