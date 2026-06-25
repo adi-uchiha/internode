@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtmlLibrary from 'sanitize-html';
 
 /**
  * Sanitizes an HTML string to prevent XSS.
@@ -6,8 +6,8 @@ import DOMPurify from 'isomorphic-dompurify';
  */
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtmlLibrary(html, {
+    allowedTags: [
       'p',
       'br',
       'b',
@@ -26,6 +26,9 @@ export function sanitizeHtml(html: string): string {
       'h3',
       'span',
     ],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+    allowedAttributes: {
+      a: ['href', 'name', 'target', 'rel', 'class'],
+      '*': ['class'],
+    },
   });
 }
